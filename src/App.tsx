@@ -1,32 +1,60 @@
-const ROWS = 4
-const COLS = 4
+import { statePath, useGame } from './hooks/useGame'
+import { GlassBoard } from './view/GlassBoard'
+import { DraftPool } from './view/DraftPool'
+import { Objectives } from './view/Objectives'
+import { ScorePanel } from './view/ScorePanel'
+import SetupScreen from './view/SetupScreen'
+import { GameOverScreen } from './view/GameOverScreen'
 
 export default function App() {
+  const { game, snapshot, send, seed } = useGame()
+  const path = statePath(snapshot)
+
+  if (path === 'setup') {
+    return <SetupScreen game={game} onChoose={(id) => send({ type: 'CHOOSE_PATTERN', id })} />
+  }
+
+  if (snapshot.status === 'done' || game.phase === 'gameOver') {
+    return (
+      <GameOverScreen
+        game={game}
+        onRestart={() => {
+          window.location.search = `?seed=${seed + 1}`
+        }}
+      />
+    )
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8">
-      <header className="text-center">
-        <h1 className="font-serif text-4xl tracking-wide text-amber-100">Rose Window</h1>
-        <p className="mt-2 text-sm text-neutral-400">Scaffold placeholder — phase 0</p>
+    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
+      <header className="flex items-baseline justify-between">
+        <h1 className="font-serif text-3xl tracking-wide text-amber-100">Rose Window</h1>
+        <p className="text-xs uppercase tracking-widest text-neutral-500">
+          {game.window?.pattern.name}
+        </p>
       </header>
-      <div
-        role="grid"
-        aria-label="Glass window"
-        data-testid="glass-board"
-        className="grid grid-cols-4 gap-1.5 rounded-2xl bg-neutral-950 p-3 ring-4 ring-neutral-800"
-      >
-        {Array.from({ length: ROWS * COLS }, (_, i) => {
-          const r = Math.floor(i / COLS)
-          const c = i % COLS
-          return (
-            <div
-              key={i}
-              role="gridcell"
-              aria-label={`row ${r}, column ${c}, empty`}
-              data-testid={`cell-r${r}c${c}`}
-              className="h-20 w-20 rounded-lg bg-neutral-800/60 ring-2 ring-neutral-950"
-            />
-          )
-        })}
+      <div className="flex flex-wrap items-start justify-center gap-8">
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-xs uppercase tracking-widest text-amber-300/80">
+            beam enters at row {game.currentEntry.position.row}, column{' '}
+            {game.currentEntry.position.col}, heading {game.currentEntry.direction}
+          </p>
+          <GlassBoard game={game} />
+        </div>
+        <aside className="flex w-72 flex-col gap-4">
+          <DraftPool game={game} statePath={path} />
+          <ScorePanel game={game} seed={seed} />
+          <Objectives game={game} />
+          {snapshot.context.lastError !== null && (
+            <p
+              data-testid="rejection-hint"
+              className="rounded-lg bg-red-950/60 px-3 py-2 text-xs text-red-200 ring-1 ring-red-900"
+              role="alert"
+            >
+              Rejected: {snapshot.context.lastError}
+            </p>
+          )}
+        </aside>
       </div>
     </main>
   )

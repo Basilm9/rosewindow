@@ -88,6 +88,8 @@ export const gameMachine = setup({
     },
     isGameOver: ({ context }) => context.game.phase === 'gameOver',
     skipAnimations: ({ context }) => context.skipAnimations,
+    /** A pre-advanced game (dev demo mode) boots past the setup screen. */
+    gameAlreadyInRound: ({ context }) => context.game.phase !== 'patternSelection',
   },
   actions: {
     choosePattern: ({ context, event }) => {
@@ -121,6 +123,11 @@ export const gameMachine = setup({
   initial: 'setup',
   states: {
     setup: {
+      /** Boots in sync with the model: a pre-advanced game (dev demo mode) skips setup. */
+      always: [
+        { guard: 'isGameOver', target: '#game.finalScoring' },
+        { guard: 'gameAlreadyInRound', target: 'round' },
+      ],
       on: {
         CHOOSE_PATTERN: [
           { guard: 'patternOffered', target: 'round', actions: 'choosePattern' },

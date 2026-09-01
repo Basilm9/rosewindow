@@ -19,6 +19,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@xstate/react": "^6.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "xstate": "^5.19.0"
