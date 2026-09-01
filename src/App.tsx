@@ -17,7 +17,7 @@ function SoundToggle() {
       aria-pressed={!muted}
       aria-label={muted ? 'unmute sounds' : 'mute sounds'}
       onClick={() => setMuted(sfx.toggleMute())}
-      className="rounded-lg px-2 py-1 text-lg text-neutral-400 ring-1 ring-neutral-800 transition hover:text-amber-200 hover:ring-amber-700/60"
+      className="rounded-lg border-2 border-black/60 bg-black/40 px-2 py-1 text-sm text-neutral-300 transition hover:text-amber-200"
     >
       {muted ? '🔇' : '🔊'}
     </button>
@@ -35,6 +35,7 @@ export default function App() {
     lastPlaced,
     lastLit,
     shakeKey,
+    forfeitNotice,
     beam,
     litCells,
     animating,
@@ -68,69 +69,87 @@ export default function App() {
 
   return (
     <div
-      className={`mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 content-start gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-8 ${
+      className={`mx-auto flex h-[100dvh] w-full max-w-7xl flex-col gap-3 overflow-hidden p-3 sm:gap-4 sm:p-5 ${
         shaking ? 'animate-shake-screen' : ''
       }`}
     >
-      <header className="flex items-center justify-between gap-3 lg:col-span-2">
-        <div className="flex items-baseline gap-3">
-          <h1 className="bg-gradient-to-b from-amber-100 to-amber-300 bg-clip-text font-serif text-2xl tracking-wide text-transparent sm:text-3xl">
-            Rose Window
-          </h1>
-          <p className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:inline">
-            {game.window?.pattern.name}
-          </p>
-        </div>
-        <SoundToggle />
-      </header>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        {/* ===== sidebar ===== */}
+        <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-0.5">
+          <div className="panel px-4 py-3">
+            <div className="flex items-center justify-between">
+              <h1 className="font-serif text-xl tracking-wide text-amber-200 [text-shadow:0_2px_0_rgba(0,0,0,0.7)]">
+                Rose Window
+              </h1>
+              <SoundToggle />
+            </div>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              {game.window?.pattern.name} · seed {seed}
+            </p>
+          </div>
 
-      <main className="flex flex-col items-center gap-4 lg:row-start-2">
-        <p
-          className="text-center text-xs uppercase tracking-[0.18em] text-amber-300/80"
-          data-testid="entry-hint"
-        >
-          {animating
-            ? 'the beam scores the window…'
-            : `beam enters at row ${game.currentEntry.position.row}, column ${game.currentEntry.position.col}, heading ${game.currentEntry.direction}`}
-        </p>
-        <GlassBoard
-          game={game}
-          legalPreview={legalPreview}
-          rejection={rejection}
-          lastPlaced={lastPlaced}
-          lastLit={lastLit}
-          beam={beam}
-          litCells={litCells}
-          animating={animating}
-          onCellClick={(position) => {
-            if (game.hand !== null) send({ type: 'PLACE_DIE', position })
-          }}
-          onBeamDone={onBeamDone}
-          onBeamStrike={onBeamStrike}
-        />
-      </main>
+          <ScorePanel game={game} seed={seed} />
+          <Objectives game={game} />
 
-      <aside className="flex w-full flex-col gap-4 lg:row-start-2">
-        <DraftPool
-          game={game}
-          statePath={path}
-          onPick={(die) => {
-            sfx.pickup()
-            send({ type: 'SELECT_DIE', die })
-          }}
-        />
-        <ScorePanel game={game} seed={seed} />
-        <Objectives game={game} />
-        {snapshot.context.lastError !== null && (
+          <div className="flex flex-col gap-2">
+            {forfeitNotice !== null && (
+              <p
+                data-testid="forfeit-banner"
+                className="rounded-lg border-2 border-orange-900/70 bg-orange-950/50 px-3 py-2 text-xs font-semibold text-orange-200"
+                role="status"
+              >
+                Round {forfeitNotice} forfeited — no legal placements. The beam still scores.
+              </p>
+            )}
+            {snapshot.context.lastError !== null && (
+              <p
+                data-testid="rejection-hint"
+                className="animate-reject rounded-lg border-2 border-red-900/70 bg-red-950/60 px-3 py-2 text-xs font-semibold text-red-200"
+                role="alert"
+              >
+                Rejected: {snapshot.context.lastError}
+              </p>
+            )}
+          </div>
+        </aside>
+
+        {/* ===== play area ===== */}
+        <main className="flex min-h-0 flex-col items-center justify-center gap-3">
           <p
-            data-testid="rejection-hint"
-            className="animate-reject rounded-xl bg-red-950/60 px-4 py-3 text-sm text-red-200 ring-1 ring-red-900"
-            role="alert"
+            className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300/80"
+            data-testid="entry-hint"
           >
-            Rejected: {snapshot.context.lastError}
+            {animating
+              ? 'the beam scores the window…'
+              : forfeitNotice !== null
+                ? `round ${forfeitNotice} forfeited`
+                : `beam enters at row ${game.currentEntry.position.row}, column ${game.currentEntry.position.col}, heading ${game.currentEntry.direction}`}
           </p>
-        )}
-      </aside>
+          <GlassBoard
+            game={game}
+            legalPreview={legalPreview}
+            rejection={rejection}
+            lastPlaced={lastPlaced}
+            lastLit={lastLit}
+            beam={beam}
+            litCells={litCells}
+            animating={animating}
+            onCellClick={(position) => {
+              if (game.hand !== null) send({ type: 'PLACE_DIE', position })
+            }}
+            onBeamDone={onBeamDone}
+            onBeamStrike={onBeamStrike}
+          />
+          <DraftPool
+            game={game}
+            statePath={path}
+            onPick={(die) => {
+              sfx.pickup()
+              send({ type: 'SELECT_DIE', die })
+            }}
+          />
+        </main>
+      </div>
     </div>
   )
 }

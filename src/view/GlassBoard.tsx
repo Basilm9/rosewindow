@@ -214,7 +214,7 @@ export function GlassBoard({
     hoveredPreview?.kind === 'adjacencyViolation' ? [...hoveredPreview.offendingNeighbors] : []
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(92vw,560px)]">
+    <div className="relative aspect-square h-auto w-full max-w-[min(92vw,560px)] lg:h-full lg:max-h-full lg:w-auto lg:max-w-full">
       {/* cathedral bloom behind the lead came */}
       <div className="pointer-events-none absolute inset-[-4%] rounded-[8%] bg-[radial-gradient(circle_at_50%_42%,rgba(251,191,36,0.10)_0%,rgba(168,85,247,0.06)_45%,transparent_70%)]" />
       <div

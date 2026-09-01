@@ -8,7 +8,7 @@ test('select a die, inspect the legal hover ghost, place it legally', async ({ p
 
   // Seed 3, Novice Rose, first pool die is blue 2 — legal on the open border r0c0.
   await page.getByTestId('draft-die-0').click()
-  await expect(page.getByTestId('draft-hint')).toContainText('In hand')
+  await expect(page.getByTestId('draft-hint')).toContainText('in hand')
 
   await page.getByTestId('cell-r0c0').hover()
   await expect(page.getByTestId('ghost-r0c0')).toBeVisible()
@@ -17,7 +17,7 @@ test('select a die, inspect the legal hover ghost, place it legally', async ({ p
   await page.getByTestId('cell-r0c0').click()
   await expect(page.getByTestId('die-r0c0')).toBeVisible()
   await expect(page.locator('[data-testid^="draft-die-"]')).toHaveCount(4)
-  await expect(page.getByTestId('draft-hint')).toContainText('Select a die')
+  await expect(page.getByTestId('draft-hint')).toContainText('Draft a die')
 })
 
 test('illegal placement shakes the cell, alerts, and keeps the die in hand', async ({ page }) => {
@@ -29,7 +29,7 @@ test('illegal placement shakes the cell, alerts, and keeps the die in hand', asy
   await page.getByTestId('cell-r1c1').click() // interior: first-placement law
   await expect(page.getByTestId('rejection-hint')).toContainText('illegalFirstPlacement')
   await expect(page.getByTestId('cell-r1c1')).toHaveAttribute('data-rejected', 'true')
-  await expect(page.getByTestId('draft-hint')).toContainText('In hand')
+  await expect(page.getByTestId('draft-hint')).toContainText('in hand')
   await expect(page.getByTestId('die-r1c1')).toHaveCount(0)
 
   // The die is not consumed: a legal cell still accepts it.
@@ -42,7 +42,7 @@ test('hover ghost flags illegal cells and outlines offending neighbors (seeded m
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/?seed=3&round=3') // Lancet: purple2@(0,1) yellow5@(1,0) red2@(2,1) purple3@(2,2)
-  await expect(page.getByTestId('round-indicator')).toHaveText('Round 3 / 8')
+  await expect(page.getByTestId('round-indicator')).toHaveText('ROUND 3/8')
 
   // Disconnected interior-ish cell is illegal for the first pool die (blue 1).
   await page.getByTestId('draft-die-0').click()
@@ -72,7 +72,7 @@ test('completing two placements advances the round with a fresh pool', async ({ 
   await expect(page.getByTestId('rejection-hint')).toContainText('disconnectedPlacement')
   await page.getByTestId('cell-r0c1').click()
   await expect(page.getByTestId('die-r0c1')).toBeVisible()
-  await expect(page.getByTestId('round-indicator')).toHaveText('Round 2 / 8')
+  await expect(page.getByTestId('round-indicator')).toHaveText('ROUND 2/8')
   await expect(page.locator('[data-testid^="draft-die-"]')).toHaveCount(5)
-  await expect(page.getByTestId('round-scores')).toContainText('R1:')
+  await expect(page.getByTestId('round-scores')).toHaveText('0')
 })

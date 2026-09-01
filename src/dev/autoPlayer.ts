@@ -98,8 +98,8 @@ export function autoPlay(game: Game, patternId: string): GameEvent[] {
   game.subscribe(events.push.bind(events))
   game.choosePattern(patternId)
   while (game.phase !== 'gameOver') {
-    if (!autoPlace(game) || !autoPlace(game)) {
-      throw new Error(`auto-player dead-ended in round ${game.round}`)
+    if (!autoPlace(game)) {
+      game.forfeitRound()
     }
   }
   return events
@@ -108,32 +108,33 @@ export function autoPlay(game: Game, patternId: string): GameEvent[] {
 /**
  * Dev demo factory: a seeded game booted straight into round `targetRound`
  * (9 = finished game). Offered patterns are probed first so the chosen one can
- * actually reach the target — the auto-player can dead-end on demanding
- * patterns, which is game truth, not a bug. Returns a fresh game untouched
- * when no pattern reaches the target.
+ * actually reach the target — dead-ended rounds are forfeited (the beam still
+ * scores), so every seed completes.
  */
 export function fastForward(seed: number, targetRound: number): Game {
   const config = createGameConfig(seed)
   const game = new Game(config)
   if (targetRound <= 1) return game
 
-  const reachesTarget = (patternId: string): boolean => {
-    const sim = new Game(config)
+  const playTo = (sim: Game, patternId: string): boolean => {
     sim.choosePattern(patternId)
     let guard = 0
-    while (sim.phase !== 'gameOver' && sim.round < targetRound && guard++ < 100) {
-      if (!autoPlace(sim) || !autoPlace(sim)) return false
+    while (sim.phase !== 'gameOver' && sim.round < targetRound && guard++ < 300) {
+      if (!autoPlace(sim)) sim.forfeitRound()
     }
     return sim.phase === 'gameOver' || sim.round >= targetRound
   }
 
-  const completable = game.offeredPatterns.find((p) => reachesTarget(p.id))
+  const completable = game.offeredPatterns.find((p) => {
+    const sim = new Game(config)
+    try {
+      return playTo(sim, p.id)
+    } catch {
+      return false
+    }
+  })
   if (completable === undefined) return game
 
-  game.choosePattern(completable.id)
-  let guard = 0
-  while (game.phase !== 'gameOver' && game.round < targetRound && guard++ < 100) {
-    if (!autoPlace(game) || !autoPlace(game)) break
-  }
+  playTo(game, completable.id)
   return game
 }

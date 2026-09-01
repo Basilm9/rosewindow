@@ -5,7 +5,7 @@ import { GameError } from './errors'
 import type { PlacementError, PlacementViolation } from './errors'
 import type { GameEvent, GameListener } from './events'
 import { GlassWindow } from './glassWindow'
-import { assertPlacementValid } from './placementValidator'
+import { assertPlacementValid, findPlacementViolation } from './placementValidator'
 import { mulberry32 } from './rng'
 import { offerPatterns } from './patterns'
 import { sample } from './sample'
@@ -15,7 +15,7 @@ import { dealObjectives } from './objectives'
 import type { DealtObjectives } from './objectives'
 import { calculateScore } from './scoreCalculator'
 import type { ScoreReport } from './scoreCalculator'
-import type { Die, EntryPoint, WindowPattern } from './types'
+import type { Die, EntryPoint, Position, WindowPattern } from './types'
 
 /** The game's phases (pitch §10, compressed for the headless model). */
 export type GamePhase = 'patternSelection' | 'draft' | 'place' | 'gameOver'
@@ -179,6 +179,52 @@ export class Game {
     }
   }
 
+  /**
+   * Deadlock escape (design addendum): when no visible die has any legal
+   * placement, the round is forfeited — the unplaced dice return to the bag and
+   * the beam still illuminates and scores the existing glass, exactly as a
+   * played round would. Keeps the round clock and final scoring intact.
+   */
+  forfeitRound(): void {
+    if (this.#phase !== 'draft' && this.#phase !== 'place') {
+      throw new GameError({ kind: 'invalidPhase' })
+    }
+    if (this.#hand !== null) {
+      this.#draftPool.putBack([this.#hand])
+      this.#hand = null
+    }
+    this.#bag.return(this.#draftPool.dice)
+    this.#draftPool.clear()
+    this.#phase = 'draft'
+    this.#emit({ kind: 'roundForfeited', round: this.#round })
+    this.#illuminateAndAdvance()
+  }
+
+  /** True when at least one visible die has at least one legal placement. */
+  hasLegalMove(): boolean {
+    const window = this.#window
+    if (window === null) return false
+    for (const die of this.#draftPool.dice) {
+      for (let row = 0; row < window.gridSize; row++) {
+        for (let col = 0; col < window.gridSize; col++) {
+          const target: Position = { row, col }
+          if (
+            findPlacementViolation({
+              grid: window.dice,
+              constraints: window.constraints,
+              pool: [die],
+              die,
+              target,
+            }) === null
+          ) {
+            return true
+          }
+        }
+      }
+    }
+    return false
+  }
+
   #beginRoundDraft(): void {
     this.#draftPool = new DraftPool(this.#bag.draw(this.config.draftSize))
     this.#placementsThisRound = 0
@@ -190,7 +236,10 @@ export class Game {
     // Refresh: unselected dice return to the bag.
     this.#bag.return(this.#draftPool.dice)
     this.#draftPool.clear()
+    this.#illuminateAndAdvance()
+  }
 
+  #illuminateAndAdvance(): void {
     // Illuminate: trace the beam from the announced entry and score the path.
     const path = traceBeam(this.#window!.dice, this.currentEntry, this.config.multiplierCap)
     this.#emit({ kind: 'beamTraced', path })

@@ -17,6 +17,8 @@ export type GameEvent =
   | { readonly kind: 'draftPoolRefreshed'; readonly dice: readonly Die[] }
   | { readonly kind: 'beamTraced'; readonly path: BeamPath }
   | { readonly kind: 'roundScored'; readonly round: number; readonly delta: number }
+  /** Design addendum over the pitch: a round with no legal placement is forfeited. */
+  | { readonly kind: 'roundForfeited'; readonly round: number }
   | { readonly kind: 'gameOver'; readonly report: ScoreReport }
 
 export type GameListener = (event: GameEvent) => void

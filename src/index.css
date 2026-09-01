@@ -195,6 +195,17 @@ body {
   transform: scale(1);
 }
 
+/* ===== Balatro-style chunky panel ===== */
+
+.panel {
+  border-radius: 0.75rem;
+  border: 2px solid rgba(0, 0, 0, 0.7);
+  background: #262320;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    0 4px 0 rgba(0, 0, 0, 0.35);
+}
+
 /* ===== juice ===== */
 
 @keyframes hint-pulse {

@@ -104,8 +104,17 @@ export const gameMachine = setup({
     skipAnimations: ({ context }) => context.skipAnimations,
     /** A pre-advanced game (dev demo mode) boots past the setup screen. */
     gameAlreadyInRound: ({ context }) => context.game.phase !== 'patternSelection',
+    /** Deadlock escape: no visible die fits anywhere — the round is forfeited. */
+    noLegalMoves: ({ context }) =>
+      (context.game.phase === 'draft' || context.game.phase === 'place') &&
+      !context.game.hasLegalMove(),
   },
   actions: {
+    /** Deadlock escape: refresh without placements; the beam still illuminates. */
+    forfeitRound: assign(({ context }) => {
+      context.game.forfeitRound()
+      return { heldDie: null }
+    }),
     choosePattern: ({ context, event }) => {
       if (event.type === 'CHOOSE_PATTERN') context.game.choosePattern(event.id)
     },
@@ -157,6 +166,7 @@ export const gameMachine = setup({
       initial: 'draft',
       states: {
         draft: {
+          always: [{ guard: 'noLegalMoves', target: 'illuminate', actions: 'forfeitRound' }],
           on: {
             SELECT_DIE: [
               { guard: 'selectLegal', target: 'place', actions: 'selectDie' },
@@ -165,6 +175,7 @@ export const gameMachine = setup({
           },
         },
         place: {
+          always: [{ guard: 'noLegalMoves', target: 'illuminate', actions: 'forfeitRound' }],
           on: {
             PLACE_DIE: [
               { guard: 'placementLegal', actions: 'performPlacement' },

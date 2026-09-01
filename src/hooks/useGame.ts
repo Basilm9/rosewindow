@@ -26,6 +26,8 @@ export interface UseGameResult {
   lastLit: { position: Position; key: number } | null
   /** Increments when a big round score should shake the screen. */
   shakeKey: number
+  /** Round number when a forfeit last occurred (for the notice banner). */
+  forfeitNotice: number | null
   /** The beam path currently animating (or settled) over the board. */
   beam: { path: BeamPath; key: number } | null
   /** Cells whose glass the beam has lit, keyed "row,col". */
@@ -67,6 +69,7 @@ export function useGame(): UseGameResult {
   const [litCells, setLitCells] = useState<ReadonlySet<string>>(new Set())
   const [lastLit, setLastLit] = useState<UseGameResult['lastLit']>(null)
   const [shakeKey, setShakeKey] = useState(0)
+  const [forfeitNotice, setForfeitNotice] = useState<number | null>(null)
   const flashKey = useRef(0)
   const beamKey = useRef(0)
 
@@ -90,6 +93,13 @@ export function useGame(): UseGameResult {
     }
   }, [machineRejection])
 
+  // Forfeit notices display for a few seconds, then fade from attention.
+  useEffect(() => {
+    if (forfeitNotice === null) return
+    const t = setTimeout(() => setForfeitNotice(null), 3500)
+    return () => clearTimeout(t)
+  }, [forfeitNotice])
+
   useEffect(() => {
     return game.subscribe((event) => {
       setEventCount((c) => c + 1)
@@ -103,6 +113,9 @@ export function useGame(): UseGameResult {
         case 'beamTraced':
           beamKey.current += 1
           setBeam({ path: event.path, key: beamKey.current })
+          break
+        case 'roundForfeited':
+          setForfeitNotice(event.round)
           break
         case 'roundScored':
           sfx.roundScored(event.delta)
@@ -171,6 +184,7 @@ export function useGame(): UseGameResult {
     lastPlaced,
     lastLit,
     shakeKey,
+    forfeitNotice,
     beam,
     litCells,
     animating,

@@ -1,36 +1,71 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Game } from '../engine/game'
+import type { ScoreReport } from '../engine/scoreCalculator'
 
-/** Rolls the displayed number toward `target` with an ease-out — juicy counters. */
-function useCountUp(target: number, ms = 600): number {
-  const [display, setDisplay] = useState(target)
-  const fromRef = useRef(target)
-
-  useEffect(() => {
-    const from = fromRef.current
-    if (from === target) return
-    let raf: number
-    const t0 = performance.now()
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / ms)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setDisplay(Math.round(from + (target - from) * eased))
-      if (p < 1) {
-        raf = requestAnimationFrame(tick)
-      } else {
-        fromRef.current = target
-      }
-    }
-    raf = requestAnimationFrame(tick)
-    return () => {
-      cancelAnimationFrame(raf)
-      fromRef.current = target
-    }
-  }, [target, ms])
-
-  return display
+const TIER_STYLES: Record<string, string> = {
+  none: 'bg-neutral-800 text-neutral-300',
+  bronze: 'bg-amber-800 text-amber-100',
+  silver: 'bg-slate-300 text-slate-900',
+  gold: 'bg-amber-400 text-amber-950',
 }
 
+const TIER_GLOW: Record<string, string> = {
+  gold: 'shadow-[0_0_18px_rgba(251,191,36,0.5)]',
+}
+
+/** Balatro-style chunky score panel: label, huge number, round chips. */
+export function GameOverPanel({ game }: { game: Game }) {
+  const report = game.report
+  if (report === null) return null
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="panel flex items-center justify-between px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
+          Final score
+        </p>
+        <span
+          data-testid="final-tier"
+          className={`rounded-md px-3 py-1 text-xs font-black uppercase tracking-[0.2em] ${TIER_STYLES[report.tier] ?? TIER_STYLES.none} ${TIER_GLOW[report.tier] ?? ''}`}
+        >
+          {report.tier}
+        </span>
+      </div>
+      <p
+        className="text-center text-6xl font-black text-amber-300 [text-shadow:0_3px_0_rgba(0,0,0,0.7)]"
+        data-testid="final-total"
+        aria-label={`final score ${report.total}`}
+      >
+        {report.total}
+      </p>
+      <div className="flex flex-col gap-1.5" data-testid="score-lines">
+        {report.lines.map((line) => (
+          <ScoreRow key={line.objectiveId} name={line.name} points={line.points} />
+        ))}
+        <ScoreRow name="Beam totals" points={report.beamTotal} accent />
+      </div>
+    </div>
+  )
+}
+
+function ScoreRow({ name, points, accent }: { name: string; points: number; accent?: boolean }) {
+  return (
+    <div
+      className={`flex items-center justify-between rounded-lg border-2 border-black/60 px-3 py-1.5 ${
+        accent ? 'bg-[#3a2f1a]' : 'bg-[#211f1b]'
+      }`}
+    >
+      <span className="text-xs font-semibold text-neutral-300">{name}</span>
+      <span
+        className={`text-lg font-black [text-shadow:0_2px_0_rgba(0,0,0,0.6)] ${accent ? 'text-amber-300' : 'text-orange-300'}`}
+        aria-label={`${name} scored ${points}`}
+      >
+        {points}
+      </span>
+    </div>
+  )
+}
+
+/** In-game chunky stat block. */
 export function ScorePanel({ game, seed }: { game: Game; seed: number }) {
   const [pulse, setPulse] = useState(0)
   const lastRound = game.roundScores.length
@@ -38,46 +73,44 @@ export function ScorePanel({ game, seed }: { game: Game; seed: number }) {
     if (lastRound > 0) setPulse((p) => p + 1)
   }, [lastRound])
 
-  const displayed = useCountUp(game.totalScore)
-
   return (
-    <section
-      aria-label="Score"
-      data-testid="score-panel"
-      className="rounded-2xl bg-neutral-900/80 p-4 ring-1 ring-neutral-800 backdrop-blur-sm sm:p-5"
-    >
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-400">Score</h2>
+    <div className="panel flex flex-col gap-2 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
+          Beam score
+        </p>
         <p
-          className="text-sm text-neutral-300"
+          className="text-xs font-bold text-neutral-300"
           data-testid="round-indicator"
           aria-label={`round ${game.round} of ${game.config.rounds}`}
         >
-          Round {game.round} / {game.config.rounds}
+          ROUND {game.round}/{game.config.rounds}
         </p>
       </div>
       <p
         key={pulse}
-        className={`mt-2 text-4xl font-bold text-amber-100 drop-shadow-[0_0_10px_rgba(251,191,36,0.35)] ${pulse > 0 ? 'animate-place' : ''}`}
+        className={`text-right text-5xl font-black leading-none text-amber-300 [text-shadow:0_3px_0_rgba(0,0,0,0.7)] ${pulse > 0 ? 'animate-place' : ''}`}
         data-testid="beam-total"
         aria-label={`beam total ${game.totalScore}`}
       >
-        {displayed}
+        {game.totalScore}
       </p>
-      <div className="mt-3 flex flex-wrap gap-1.5" data-testid="round-scores">
+      <div className="flex flex-wrap justify-end gap-1" data-testid="round-scores">
         {game.roundScores.map((score, index) => (
           <span
             key={index}
-            className="rounded-lg bg-neutral-950/70 px-2 py-1 text-xs text-neutral-300 ring-1 ring-neutral-800"
+            className="rounded border border-black/50 bg-black/40 px-1.5 py-0.5 text-[10px] font-bold text-neutral-300"
             aria-label={`round ${index + 1} scored ${score}`}
           >
-            R{index + 1}: {score}
+            {score}
           </span>
         ))}
       </div>
-      <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-neutral-600">
+      <p className="text-[9px] uppercase tracking-[0.18em] text-neutral-600">
         seed {seed} · {game.window?.pattern.name ?? '—'}
       </p>
-    </section>
+    </div>
   )
 }
+
+export type { ScoreReport }
