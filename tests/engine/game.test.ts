@@ -173,6 +173,26 @@ describe('Game — golden master (seed 3, novice-rose, max-flex auto-player)', (
     expect(game.phase).toBe('gameOver')
   })
 
+  it('produces the exact recorded final score report', () => {
+    const game = newGame()
+    autoPlay(game, PATTERN)
+    // Beam total + objectives; tier from the provisional thresholds.
+    expect(game.report).toEqual({
+      lines: [
+        { objectiveId: 'column-color-variety', name: 'Column Color Variety', points: 10 },
+        { objectiveId: 'row-value-variety', name: 'Row Value Variety', points: 4 },
+        { objectiveId: 'even-values', name: 'Even Values', points: 7 },
+        { objectiveId: 'patron-blue', name: 'Patron of Blue', points: 9 },
+      ],
+      beamTotal: 156,
+      total: 186,
+      tier: 'gold',
+    })
+    expect(game.report!.beamTotal).toBe(game.totalScore)
+    expect(game.report!.total).toBe(186)
+    expect(game.report!.tier).toBe('gold')
+  })
+
   it('replays bit-identically on a fresh instance', () => {
     const a = autoPlay(newGame(), PATTERN)
     const b = autoPlay(newGame(), PATTERN)

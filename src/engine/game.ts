@@ -13,6 +13,8 @@ import { traceBeam } from './beamTracer'
 import { allEntryPoints } from './types'
 import { dealObjectives } from './objectives'
 import type { DealtObjectives } from './objectives'
+import { calculateScore } from './scoreCalculator'
+import type { ScoreReport } from './scoreCalculator'
 import type { Die, EntryPoint, WindowPattern } from './types'
 
 /** The game's phases (pitch §10, compressed for the headless model). */
@@ -42,6 +44,7 @@ export class Game {
   #placementsThisRound = 0
   #roundScores: number[] = []
   #totalScore = 0
+  #report: ScoreReport | null = null
   #bag: DiceBag
   #listeners = new Set<GameListener>()
 
@@ -94,6 +97,15 @@ export class Game {
 
   get totalScore(): number {
     return this.#totalScore
+  }
+
+  /**
+   * The itemized final score once the game is over (null during play).
+   * `totalScore` remains the running beam total; the final score is
+   * `report.total` = beam totals + objectives (pitch §4).
+   */
+  get report(): ScoreReport | null {
+    return this.#report
   }
 
   #requirePhase(phase: GamePhase): void {
@@ -187,8 +199,15 @@ export class Game {
     this.#emit({ kind: 'roundScored', round: this.#round, delta: path.totalScore })
 
     if (this.#round === this.config.rounds) {
+      // Final scoring: objectives over the finished window + beam totals (pitch §4).
+      this.#report = calculateScore({
+        grid: this.#window!.dice,
+        objectives: this.objectives,
+        beamTotal: this.#totalScore,
+        tiers: this.config.tiers,
+      })
       this.#phase = 'gameOver'
-      this.#emit({ kind: 'gameOver', totalScore: this.#totalScore })
+      this.#emit({ kind: 'gameOver', report: this.#report })
       return
     }
 

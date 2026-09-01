@@ -1,5 +1,6 @@
 import type { BeamPath } from './beamTracer'
 import type { PlacementViolation } from './errors'
+import type { ScoreReport } from './scoreCalculator'
 import type { Die, Position } from './types'
 
 /**
@@ -16,6 +17,6 @@ export type GameEvent =
   | { readonly kind: 'draftPoolRefreshed'; readonly dice: readonly Die[] }
   | { readonly kind: 'beamTraced'; readonly path: BeamPath }
   | { readonly kind: 'roundScored'; readonly round: number; readonly delta: number }
-  | { readonly kind: 'gameOver'; readonly totalScore: number }
+  | { readonly kind: 'gameOver'; readonly report: ScoreReport }
 
 export type GameListener = (event: GameEvent) => void
