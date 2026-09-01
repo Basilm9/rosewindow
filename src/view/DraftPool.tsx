@@ -39,9 +39,13 @@ export function DraftPool({
             aria-label={`select ${dieLabel(die)}`}
             data-testid={`draft-die-${index}`}
             onClick={() => onPick(die)}
-            className="block w-12 rounded-[14%] leading-none transition duration-150 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:w-14 hover:ring-2 hover:ring-amber-300/90"
+            className="group relative block w-12 leading-none transition duration-150 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:w-14"
           >
             <DieFace die={die} size="md" />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-[14%] border-2 border-amber-300/90 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            />
           </button>
         ))}
         {hand !== null && (

@@ -101,119 +101,127 @@ export function BeamLayer({
     .join(' ')
   const head = index > 0 ? cellCenter(path.segments[Math.min(index, path.segments.length) - 1]!.position) : null
 
+  const frame =
+    'pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-1000'
+
+  /**
+   * Twin layers so the beam runs BEHIND the translucent glass panes while the
+   * head, entry flash, and score floats stay readable above them.
+   */
   return (
-    <svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      data-testid="beam-layer"
-      data-settled={finished ? 'true' : undefined}
-      aria-label={`beam path scoring ${path.totalScore} points, ${path.termination === 'cycle' ? 'looped back on itself' : 'exited the window'}`}
-      className={`pointer-events-none absolute inset-0 z-20 h-full w-full transition-opacity duration-1000 ${
-        finished ? 'opacity-80' : 'opacity-100'
-      }`}
-    >
-      <defs>
-        <filter id="beam-glow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="2.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <radialGradient id="beam-head">
-          <stop offset="0%" stopColor="#fffbeb" />
-          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
-        </radialGradient>
-      </defs>
+    <>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        data-testid="beam-layer"
+        data-settled={finished ? 'true' : undefined}
+        aria-hidden
+        className={`${frame} z-10 ${finished ? 'opacity-80' : 'opacity-100'}`}
+      >
+        <defs>
+          <filter id="beam-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="2.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <radialGradient id="beam-head">
+            <stop offset="0%" stopColor="#fffbeb" />
+            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+          </radialGradient>
+        </defs>
 
-      {points !== '' && (
-        <g
-          filter="url(#beam-glow)"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        >
-          {/* beads of light in every traversed cell */}
-          {walked.map((s, i) => {
-            const c = cellCenter(s.position)
-            return (
-              <circle
-                key={`bead-${i}`}
-                cx={c.x}
-                cy={c.y}
-                r={s.die !== null ? 8.5 : 6}
-                fill={s.die !== null ? 'url(#beam-head)' : '#f59e0b'}
-                opacity={s.die !== null ? 0.85 : 0.4}
-                data-testid={`bead-${i}`}
+        {points !== '' && (
+          <g filter="url(#beam-glow)" strokeLinecap="round" strokeLinejoin="round" fill="none">
+            {walked.map((s, i) => {
+              const c = cellCenter(s.position)
+              return (
+                <circle
+                  key={`bead-${i}`}
+                  cx={c.x}
+                  cy={c.y}
+                  r={s.die !== null ? 8.5 : 6}
+                  fill={s.die !== null ? 'url(#beam-head)' : '#f59e0b'}
+                  opacity={s.die !== null ? 0.85 : 0.4}
+                  data-testid={`bead-${i}`}
+                />
+              )
+            })}
+            <g className={finished ? 'beam-settled-halo' : undefined}>
+              <polyline points={points} stroke="#d97706" strokeWidth={11} opacity={0.3} />
+              <polyline points={points} stroke="#f59e0b" strokeWidth={6.5} opacity={0.85} />
+              <polyline
+                points={points}
+                stroke="#fffbeb"
+                strokeWidth={2.6}
+                data-testid="beam-core"
+                className="beam-flow"
               />
-            )
-          })}
-          <g className={finished ? 'beam-settled-halo' : undefined}>
-            <polyline points={points} stroke="#d97706" strokeWidth={11} opacity={0.3} />
-            <polyline points={points} stroke="#f59e0b" strokeWidth={6.5} opacity={0.85} />
-            <polyline
-              points={points}
-              stroke="#fffbeb"
-              strokeWidth={2.6}
-              data-testid="beam-core"
-              className="beam-flow"
-            />
+            </g>
           </g>
-        </g>
-      )}
+        )}
+      </svg>
 
-      {head !== null && !finished && (
-        <g>
-          <circle cx={head.x} cy={head.y} r={8.5} fill="url(#beam-head)" opacity={0.95} />
-          <circle cx={head.x} cy={head.y} r={2.4} fill="#fffbeb" />
-        </g>
-      )}
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-label={`beam path scoring ${path.totalScore} points, ${path.termination === 'cycle' ? 'looped back on itself' : 'exited the window'}`}
+        className={`${frame} z-30`}
+      >
+        {head !== null && !finished && (
+          <g>
+            <circle cx={head.x} cy={head.y} r={8.5} fill="url(#beam-head)" opacity={0.95} />
+            <circle cx={head.x} cy={head.y} r={2.4} fill="#fffbeb" />
+          </g>
+        )}
 
-      {!finished && (
-        <circle
-          cx={entry.x}
-          cy={entry.y}
-          r={7}
-          fill="none"
-          stroke="#fde68a"
-          strokeWidth={1.2}
-          className="animate-entry-flash"
-        />
-      )}
+        {!finished && (
+          <circle
+            cx={entry.x}
+            cy={entry.y}
+            r={7}
+            fill="none"
+            stroke="#fde68a"
+            strokeWidth={1.2}
+            className="animate-entry-flash"
+          />
+        )}
 
-      {floats.map((f) => (
-        <g key={f.id} className="animate-score-rise" data-testid={`score-float-${f.id}`}>
-          <text
-            x={f.x}
-            y={f.y - 7}
-            textAnchor="middle"
-            fontSize={5.4}
-            fontWeight="bold"
-            fill="#fde68a"
-            stroke="#451a03"
-            strokeWidth={0.5}
-            paintOrder="stroke"
-          >
-            +{f.points}
-          </text>
-          {f.multiplier > 1 && (
+        {floats.map((f) => (
+          <g key={f.id} className="animate-score-rise" data-testid={`score-float-${f.id}`}>
             <text
               x={f.x}
-              y={f.y - 2.2}
+              y={f.y - 7}
               textAnchor="middle"
-              fontSize={3.6}
+              fontSize={5.4}
               fontWeight="bold"
-              fill="#fbbf24"
+              fill="#fde68a"
               stroke="#451a03"
-              strokeWidth={0.4}
+              strokeWidth={0.5}
               paintOrder="stroke"
             >
-              ×{f.multiplier}
+              +{f.points}
             </text>
-          )}
-        </g>
-      ))}
-    </svg>
+            {f.multiplier > 1 && (
+              <text
+                x={f.x}
+                y={f.y - 2.2}
+                textAnchor="middle"
+                fontSize={3.6}
+                fontWeight="bold"
+                fill="#fbbf24"
+                stroke="#451a03"
+                strokeWidth={0.4}
+                paintOrder="stroke"
+              >
+                ×{f.multiplier}
+              </text>
+            )}
+          </g>
+        ))}
+      </svg>
+    </>
   )
 }

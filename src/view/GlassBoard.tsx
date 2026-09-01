@@ -124,7 +124,7 @@ function Cell({
       onMouseEnter={() => onHover(position)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(position)}
-      className={`relative flex items-center justify-center overflow-hidden rounded-[12%] bg-gradient-to-br from-neutral-800/70 to-neutral-900/70 ring-2 ring-neutral-950 transition-[box-shadow,background-color] duration-200 ${
+      className={`relative z-20 flex items-center justify-center overflow-hidden rounded-[12%] bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 ring-2 ring-neutral-950 transition-[box-shadow,background-color] duration-200 ${
         hoverRing || ''
       } ${rejecting ? 'animate-reject !bg-red-900/50' : ''} ${
         justPlaced ? 'animate-place' : ''
@@ -208,32 +208,7 @@ export function GlassBoard({
         data-testid="glass-board"
         className="@container absolute inset-0 grid grid-cols-4 grid-rows-4 gap-[2%] rounded-[4%] bg-neutral-950 p-[3%] ring-4 ring-neutral-800 shadow-[inset_0_0_46px_rgba(0,0,0,0.85),0_0_0_1px_rgba(251,191,36,0.14),0_18px_60px_rgba(0,0,0,0.6)]"
       >
-        {window.constraints.map((rowConstraints, row) =>
-          rowConstraints.map((constraint, col) => {
-            const position: Position = { row, col }
-            return (
-              <Cell
-                key={`${row}-${col}`}
-                row={row}
-                col={col}
-                constraint={constraint}
-                die={window.dieAt(position)}
-                isEntry={entry.position.row === row && entry.position.col === col}
-                entryDirection={entry.direction}
-                hand={animating ? null : hand}
-                preview={animating ? null : (legalPreview.get(cellKeyOf(position)) ?? null)}
-                hovered={hovered?.row === row && hovered?.col === col}
-                isOffending={offendingCells.some((n) => n.row === row && n.col === col)}
-                lit={litCells.has(cellKeyOf(position))}
-                onHover={setHovered}
-                onClick={onCellClick}
-                rejecting={rejection?.position.row === row && rejection?.position.col === col}
-                justPlaced={lastPlaced?.position.row === row && lastPlaced?.position.col === col}
-              />
-            )
-          }),
-        )}
-      </div>
+      {/* beam runs BEHIND the glass panes: cells and dice (translucent) sit above it */}
       {beam !== null && (
         <BeamLayer
           key={beam.key}
@@ -242,6 +217,32 @@ export function GlassBoard({
           onStrike={(segment) => onBeamStrike(segment)}
         />
       )}
+      {window.constraints.map((rowConstraints, row) =>
+        rowConstraints.map((constraint, col) => {
+          const position: Position = { row, col }
+          return (
+            <Cell
+              key={`${row}-${col}`}
+              row={row}
+              col={col}
+              constraint={constraint}
+              die={window.dieAt(position)}
+              isEntry={entry.position.row === row && entry.position.col === col}
+              entryDirection={entry.direction}
+              hand={animating ? null : hand}
+              preview={animating ? null : (legalPreview.get(cellKeyOf(position)) ?? null)}
+              hovered={hovered?.row === row && hovered?.col === col}
+              isOffending={offendingCells.some((n) => n.row === row && n.col === col)}
+              lit={litCells.has(cellKeyOf(position))}
+              onHover={setHovered}
+              onClick={onCellClick}
+              rejecting={rejection?.position.row === row && rejection?.position.col === col}
+              justPlaced={lastPlaced?.position.row === row && lastPlaced?.position.col === col}
+            />
+          )
+        }),
+      )}
+      </div>
     </div>
   )
 }
