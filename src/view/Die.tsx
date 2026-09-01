@@ -38,7 +38,8 @@ export function DieFace({
       >
         {die.value}
       </span>
-      <span className="pointer-events-none absolute left-[14%] top-[10%] h-[18%] w-[30%] rounded-full bg-white/25 blur-[2px]" />
+      <span className="pointer-events-none absolute left-[14%] top-[9%] h-[20%] w-[34%] rounded-full bg-white/30 blur-[2px]" />
+      <span className="pointer-events-none absolute inset-0 rounded-[14%] bg-[conic-gradient(from_215deg,transparent_0deg,rgba(255,255,255,0.22)_55deg,transparent_115deg,transparent_240deg,rgba(255,255,255,0.1)_290deg,transparent_330deg)] mix-blend-screen" />
     </div>
   )
 }

@@ -147,15 +147,17 @@ function Cell({
           data-testid={`ghost-r${row}c${col}`}
           data-legal={legal ? 'true' : 'false'}
           aria-label={`preview ${hand!.color} ${hand!.value}, ${legal ? 'legal' : 'illegal'}`}
-          className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[12%] ${
-            legal ? 'bg-emerald-500/10' : 'bg-red-500/20'
+          className={`pointer-events-none absolute inset-0 z-10 rounded-[12%] outline-2 outline-dashed ${
+            legal
+              ? 'bg-emerald-400/15 outline-emerald-300/90'
+              : 'bg-red-500/25 outline-red-400/90'
           }`}
         >
-          <span className={`h-[72%] w-[72%] ${legal ? 'opacity-70' : 'opacity-50 grayscale-[40%]'}`}>
+          <span className={`absolute inset-0 ${legal ? 'opacity-85' : 'opacity-60 grayscale-[30%]'}`}>
             <DieFace die={hand} fluid />
           </span>
           {!legal && (
-            <span className="absolute right-[6%] top-[4%] text-[min(3.4cqw,0.9rem)] font-bold text-red-400">
+            <span className="absolute right-[5%] top-[3%] text-[min(4cqw,1rem)] font-bold text-red-400 drop-shadow">
               ✕
             </span>
           )}
@@ -197,12 +199,14 @@ export function GlassBoard({
     hoveredPreview?.kind === 'adjacencyViolation' ? [...hoveredPreview.offendingNeighbors] : []
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(92vw,540px)]">
+    <div className="relative mx-auto aspect-square w-full max-w-[min(92vw,560px)]">
+      {/* cathedral bloom behind the lead came */}
+      <div className="pointer-events-none absolute inset-[-4%] rounded-[8%] bg-[radial-gradient(circle_at_50%_42%,rgba(251,191,36,0.10)_0%,rgba(168,85,247,0.06)_45%,transparent_70%)]" />
       <div
         role="grid"
         aria-label={`Glass window pattern: ${window.pattern.name}`}
         data-testid="glass-board"
-        className="@container absolute inset-0 grid grid-cols-4 grid-rows-4 gap-[2%] rounded-[4%] bg-neutral-950 p-[3%] ring-4 ring-neutral-800 shadow-[inset_0_0_40px_rgba(0,0,0,0.8),0_0_50px_rgba(0,0,0,0.5)]"
+        className="@container absolute inset-0 grid grid-cols-4 grid-rows-4 gap-[2%] rounded-[4%] bg-neutral-950 p-[3%] ring-4 ring-neutral-800 shadow-[inset_0_0_46px_rgba(0,0,0,0.85),0_0_0_1px_rgba(251,191,36,0.14),0_18px_60px_rgba(0,0,0,0.6)]"
       >
         {window.constraints.map((rowConstraints, row) =>
           rowConstraints.map((constraint, col) => {

@@ -6,9 +6,11 @@
 
 body {
   background:
-    radial-gradient(ellipse 120% 60% at 50% -10%, #2c2937 0%, transparent 60%),
-    #161519;
+    radial-gradient(ellipse 90% 50% at 50% -12%, rgba(120, 90, 160, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 120% 70% at 50% 115%, rgba(180, 120, 40, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at center, #1e1c26 0%, #121117 75%, #0d0c10 100%);
   color: #e8e4da;
+  min-height: 100vh;
 }
 
 @keyframes shake {
@@ -63,6 +65,33 @@ body {
   }
 }
 
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -13;
+  }
+}
+
+@keyframes settle-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes entry-flash {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
 .animate-reject {
   animation:
     shake 0.4s ease-in-out,
@@ -77,10 +106,28 @@ body {
   animation: score-rise 1.4s ease-out forwards;
 }
 
+.beam-flow {
+  stroke-dasharray: 3.5 2.5;
+  animation: dash-flow 0.45s linear infinite;
+}
+
+.beam-settled-halo {
+  animation: settle-pulse 2.4s ease-in-out infinite;
+}
+
+.animate-entry-flash {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: entry-flash 0.7s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-reject,
   .animate-place,
-  .animate-score-rise {
+  .animate-score-rise,
+  .beam-flow,
+  .beam-settled-halo,
+  .animate-entry-flash {
     animation: none;
   }
 }

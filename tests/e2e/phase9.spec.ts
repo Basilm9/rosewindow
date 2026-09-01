@@ -34,8 +34,8 @@ test('round-1 beam animates, strikes dice, floats scores, and gates the round', 
   // The animation completes and dispatches BEAM_ANIMATION_DONE: round 2 begins.
   await expect(page.getByTestId('round-indicator')).toHaveText('Round 2 / 8', { timeout: 5000 })
   await expect(page.getByTestId('round-scores')).toContainText('R1: 12')
-  // The settled beam dims to a persistent glow holding the full walked path.
-  await expect(page.getByTestId('beam-layer')).toHaveClass(/opacity-40/)
+  // The settled beam keeps breathing (energy flow) and holds the full walked path.
+  await expect(page.getByTestId('beam-layer')).toHaveAttribute('data-settled', 'true')
   await expect(page.getByTestId('beam-core')).toHaveAttribute('points', '86,38 86,62 86,86')
   await page.screenshot({ path: 'test-results/phase9-beam.png', fullPage: true })
 })

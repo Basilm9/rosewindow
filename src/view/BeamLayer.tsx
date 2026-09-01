@@ -10,11 +10,12 @@ import { sfx } from '../dev/sfx'
  * (viewBox 0 0 100 100), paced step-by-step by the `beamMachine` actor. Each
  * `ADVANCE` extends the glowing polyline one cell, flares struck dice, and
  * floats the points they scored. When the trace terminates the layer settles to
- * a dim persistent glow and reports done so the machine can leave `illuminate`.
+ * a breathing glow with flowing energy and reports done so the machine can
+ * leave `illuminate`.
  */
 
-const STEP_MS = 300
-const TAIL_MS = 380
+export const STEP_MS = 430
+const TAIL_MS = 450
 
 /** Cell center in board units: 3% inset, 2% gaps, 22-unit cells. */
 function cellCenter(position: { row: number; col: number }): { x: number; y: number } {
@@ -91,9 +92,10 @@ export function BeamLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path])
 
+  const entry = cellCenter(path.segments[0]!.position)
   const consumed = path.segments.slice(0, Math.max(index, 1))
-  const points = consumed
-    .slice(0, index)
+  const walked = consumed.slice(0, index)
+  const points = walked
     .map((s) => cellCenter(s.position))
     .map((c) => `${c.x},${c.y}`)
     .join(' ')
@@ -104,15 +106,17 @@ export function BeamLayer({
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       data-testid="beam-layer"
+      data-settled={finished ? 'true' : undefined}
       aria-label={`beam path scoring ${path.totalScore} points, ${path.termination === 'cycle' ? 'looped back on itself' : 'exited the window'}`}
-      className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-700 ${
-        finished ? 'opacity-40' : 'opacity-100'
+      className={`pointer-events-none absolute inset-0 z-20 h-full w-full transition-opacity duration-1000 ${
+        finished ? 'opacity-80' : 'opacity-100'
       }`}
     >
       <defs>
-        <filter id="beam-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.6" result="blur" />
+        <filter id="beam-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="2.2" result="blur" />
           <feMerge>
+            <feMergeNode in="blur" />
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
@@ -124,23 +128,58 @@ export function BeamLayer({
       </defs>
 
       {points !== '' && (
-        <g filter="url(#beam-glow)" strokeLinecap="round" strokeLinejoin="round" fill="none">
-          <polyline
-            points={points}
-            stroke="#f59e0b"
-            strokeWidth={2.6}
-            opacity={0.55}
-            data-testid="beam-halo"
-          />
-          <polyline points={points} stroke="#fef3c7" strokeWidth={1.1} data-testid="beam-core" />
+        <g
+          filter="url(#beam-glow)"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        >
+          {/* beads of light in every traversed cell */}
+          {walked.map((s, i) => {
+            const c = cellCenter(s.position)
+            return (
+              <circle
+                key={`bead-${i}`}
+                cx={c.x}
+                cy={c.y}
+                r={s.die !== null ? 8.5 : 6}
+                fill={s.die !== null ? 'url(#beam-head)' : '#f59e0b'}
+                opacity={s.die !== null ? 0.85 : 0.4}
+                data-testid={`bead-${i}`}
+              />
+            )
+          })}
+          <g className={finished ? 'beam-settled-halo' : undefined}>
+            <polyline points={points} stroke="#d97706" strokeWidth={11} opacity={0.3} />
+            <polyline points={points} stroke="#f59e0b" strokeWidth={6.5} opacity={0.85} />
+            <polyline
+              points={points}
+              stroke="#fffbeb"
+              strokeWidth={2.6}
+              data-testid="beam-core"
+              className="beam-flow"
+            />
+          </g>
         </g>
       )}
 
       {head !== null && !finished && (
         <g>
-          <circle cx={head.x} cy={head.y} r={5} fill="url(#beam-head)" opacity={0.9} />
-          <circle cx={head.x} cy={head.y} r={1.6} fill="#fffbeb" />
+          <circle cx={head.x} cy={head.y} r={8.5} fill="url(#beam-head)" opacity={0.95} />
+          <circle cx={head.x} cy={head.y} r={2.4} fill="#fffbeb" />
         </g>
+      )}
+
+      {!finished && (
+        <circle
+          cx={entry.x}
+          cy={entry.y}
+          r={7}
+          fill="none"
+          stroke="#fde68a"
+          strokeWidth={1.2}
+          className="animate-entry-flash"
+        />
       )}
 
       {floats.map((f) => (
@@ -149,11 +188,11 @@ export function BeamLayer({
             x={f.x}
             y={f.y - 7}
             textAnchor="middle"
-            fontSize={5}
+            fontSize={5.4}
             fontWeight="bold"
             fill="#fde68a"
-            stroke="#78350f"
-            strokeWidth={0.4}
+            stroke="#451a03"
+            strokeWidth={0.5}
             paintOrder="stroke"
           >
             +{f.points}
@@ -161,13 +200,13 @@ export function BeamLayer({
           {f.multiplier > 1 && (
             <text
               x={f.x}
-              y={f.y - 2.4}
+              y={f.y - 2.2}
               textAnchor="middle"
-              fontSize={3.4}
+              fontSize={3.6}
               fontWeight="bold"
               fill="#fbbf24"
-              stroke="#78350f"
-              strokeWidth={0.35}
+              stroke="#451a03"
+              strokeWidth={0.4}
               paintOrder="stroke"
             >
               ×{f.multiplier}
