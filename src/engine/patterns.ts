@@ -16,12 +16,25 @@ const COLOR_BY_LETTER: Readonly<Record<string, DieColor>> = {
 }
 
 /**
- * Parses one row of a hand-authored pattern: `R Y B G P` are colors, `1`–`6` are
- * value demands, `.` is open. Throws on any other character so that typos in the
- * hand-authored data fail loudly at module load instead of at play time.
+ * Parses hand-authored constraint rows into a square grid: `R Y B G P` are color
+ * demands, `1`–`6` are value demands, `.` is open. Grid size is inferred from the
+ * row count (4 for the real game, larger in tests). Throws on any invalid character
+ * or a non-square layout, so typos in hand-authored data fail loudly at load time
+ * instead of at play time. Exported for tests and authoring tools.
+ */
+export function parseConstraints(rows: readonly string[]): CellConstraint[][] {
+  const grid = rows.map(parseConstraintRow)
+  if (grid.some((row) => row.length !== rows.length)) {
+    throw new Error('constraint grid must be square')
+  }
+  return grid
+}
+
+/**
+ * Parses one hand-authored row: `R Y B G P` are colors, `1`–`6` are values, `.`
+ * is open. Length is unchecked here; `parseConstraints` enforces the square shape.
  */
 function parseConstraintRow(row: string): CellConstraint[] {
-  if (row.length !== 4) throw new Error(`pattern row must be 4 cells, got "${row}"`)
   return [...row].map((ch) => {
     if (ch === '.') return openConstraint()
     if (ch >= '1' && ch <= '6') return valueConstraint(Number(ch))
@@ -38,7 +51,7 @@ function patternFromRows(
   rows: readonly string[],
 ): WindowPattern {
   if (rows.length !== 4) throw new Error(`pattern "${id}" must have 4 rows`)
-  return { id, name, description, constraints: rows.map(parseConstraintRow) }
+  return { id, name, description, constraints: parseConstraints(rows) }
 }
 
 /** The six hand-authored window patterns (pitch §6); two are offered per run. */

@@ -60,6 +60,27 @@ export interface Die {
   readonly value: number
 }
 
+/** Structural equality: same color and same value. */
+export function sameDie(a: Die, b: Die): boolean {
+  return a.color === b.color && a.value === b.value
+}
+
+/** The four orthogonal neighbor offsets — the adjacency law (pitch §2) uses only these. */
+export const ORTHOGONAL_DELTAS: readonly Position[] = [
+  { row: -1, col: 0 },
+  { row: 1, col: 0 },
+  { row: 0, col: -1 },
+  { row: 0, col: 1 },
+]
+
+/** The four diagonal offsets — the connectivity law (pitch §9) uses orthogonals plus these. */
+export const DIAGONAL_DELTAS: readonly Position[] = [
+  { row: -1, col: -1 },
+  { row: -1, col: 1 },
+  { row: 1, col: -1 },
+  { row: 1, col: 1 },
+]
+
 /** The printed demand on a window cell: a required color, a required value, or nothing. */
 export type CellConstraint =
   | { readonly kind: 'open' }
