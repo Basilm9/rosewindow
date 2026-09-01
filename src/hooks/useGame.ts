@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMachine } from '@xstate/react'
 import { Game } from '../engine/game'
 import { findPlacementViolation } from '../engine/placementValidator'
 import type { PlacementViolation } from '../engine/errors'
-import type { Die, Position } from '../engine/types'
+import type { BeamPath, BeamSegment } from '../engine/beamTracer'
+import type { Position } from '../engine/types'
 import { gameMachine } from '../machine/gameMachine'
 import { fastForward } from '../dev/autoPlayer'
+import { sfx } from '../dev/sfx'
 
 type UseMachineResult = ReturnType<typeof useGameActor>
 
@@ -20,6 +22,16 @@ export interface UseGameResult {
   legalPreview: Map<string, PlacementViolation | null>
   rejection: { position: Position; kind: string; key: number } | null
   lastPlaced: { position: Position; key: number } | null
+  /** The beam path currently animating (or settled) over the board. */
+  beam: { path: BeamPath; key: number } | null
+  /** Cells whose glass the beam has lit, keyed "row,col". */
+  litCells: ReadonlySet<string>
+  /** True while the beam animation is running (machine gated in illuminate). */
+  animating: boolean
+  /** The machine's illuminate gate calls this when the beam animation finishes. */
+  onBeamDone: () => void
+  /** Fires per struck die during the beam animation (lights the glass). */
+  onBeamStrike: (segment: BeamSegment) => void
 }
 
 function useGameActor(game: Game, skipAnimations: boolean) {
@@ -47,9 +59,15 @@ export function useGame(): UseGameResult {
   const [eventCount, setEventCount] = useState(0)
   const [rejection, setRejection] = useState<UseGameResult['rejection']>(null)
   const [lastPlaced, setLastPlaced] = useState<UseGameResult['lastPlaced']>(null)
+  const [beam, setBeam] = useState<UseGameResult['beam']>(null)
+  const [litCells, setLitCells] = useState<ReadonlySet<string>>(new Set())
   const flashKey = useRef(0)
+  const beamKey = useRef(0)
 
-  const [snapshot, send] = useGameActor(game, true)
+  const [snapshot, send] = useGameActor(game, false)
+
+  const path = statePath(snapshot)
+  const animating = path === 'round.illuminate'
 
   // The machine guards illegal placements before the engine sees them, so its
   // context is the authoritative rejection source for the view.
@@ -62,19 +80,47 @@ export function useGame(): UseGameResult {
         kind: machineRejection.violation.kind,
         key: flashKey.current,
       })
+      sfx.reject()
     }
   }, [machineRejection])
 
   useEffect(() => {
     return game.subscribe((event) => {
       setEventCount((c) => c + 1)
-      if (event.kind === 'diePlaced') {
-        flashKey.current += 1
-        setLastPlaced({ position: event.position, key: flashKey.current })
-        setRejection(null)
+      switch (event.kind) {
+        case 'diePlaced':
+          flashKey.current += 1
+          setLastPlaced({ position: event.position, key: flashKey.current })
+          setRejection(null)
+          sfx.place()
+          break
+        case 'beamTraced':
+          beamKey.current += 1
+          setBeam({ path: event.path, key: beamKey.current })
+          break
+        case 'roundScored':
+          sfx.roundScored(event.delta)
+          break
+        case 'gameOver':
+          sfx.roundScored(99)
+          break
       }
     })
   }, [game])
+
+  const onBeamDone = useCallback(() => {
+    send({ type: 'BEAM_ANIMATION_DONE' })
+  }, [send])
+
+  const onBeamStrike = useCallback((segment: BeamSegment) => {
+    if (segment.die !== null) {
+      setLitCells((prev) => {
+        const next = new Set(prev)
+        next.add(cellKey(segment.position))
+        return next
+      })
+    }
+  }, [])
 
   /**
    * Hover-preview legality, computed from the engine's PURE validator for
@@ -83,11 +129,9 @@ export function useGame(): UseGameResult {
    * memo would go stale exactly when the hand changes.
    */
   const legalPreview = new Map<string, PlacementViolation | null>()
-  let previewHand: Die | null = null
   {
     const hand = game.hand
     const gameWindow = game.window
-    previewHand = hand
     if (hand !== null && gameWindow !== null) {
       for (let row = 0; row < gameWindow.gridSize; row++) {
         for (let col = 0; col < gameWindow.gridSize; col++) {
@@ -107,16 +151,21 @@ export function useGame(): UseGameResult {
     }
   }
 
-  // Dev/e2e aid: inspect live model state from the browser console.
-  if (typeof window !== 'undefined') {
-    const w = window as unknown as Record<string, unknown>
-    w.__roseGame = game
-    w.__rosePreview = legalPreview
-    w.__rosePreviewHand = previewHand
-    w.__renderCount = Number(w.__renderCount ?? 0) + 1
+  return {
+    game,
+    snapshot,
+    send,
+    eventCount,
+    seed,
+    legalPreview,
+    rejection,
+    lastPlaced,
+    beam,
+    litCells,
+    animating,
+    onBeamDone,
+    onBeamStrike,
   }
-
-  return { game, snapshot, send, eventCount, seed, legalPreview, rejection, lastPlaced }
 }
 
 /** Dot path of the machine state ('setup', 'round.draft', 'round.illuminate', 'gameOver'). */

@@ -5,7 +5,9 @@
 }
 
 body {
-  background-color: #1c1a22;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, #2c2937 0%, transparent 60%),
+    #161519;
   color: #e8e4da;
 }
 
@@ -47,6 +49,20 @@ body {
   }
 }
 
+@keyframes score-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px);
+  }
+}
+
 .animate-reject {
   animation:
     shake 0.4s ease-in-out,
@@ -57,3 +73,14 @@ body {
   animation: place-pop 0.18s ease-out;
 }
 
+.animate-score-rise {
+  animation: score-rise 1.4s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reject,
+  .animate-place,
+  .animate-score-rise {
+    animation: none;
+  }
+}

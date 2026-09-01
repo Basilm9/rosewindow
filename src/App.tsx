@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { statePath, useGame } from './hooks/useGame'
 import { GlassBoard } from './view/GlassBoard'
 import { DraftPool } from './view/DraftPool'
@@ -5,9 +6,39 @@ import { Objectives } from './view/Objectives'
 import { ScorePanel } from './view/ScorePanel'
 import SetupScreen from './view/SetupScreen'
 import { GameOverScreen } from './view/GameOverScreen'
+import { sfx } from './dev/sfx'
+
+function SoundToggle() {
+  const [muted, setMuted] = useState(sfx.muted)
+  return (
+    <button
+      type="button"
+      data-testid="sound-toggle"
+      aria-pressed={!muted}
+      aria-label={muted ? 'unmute sounds' : 'mute sounds'}
+      onClick={() => setMuted(sfx.toggleMute())}
+      className="rounded-lg px-2 py-1 text-lg text-neutral-400 ring-1 ring-neutral-800 transition hover:text-amber-200 hover:ring-amber-700/60"
+    >
+      {muted ? '🔇' : '🔊'}
+    </button>
+  )
+}
 
 export default function App() {
-  const { game, snapshot, send, seed, legalPreview, rejection, lastPlaced } = useGame()
+  const {
+    game,
+    snapshot,
+    send,
+    seed,
+    legalPreview,
+    rejection,
+    lastPlaced,
+    beam,
+    litCells,
+    animating,
+    onBeamDone,
+    onBeamStrike,
+  } = useGame()
   const path = statePath(snapshot)
 
   if (path === 'setup') {
@@ -26,48 +57,65 @@ export default function App() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
-      <header className="flex items-baseline justify-between">
-        <h1 className="font-serif text-3xl tracking-wide text-amber-100">Rose Window</h1>
-        <p className="text-xs uppercase tracking-widest text-neutral-500">
-          {game.window?.pattern.name}
-        </p>
-      </header>
-      <div className="flex flex-wrap items-start justify-center gap-8">
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-xs uppercase tracking-widest text-amber-300/80">
-            beam enters at row {game.currentEntry.position.row}, column{' '}
-            {game.currentEntry.position.col}, heading {game.currentEntry.direction}
+    <div className="mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 content-start gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-8">
+      <header className="flex items-center justify-between gap-3 lg:col-span-2">
+        <div className="flex items-baseline gap-3">
+          <h1 className="bg-gradient-to-b from-amber-100 to-amber-300 bg-clip-text font-serif text-2xl tracking-wide text-transparent sm:text-3xl">
+            Rose Window
+          </h1>
+          <p className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:inline">
+            {game.window?.pattern.name}
           </p>
-          <GlassBoard
-            game={game}
-            legalPreview={legalPreview}
-            rejection={rejection}
-            lastPlaced={lastPlaced}
-            onCellClick={(position) => {
-              if (game.hand !== null) send({ type: 'PLACE_DIE', position })
-            }}
-          />
         </div>
-        <aside className="flex w-72 flex-col gap-4">
-          <DraftPool
-            game={game}
-            statePath={path}
-            onPick={(die) => send({ type: 'SELECT_DIE', die })}
-          />
-          <ScorePanel game={game} seed={seed} />
-          <Objectives game={game} />
-          {snapshot.context.lastError !== null && (
-            <p
-              data-testid="rejection-hint"
-              className="rounded-lg bg-red-950/60 px-3 py-2 text-xs text-red-200 ring-1 ring-red-900"
-              role="alert"
-            >
-              Rejected: {snapshot.context.lastError}
-            </p>
-          )}
-        </aside>
-      </div>
-    </main>
+        <SoundToggle />
+      </header>
+
+      <main className="flex flex-col items-center gap-4 lg:row-start-2">
+        <p
+          className="text-center text-xs uppercase tracking-[0.18em] text-amber-300/80"
+          data-testid="entry-hint"
+        >
+          {animating
+            ? 'the beam scores the window…'
+            : `beam enters at row ${game.currentEntry.position.row}, column ${game.currentEntry.position.col}, heading ${game.currentEntry.direction}`}
+        </p>
+        <GlassBoard
+          game={game}
+          legalPreview={legalPreview}
+          rejection={rejection}
+          lastPlaced={lastPlaced}
+          beam={beam}
+          litCells={litCells}
+          animating={animating}
+          onCellClick={(position) => {
+            if (game.hand !== null) send({ type: 'PLACE_DIE', position })
+          }}
+          onBeamDone={onBeamDone}
+          onBeamStrike={onBeamStrike}
+        />
+      </main>
+
+      <aside className="flex w-full flex-col gap-4 lg:row-start-2">
+        <DraftPool
+          game={game}
+          statePath={path}
+          onPick={(die) => {
+            sfx.pickup()
+            send({ type: 'SELECT_DIE', die })
+          }}
+        />
+        <ScorePanel game={game} seed={seed} />
+        <Objectives game={game} />
+        {snapshot.context.lastError !== null && (
+          <p
+            data-testid="rejection-hint"
+            className="animate-reject rounded-xl bg-red-950/60 px-4 py-3 text-sm text-red-200 ring-1 ring-red-900"
+            role="alert"
+          >
+            Rejected: {snapshot.context.lastError}
+          </p>
+        )}
+      </aside>
+    </div>
   )
 }

@@ -15,35 +15,45 @@ export function DraftPool({
   const hand = game.hand
   const canPick = statePath === 'round.draft' || statePath === 'round.place'
   const hint =
-    statePath === 'round.place'
-      ? hand !== null
-        ? `In hand: ${dieLabel(hand)} — choose a cell`
-        : 'Choose a cell'
-      : 'Select a die from the pool'
+    statePath === 'round.illuminate'
+      ? 'The beam scores the window…'
+      : statePath === 'round.place'
+        ? hand !== null
+          ? `In hand: ${dieLabel(hand)} — choose a cell`
+          : 'Choose a cell'
+        : 'Select a die from the pool'
 
   return (
     <section
       aria-label="Draft pool"
       data-testid="draft-pool"
-      className="rounded-xl bg-neutral-900/80 p-4 ring-1 ring-neutral-800"
+      className="rounded-2xl bg-neutral-900/80 p-4 ring-1 ring-neutral-800 backdrop-blur-sm sm:p-5"
     >
-      <h2 className="text-xs uppercase tracking-widest text-neutral-400">Draft pool</h2>
-      <div className="mt-3 flex gap-2" data-testid="draft-dice">
-        {game.draftPool.dice.map((die, index) => {
-          return (
-            <button
-              key={`${die.color}-${die.value}-${index}`}
-              type="button"
-              disabled={!canPick}
-              aria-label={`select ${dieLabel(die)}`}
-              data-testid={`draft-die-${index}`}
-              onClick={() => onPick(die)}
-              className="rounded-md transition disabled:cursor-not-allowed disabled:opacity-60 hover:ring-2 hover:ring-neutral-500"
-            >
-              <DieFace die={die} />
-            </button>
-          )
-        })}
+      <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-400">Draft pool</h2>
+      <div className="mt-3 flex min-h-14 flex-wrap items-center gap-2" data-testid="draft-dice">
+        {game.draftPool.dice.map((die, index) => (
+          <button
+            key={`${die.color}-${die.value}-${index}`}
+            type="button"
+            disabled={!canPick}
+            aria-label={`select ${dieLabel(die)}`}
+            data-testid={`draft-die-${index}`}
+            onClick={() => onPick(die)}
+            className="w-12 rounded-md transition duration-150 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:ring-2 enabled:hover:ring-amber-400/70 sm:w-14"
+          >
+            <DieFace die={die} size="md" />
+          </button>
+        ))}
+        {hand !== null && (
+          <span aria-hidden className="mx-1 text-neutral-600">
+            →
+          </span>
+        )}
+        {hand !== null && (
+          <span data-testid="hand-chip" className="h-12 w-12 animate-place sm:h-14 sm:w-14">
+            <DieFace die={hand} size="md" className="ring-2 ring-amber-300/80" />
+          </span>
+        )}
       </div>
       <p className="mt-3 text-sm text-neutral-300" data-testid="draft-hint">
         {hint}
