@@ -2,6 +2,7 @@ import { assign, enqueueActions, setup } from 'xstate'
 import { findPlacementViolation } from '../engine/placementValidator'
 import type { Game } from '../engine/game'
 import type { ScoreReport } from '../engine/scoreCalculator'
+import type { PlacementViolation } from '../engine/errors'
 import type { Die, Position } from '../engine/types'
 
 /**
@@ -30,6 +31,10 @@ export interface GameMachineContext {
   readonly skipAnimations: boolean
   /** Human-readable reason for the last rejected event, for the view. */
   readonly lastError: string | null
+  /** Structured rejection from the last illegal PLACE_DIE, for the view's flash. */
+  readonly lastRejection: { readonly position: Position; readonly violation: PlacementViolation } | null
+  /** Mirrors `game.hand` so selection changes update the snapshot (and React). */
+  readonly heldDie: Die | null
   readonly report: ScoreReport | null
 }
 
@@ -41,10 +46,13 @@ export type GameMachineEvent =
   | { readonly type: 'DIE_PLACED' }
   | { readonly type: 'ROUND_COMPLETED' }
 
-function rejectionReason(game: Game, position: Position): string {
-  if (game.phase !== 'place') return `cannot place during phase "${game.phase}"`
+function rejectionAt(game: Game, position: Position): {
+  position: Position
+  violation: PlacementViolation
+} | null {
+  if (game.phase !== 'place') return null
   const hand = game.hand
-  if (hand === null) return 'no die is in hand'
+  if (hand === null) return null
   const violation = findPlacementViolation({
     grid: game.window!.dice,
     constraints: game.window!.constraints,
@@ -52,7 +60,13 @@ function rejectionReason(game: Game, position: Position): string {
     die: hand,
     target: position,
   })
-  return violation === null ? 'unknown rejection' : violation.kind
+  return violation === null ? null : { position, violation }
+}
+
+function rejectionText(game: Game, position: Position): string {
+  if (game.phase !== 'place') return `cannot place during phase "${game.phase}"`
+  if (game.hand === null) return 'no die is in hand'
+  return rejectionAt(game, position)?.violation.kind ?? 'unknown rejection'
 }
 
 export const gameMachine = setup({
@@ -95,9 +109,11 @@ export const gameMachine = setup({
     choosePattern: ({ context, event }) => {
       if (event.type === 'CHOOSE_PATTERN') context.game.choosePattern(event.id)
     },
-    selectDie: ({ context, event }) => {
+    /** Mutates the model and mirrors the held die into context so React sees it. */
+    selectDie: assign(({ context, event }) => {
       if (event.type === 'SELECT_DIE') context.game.selectDie(event.die)
-    },
+      return { heldDie: context.game.hand, lastError: null }
+    }),
     /** Mutates only after `placementLegal`; routes via raised events. */
     performPlacement: enqueueActions(({ context, event, enqueue }) => {
       if (event.type !== 'PLACE_DIE') return
@@ -105,7 +121,7 @@ export const gameMachine = setup({
       context.game.placeDie(event.position)
       const roundCompleted =
         context.game.phase === 'gameOver' || context.game.round !== roundBefore
-      enqueue.assign({ lastError: null })
+      enqueue.assign({ lastError: null, lastRejection: null })
       enqueue.raise({ type: roundCompleted ? 'ROUND_COMPLETED' : 'DIE_PLACED' })
     }),
     storeReport: assign({
@@ -118,6 +134,8 @@ export const gameMachine = setup({
     game: input.game,
     skipAnimations: input.skipAnimations ?? false,
     lastError: null,
+    lastRejection: null,
+    heldDie: input.game.hand,
     report: null,
   }),
   initial: 'setup',
@@ -153,11 +171,16 @@ export const gameMachine = setup({
               {
                 actions: assign({
                   lastError: ({ context, event }) =>
-                    event.type === 'PLACE_DIE'
-                      ? rejectionReason(context.game, event.position)
-                      : 'invalid event',
+                    event.type === 'PLACE_DIE' ? rejectionText(context.game, event.position) : 'invalid event',
+                  lastRejection: ({ context, event }) =>
+                    event.type === 'PLACE_DIE' ? rejectionAt(context.game, event.position) : null,
                 }),
               },
+            ],
+            /** Re-selection while holding a die: the held die returns to the pool. */
+            SELECT_DIE: [
+              { guard: 'selectLegal', actions: 'selectDie' },
+              { actions: assign({ lastError: 'die not in pool or wrong phase' }) },
             ],
             DIE_PLACED: { target: 'draft' },
             ROUND_COMPLETED: { target: 'illuminate' },

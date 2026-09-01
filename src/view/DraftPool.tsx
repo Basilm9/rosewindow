@@ -1,9 +1,19 @@
 import type { Game } from '../engine/game'
+import type { Die } from '../engine/types'
 import { DieFace } from './Die'
 import { dieLabel } from './palette'
 
-export function DraftPool({ game, statePath }: { game: Game; statePath: string }) {
+export function DraftPool({
+  game,
+  statePath,
+  onPick,
+}: {
+  game: Game
+  statePath: string
+  onPick: (die: Die) => void
+}) {
   const hand = game.hand
+  const canPick = statePath === 'round.draft' || statePath === 'round.place'
   const hint =
     statePath === 'round.place'
       ? hand !== null
@@ -19,16 +29,25 @@ export function DraftPool({ game, statePath }: { game: Game; statePath: string }
     >
       <h2 className="text-xs uppercase tracking-widest text-neutral-400">Draft pool</h2>
       <div className="mt-3 flex gap-2" data-testid="draft-dice">
-        {game.draftPool.dice.map((die, index) => (
-          <DieFace key={`${die.color}-${die.value}-${index}`} die={die} testId={`draft-die-${index}`} />
-        ))}
+        {game.draftPool.dice.map((die, index) => {
+          return (
+            <button
+              key={`${die.color}-${die.value}-${index}`}
+              type="button"
+              disabled={!canPick}
+              aria-label={`select ${dieLabel(die)}`}
+              data-testid={`draft-die-${index}`}
+              onClick={() => onPick(die)}
+              className="rounded-md transition disabled:cursor-not-allowed disabled:opacity-60 hover:ring-2 hover:ring-neutral-500"
+            >
+              <DieFace die={die} />
+            </button>
+          )
+        })}
       </div>
       <p className="mt-3 text-sm text-neutral-300" data-testid="draft-hint">
         {hint}
       </p>
-      {statePath !== 'round.place' && statePath !== 'round.draft' && (
-        <p className="mt-1 text-sm text-neutral-500">—</p>
-      )}
     </section>
   )
 }

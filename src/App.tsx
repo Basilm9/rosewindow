@@ -7,7 +7,7 @@ import SetupScreen from './view/SetupScreen'
 import { GameOverScreen } from './view/GameOverScreen'
 
 export default function App() {
-  const { game, snapshot, send, seed } = useGame()
+  const { game, snapshot, send, seed, legalPreview, rejection, lastPlaced } = useGame()
   const path = statePath(snapshot)
 
   if (path === 'setup') {
@@ -39,10 +39,22 @@ export default function App() {
             beam enters at row {game.currentEntry.position.row}, column{' '}
             {game.currentEntry.position.col}, heading {game.currentEntry.direction}
           </p>
-          <GlassBoard game={game} />
+          <GlassBoard
+            game={game}
+            legalPreview={legalPreview}
+            rejection={rejection}
+            lastPlaced={lastPlaced}
+            onCellClick={(position) => {
+              if (game.hand !== null) send({ type: 'PLACE_DIE', position })
+            }}
+          />
         </div>
         <aside className="flex w-72 flex-col gap-4">
-          <DraftPool game={game} statePath={path} />
+          <DraftPool
+            game={game}
+            statePath={path}
+            onPick={(die) => send({ type: 'SELECT_DIE', die })}
+          />
           <ScorePanel game={game} seed={seed} />
           <Objectives game={game} />
           {snapshot.context.lastError !== null && (
