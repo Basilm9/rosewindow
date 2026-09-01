@@ -6,6 +6,8 @@ import { Objectives } from './view/Objectives'
 import { ScorePanel } from './view/ScorePanel'
 import SetupScreen from './view/SetupScreen'
 import { GameOverScreen } from './view/GameOverScreen'
+import { TutorialOverlay } from './view/TutorialOverlay'
+import { useTutorial } from './hooks/useTutorial'
 import { sfx } from './dev/sfx'
 
 function SoundToggle() {
@@ -44,6 +46,8 @@ export default function App() {
   } = useGame()
   const path = statePath(snapshot)
 
+  const tutorial = useTutorial(game, path)
+
   const [shaking, setShaking] = useState(false)
   useEffect(() => {
     if (shakeKey === 0) return
@@ -53,7 +57,14 @@ export default function App() {
   }, [shakeKey])
 
   if (path === 'setup') {
-    return <SetupScreen game={game} onChoose={(id) => send({ type: 'CHOOSE_PATTERN', id })} />
+    return (
+      <>
+        <SetupScreen game={game} onChoose={(id) => send({ type: 'CHOOSE_PATTERN', id })} />
+        {tutorial.active && (
+          <TutorialOverlay step={tutorial.step} onNext={tutorial.next} onSkip={tutorial.skip} />
+        )}
+      </>
+    )
   }
 
   if (snapshot.status === 'done' || game.phase === 'gameOver') {
@@ -87,6 +98,17 @@ export default function App() {
               {game.window?.pattern.name} · seed {seed}
             </p>
           </div>
+          <button
+            type="button"
+            data-testid="tutorial-replay"
+            aria-label="replay tutorial"
+            onClick={() => {
+              window.location.search = '?tutorial=1'
+            }}
+            className="panel px-3 py-2 text-left text-xs font-bold text-neutral-300 transition hover:text-amber-200"
+          >
+            ? How to play
+          </button>
 
           <ScorePanel game={game} seed={seed} />
           <Objectives game={game} />
@@ -149,6 +171,10 @@ export default function App() {
             }}
           />
         </main>
+
+        {tutorial.active && (
+          <TutorialOverlay step={tutorial.step} onNext={tutorial.next} onSkip={tutorial.skip} />
+        )}
       </div>
     </div>
   )
