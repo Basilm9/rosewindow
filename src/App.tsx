@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { statePath, useGame } from './hooks/useGame'
 import { GlassBoard } from './view/GlassBoard'
 import { DraftPool } from './view/DraftPool'
@@ -33,6 +33,8 @@ export default function App() {
     legalPreview,
     rejection,
     lastPlaced,
+    lastLit,
+    shakeKey,
     beam,
     litCells,
     animating,
@@ -40,6 +42,14 @@ export default function App() {
     onBeamStrike,
   } = useGame()
   const path = statePath(snapshot)
+
+  const [shaking, setShaking] = useState(false)
+  useEffect(() => {
+    if (shakeKey === 0) return
+    setShaking(true)
+    const t = setTimeout(() => setShaking(false), 470)
+    return () => clearTimeout(t)
+  }, [shakeKey])
 
   if (path === 'setup') {
     return <SetupScreen game={game} onChoose={(id) => send({ type: 'CHOOSE_PATTERN', id })} />
@@ -57,7 +67,11 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 content-start gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-8">
+    <div
+      className={`mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 content-start gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:p-8 ${
+        shaking ? 'animate-shake-screen' : ''
+      }`}
+    >
       <header className="flex items-center justify-between gap-3 lg:col-span-2">
         <div className="flex items-baseline gap-3">
           <h1 className="bg-gradient-to-b from-amber-100 to-amber-300 bg-clip-text font-serif text-2xl tracking-wide text-transparent sm:text-3xl">
@@ -84,6 +98,7 @@ export default function App() {
           legalPreview={legalPreview}
           rejection={rejection}
           lastPlaced={lastPlaced}
+          lastLit={lastLit}
           beam={beam}
           litCells={litCells}
           animating={animating}

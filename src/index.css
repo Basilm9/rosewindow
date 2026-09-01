@@ -131,3 +131,214 @@ body {
     animation: none;
   }
 }
+
+/* ===== Custom die-slot hover/selection ring (hand-rolled, symmetric) ===== */
+
+.die-slot {
+  position: relative;
+  display: block;
+  width: 3.5rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  line-height: 0;
+  cursor: pointer;
+  border-radius: 16%;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+@media (max-width: 640px) {
+  .die-slot {
+    width: 3rem;
+  }
+}
+
+.die-slot:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.die-slot:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.die-slot:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+/* the ring: a ::after frame inset -3px — perfectly symmetric by construction */
+.die-slot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 20%;
+  border: 2px solid rgba(252, 211, 77, 0.95);
+  box-shadow:
+    0 0 14px rgba(251, 191, 36, 0.45),
+    inset 0 0 8px rgba(251, 191, 36, 0.2);
+  opacity: 0;
+  transform: scale(0.88);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  pointer-events: none;
+}
+
+.die-slot:hover:not(:disabled)::after,
+.die-slot:focus-visible::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ===== juice ===== */
+
+@keyframes hint-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 20px rgba(52, 211, 153, 0.28);
+  }
+}
+
+.cell-hint {
+  animation: hint-pulse 1.8s ease-in-out infinite;
+}
+
+.cell-press:active {
+  transform: scale(0.95);
+}
+
+@keyframes burst-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+.burst-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 14%;
+  border: 2px solid rgba(253, 230, 138, 0.9);
+  animation: burst-ring 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes spark-fly {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+  }
+}
+
+.spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7%;
+  height: 7%;
+  border-radius: 50%;
+  background: #fde68a;
+  box-shadow: 0 0 6px rgba(253, 230, 138, 0.9);
+  animation: spark-fly 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes strike-flash {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.strike-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 12%;
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.85), transparent 72%);
+  animation: strike-flash 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(-2.5deg) scale(1);
+  }
+  50% {
+    transform: rotate(2.5deg) scale(1.04);
+  }
+}
+
+.animate-wobble {
+  animation: wobble 1.5s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+@keyframes arrow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-arrow {
+  animation: arrow-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes shake-screen {
+  10%,
+  90% {
+    transform: translate(-2px, 1px);
+  }
+  25%,
+  75% {
+    transform: translate(3px, -2px);
+  }
+  40%,
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  50% {
+    transform: translate(4px, 1px);
+  }
+}
+
+.animate-shake-screen {
+  animation: shake-screen 0.45s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-hint,
+  .animate-wobble,
+  .animate-arrow,
+  .animate-shake-screen,
+  .cell-press:active {
+    animation: none;
+    transform: none;
+  }
+  .burst-ring,
+  .spark,
+  .strike-flash {
+    animation: none;
+    opacity: 0;
+  }
+}

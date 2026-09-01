@@ -1,5 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Game } from '../engine/game'
+
+/** Rolls the displayed number toward `target` with an ease-out — juicy counters. */
+function useCountUp(target: number, ms = 600): number {
+  const [display, setDisplay] = useState(target)
+  const fromRef = useRef(target)
+
+  useEffect(() => {
+    const from = fromRef.current
+    if (from === target) return
+    let raf: number
+    const t0 = performance.now()
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / ms)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplay(Math.round(from + (target - from) * eased))
+      if (p < 1) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        fromRef.current = target
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      fromRef.current = target
+    }
+  }, [target, ms])
+
+  return display
+}
 
 export function ScorePanel({ game, seed }: { game: Game; seed: number }) {
   const [pulse, setPulse] = useState(0)
@@ -7,6 +37,8 @@ export function ScorePanel({ game, seed }: { game: Game; seed: number }) {
   useEffect(() => {
     if (lastRound > 0) setPulse((p) => p + 1)
   }, [lastRound])
+
+  const displayed = useCountUp(game.totalScore)
 
   return (
     <section
@@ -26,11 +58,11 @@ export function ScorePanel({ game, seed }: { game: Game; seed: number }) {
       </div>
       <p
         key={pulse}
-        className={`mt-2 text-4xl font-bold text-amber-100 ${pulse > 0 ? 'animate-place' : ''}`}
+        className={`mt-2 text-4xl font-bold text-amber-100 drop-shadow-[0_0_10px_rgba(251,191,36,0.35)] ${pulse > 0 ? 'animate-place' : ''}`}
         data-testid="beam-total"
         aria-label={`beam total ${game.totalScore}`}
       >
-        {game.totalScore}
+        {displayed}
       </p>
       <div className="mt-3 flex flex-wrap gap-1.5" data-testid="round-scores">
         {game.roundScores.map((score, index) => (

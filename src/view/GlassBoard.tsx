@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { Game } from '../engine/game'
 import type { PlacementViolation } from '../engine/errors'
 import type { CellConstraint, Die, Direction, Position } from '../engine/types'
@@ -58,6 +59,7 @@ export interface GlassBoardProps {
   lastPlaced: { position: Position; key: number } | null
   beam: { path: BeamPath; key: number } | null
   litCells: ReadonlySet<string>
+  lastLit: { position: Position; key: number } | null
   animating: boolean
   onCellClick: (position: Position) => void
   onBeamDone: () => void
@@ -76,6 +78,7 @@ function Cell({
   hovered,
   isOffending,
   lit,
+  justLit,
   onHover,
   onClick,
   rejecting,
@@ -92,14 +95,16 @@ function Cell({
   hovered: boolean
   isOffending: boolean
   lit: boolean
+  justLit: number
   onHover: (position: Position | null) => void
   onClick: (position: Position) => void
   rejecting: boolean
-  justPlaced: boolean
+  justPlaced: number
 }) {
   const position: Position = { row, col }
   const showGhost = hovered && die === null && hand !== null
   const legal = preview === null
+  const hint = die === null && hand !== null && legal
 
   const hoverRing = showGhost
     ? legal
@@ -124,13 +129,13 @@ function Cell({
       onMouseEnter={() => onHover(position)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(position)}
-      className={`relative z-20 flex items-center justify-center overflow-hidden rounded-[12%] bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 ring-2 ring-neutral-950 transition-[box-shadow,background-color] duration-200 ${
+      className={`cell-press relative z-20 flex items-center justify-center overflow-hidden rounded-[12%] bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 ring-2 ring-neutral-950 transition-[box-shadow,background-color] duration-200 ${
         hoverRing || ''
       } ${rejecting ? 'animate-reject !bg-red-900/50' : ''} ${
-        justPlaced ? 'animate-place' : ''
-      } ${die === null && hand !== null ? 'cursor-pointer' : ''} ${
-        isOffending ? 'ring-4 ring-red-400' : ''
-      }`}
+        hint ? 'cell-hint' : ''
+      } ${justPlaced ? 'animate-place' : ''} ${
+        die === null && hand !== null ? 'cursor-pointer' : ''
+      } ${isOffending ? 'ring-4 ring-red-400' : ''}`}
     >
       <ConstraintMark constraint={constraint} />
       {die !== null && (
@@ -139,9 +144,18 @@ function Cell({
           fluid
           lit={lit}
           testId={`die-r${row}c${col}`}
-          className={justPlaced ? 'animate-place' : ''}
+          className={justPlaced || justLit ? 'animate-place' : ''}
         />
       )}
+      {justPlaced > 0 && (
+        <span key={`burst-${justPlaced}`} className="burst-ring" data-testid={`burst-r${row}c${col}`}>
+          <span className="spark" style={{ '--dx': '-56%', '--dy': '-64%' } as CSSProperties} />
+          <span className="spark" style={{ '--dx': '58%', '--dy': '-52%', animationDelay: '40ms' } as CSSProperties} />
+          <span className="spark" style={{ '--dx': '-48%', '--dy': '58%', animationDelay: '80ms' } as CSSProperties} />
+          <span className="spark" style={{ '--dx': '62%', '--dy': '48%', animationDelay: '120ms' } as CSSProperties} />
+        </span>
+      )}
+      {justLit > 0 && <span key={`flash-${justLit}`} className="strike-flash" />}
       {showGhost && (
         <span
           data-testid={`ghost-r${row}c${col}`}
@@ -167,7 +181,7 @@ function Cell({
         <span
           aria-label={`beam enters heading ${entryDirection}`}
           data-testid="entry-arrow"
-          className={`absolute ${ARROW_POSITION[entryDirection]} z-10 text-[min(3.8cqw,1rem)] text-amber-300 drop-shadow`}
+          className={`absolute ${ARROW_POSITION[entryDirection]} z-30 animate-arrow text-[min(3.8cqw,1rem)] text-amber-300 drop-shadow`}
         >
           {ARROW_BY_DIRECTION[entryDirection]}
         </span>
@@ -183,6 +197,7 @@ export function GlassBoard({
   lastPlaced,
   beam,
   litCells,
+  lastLit,
   animating,
   onCellClick,
   onBeamDone,
@@ -234,10 +249,17 @@ export function GlassBoard({
               hovered={hovered?.row === row && hovered?.col === col}
               isOffending={offendingCells.some((n) => n.row === row && n.col === col)}
               lit={litCells.has(cellKeyOf(position))}
+              justLit={
+                lastLit?.position.row === row && lastLit?.position.col === col ? lastLit.key : 0
+              }
               onHover={setHovered}
               onClick={onCellClick}
               rejecting={rejection?.position.row === row && rejection?.position.col === col}
-              justPlaced={lastPlaced?.position.row === row && lastPlaced?.position.col === col}
+              justPlaced={
+                lastPlaced?.position.row === row && lastPlaced?.position.col === col
+                  ? lastPlaced.key
+                  : 0
+              }
             />
           )
         }),

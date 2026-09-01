@@ -22,6 +22,10 @@ export interface UseGameResult {
   legalPreview: Map<string, PlacementViolation | null>
   rejection: { position: Position; kind: string; key: number } | null
   lastPlaced: { position: Position; key: number } | null
+  /** The die the beam just struck (for the strike flash/pop). */
+  lastLit: { position: Position; key: number } | null
+  /** Increments when a big round score should shake the screen. */
+  shakeKey: number
   /** The beam path currently animating (or settled) over the board. */
   beam: { path: BeamPath; key: number } | null
   /** Cells whose glass the beam has lit, keyed "row,col". */
@@ -61,6 +65,8 @@ export function useGame(): UseGameResult {
   const [lastPlaced, setLastPlaced] = useState<UseGameResult['lastPlaced']>(null)
   const [beam, setBeam] = useState<UseGameResult['beam']>(null)
   const [litCells, setLitCells] = useState<ReadonlySet<string>>(new Set())
+  const [lastLit, setLastLit] = useState<UseGameResult['lastLit']>(null)
+  const [shakeKey, setShakeKey] = useState(0)
   const flashKey = useRef(0)
   const beamKey = useRef(0)
 
@@ -100,6 +106,7 @@ export function useGame(): UseGameResult {
           break
         case 'roundScored':
           sfx.roundScored(event.delta)
+          if (event.delta >= 15) setShakeKey((k) => k + 1)
           break
         case 'gameOver':
           sfx.roundScored(99)
@@ -119,6 +126,8 @@ export function useGame(): UseGameResult {
         next.add(cellKey(segment.position))
         return next
       })
+      flashKey.current += 1
+      setLastLit({ position: segment.position, key: flashKey.current })
     }
   }, [])
 
@@ -160,6 +169,8 @@ export function useGame(): UseGameResult {
     legalPreview,
     rejection,
     lastPlaced,
+    lastLit,
+    shakeKey,
     beam,
     litCells,
     animating,
