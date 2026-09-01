@@ -41,17 +41,12 @@ export function DraftPool({
             onClick={() => onPick(die)}
             className="die-slot"
           >
-            <DieFace die={die} size="md" />
+            <DieFace die={die} fluid />
           </button>
         ))}
         {hand !== null && (
-          <span aria-hidden className="mx-1 self-center text-neutral-600">
-            →
-          </span>
-        )}
-        {hand !== null && (
-          <span data-testid="hand-chip" className="die-slot h-12 w-12 cursor-default sm:h-14 sm:w-14 animate-wobble">
-            <DieFace die={hand} size="md" className="ring-2 ring-amber-300/80" />
+          <span aria-hidden className="die-slot self-center cursor-default animate-wobble">
+            <DieFace die={hand} fluid className="ring-2 ring-amber-300/80" />
           </span>
         )}
       </div>
