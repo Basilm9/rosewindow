@@ -8,7 +8,7 @@ interface Candidate {
   target: Position
 }
 
-function legalPairs(game: Game): Candidate[] {
+export function legalPairs(game: Game): Candidate[] {
   const window = game.window!
   const pairs: Candidate[] = []
   for (const die of game.draftPool.dice) {
@@ -62,13 +62,10 @@ function pairsAfter(game: Game, candidate: Candidate): number {
   return count
 }
 
-/**
- * Deterministic test auto-player that prefers the placement leaving the most
- * future options (max-flexibility greedy). Returns false when hard-stuck.
- */
-export function autoPlace(game: Game): boolean {
+/** The legal placement leaving the most future options (max-flexibility greedy). */
+export function bestPair(game: Game): Candidate | null {
   const candidates = legalPairs(game)
-  if (candidates.length === 0) return false
+  if (candidates.length === 0) return null
   let best = candidates[0]!
   let bestFlex = -1
   for (const candidate of candidates) {
@@ -78,6 +75,16 @@ export function autoPlace(game: Game): boolean {
       best = candidate
     }
   }
+  return best
+}
+
+/**
+ * Deterministic test auto-player that prefers the placement leaving the most
+ * future options (max-flexibility greedy). Returns false when hard-stuck.
+ */
+export function autoPlace(game: Game): boolean {
+  const best = bestPair(game)
+  if (best === null) return false
   game.selectDie(best.die)
   game.placeDie(best.target)
   return true
