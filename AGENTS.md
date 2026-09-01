@@ -28,6 +28,7 @@ Vite + React 19 + TypeScript (strict) + Tailwind CSS v4 + XState v5. Vitest for 
 - All randomness goes through the injected seeded RNG (`src/engine/rng.ts`). Never call `Math.random()`.
 - Beam behavior constants (turn colors, lockout formula `V-1`, multiplier cap 5) live in a single `GameConfig`-style constants module — tunable data, not scattered literals.
 - Budget discipline: the engine stays ~15 modules. Do not add a module without a matching deletion or a stated reason.
+- Every exported engine declaration carries TSDoc (course documentation milestone); ambiguity resolutions (e.g., multiplier timing, cycle-guard semantics) are documented at the function that implements them.
 
 ## Verification protocol (UI changes)
 
