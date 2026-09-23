@@ -1,12 +1,19 @@
-import type { Die, DieColor } from '../engine/types'
+import type { Die, DieColor, Refraction } from '../engine/types'
 
 /** Stained-glass palette per color: translucent fill, lead-tinted ring, light text. */
 export const DIE_STYLES: Record<DieColor, { fill: string; ring: string; text: string }> = {
-  red: { fill: 'bg-red-600/70', ring: 'ring-red-400/40', text: 'text-red-50' },
-  yellow: { fill: 'bg-amber-300/70', ring: 'ring-amber-200/50', text: 'text-amber-50' },
-  blue: { fill: 'bg-sky-600/70', ring: 'ring-sky-400/40', text: 'text-sky-50' },
-  green: { fill: 'bg-emerald-600/70', ring: 'ring-emerald-400/40', text: 'text-emerald-50' },
-  purple: { fill: 'bg-fuchsia-600/70', ring: 'ring-fuchsia-400/40', text: 'text-fuchsia-50' },
+  red: { fill: 'glass-red glass-fill', ring: 'ring-rose-300/50', text: 'text-rose-100' },
+  yellow: { fill: 'glass-yellow glass-fill', ring: 'ring-amber-200/50', text: 'text-amber-100' },
+  blue: { fill: 'glass-blue glass-fill', ring: 'ring-sky-300/50', text: 'text-sky-100' },
+  green: { fill: 'glass-green glass-fill', ring: 'ring-emerald-200/50', text: 'text-emerald-100' },
+  purple: { fill: 'glass-purple glass-fill', ring: 'ring-violet-300/50', text: 'text-violet-100' },
+}
+
+/** The same symbols appear on panes and in the light guide. */
+export const REFRACTION_SYMBOLS: Record<Refraction, string> = {
+  clockwise: '↻',
+  counterClockwise: '↺',
+  straight: '↑',
 }
 
 export function dieLabel(die: Die): string {
@@ -20,3 +27,12 @@ export const DIE_SIZES = {
 } as const
 
 export type DieSize = keyof typeof DIE_SIZES
+
+/** Multiplier heat: the hotter the chain, the hotter the color (shared with the HUD). */
+export const MULTIPLIER_HEAT: Record<number, string> = {
+  1: '#fff4cc',
+  2: '#ffd34d',
+  3: '#ff9d2e',
+  4: '#ff5a7a',
+  5: '#d68bff',
+}

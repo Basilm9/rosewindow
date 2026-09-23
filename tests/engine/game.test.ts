@@ -65,6 +65,40 @@ describe('Game — phase law', () => {
 })
 
 describe('Game — selection and placement', () => {
+  it('keeps the held die and pool unchanged after an invalid re-selection', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    const held = game.draftPool.dice[0]!
+    game.selectDie(held)
+    const pool = game.draftPool.dice
+    expect(() => game.selectDie({ color: 'purple', value: 6 })).toThrowError(/draft pool/)
+    expect(game.hand).toEqual(held)
+    expect(game.draftPool.dice).toEqual(pool)
+    expect(game.phase).toBe('place')
+  })
+
+  it('counts a legal held die even when the visible pool is empty', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    const playable = game.draftPool.dice[0]!
+    game.draftPool.clear()
+    game.draftPool.putBack([playable])
+    game.selectDie(playable)
+    expect(game.hasLegalMove()).toBe(true)
+  })
+
+  it('cancels selection by returning the hand to the draft', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    const die = game.draftPool.dice[0]!
+    game.selectDie(die)
+    game.cancelSelection()
+    expect(game.phase).toBe('draft')
+    expect(game.hand).toBeNull()
+    expect(game.draftPool.dice).toHaveLength(5)
+    expect(game.draftPool.dice).toContainEqual(die)
+  })
+
   it('selecting moves the die from pool to hand; re-selecting returns the first', () => {
     const game = newGame()
     game.choosePattern(game.offeredPatterns[0]!.id)
@@ -116,6 +150,74 @@ describe('Game — selection and placement', () => {
     expect(events.at(-1)?.kind).toBe('gameOver')
     // the announced entry advanced round by round
     expect(game.currentEntry).toEqual(game.entrySequence[7])
+  })
+})
+
+describe('Game — a single draft refresh', () => {
+  it('replaces the unplaced dice deterministically without consuming a placement or round', () => {
+    const games = [newGame(), newGame()]
+    for (const game of games) {
+      game.choosePattern(PATTERN)
+      game.selectDie(game.draftPool.dice[0]!)
+      const original = game.draftPool.dice
+      game.refreshDraft()
+      expect(game.draftPool.dice).not.toEqual(original)
+      expect(game.draftPool.size).toBe(5)
+      expect(game.hand).toBeNull()
+      expect(game.phase).toBe('draft')
+      expect(game.round).toBe(1)
+      expect(game.roundScores).toEqual([])
+      expect(game.refreshesRemaining).toBe(0)
+      expect(() => game.refreshDraft()).toThrowError(/refresh/i)
+    }
+    expect(games[0]!.draftPool.dice).toEqual(games[1]!.draftPool.dice)
+  })
+
+  it('preserves a partially completed round and the remaining draft size', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    const first = game.draftPool.dice[0]!
+    const target = game.legalPlacementsFor(first)[0]!
+    game.selectDie(first)
+    game.placeDie(target)
+    game.refreshDraft()
+    expect(game.window!.placedCount).toBe(1)
+    expect(game.draftPool.size).toBe(4)
+    expect(game.round).toBe(1)
+    const next = game.draftPool.dice.find((die) => game.legalPlacementsFor(die).length > 0)!
+    const nextTarget = game.legalPlacementsFor(next)[0]!
+    game.selectDie(next)
+    game.placeDie(nextTarget)
+    expect(game.round).toBe(2)
+    expect(game.roundScores).toHaveLength(1)
+  })
+
+  it('rejects refresh outside gameplay without spending it', () => {
+    const game = newGame()
+    expect(() => game.refreshDraft()).toThrowError(/phase/)
+    expect(game.refreshesRemaining).toBe(1)
+  })
+})
+
+describe('Game — forfeiting only a blocked draft', () => {
+  it('rejects a forfeit while a legal move remains and preserves the draft', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    const pool = game.draftPool.dice
+    expect(() => game.forfeitRound()).toThrowError(/legal move/)
+    expect(game.round).toBe(1)
+    expect(game.draftPool.dice).toEqual(pool)
+    expect(game.roundScores).toEqual([])
+  })
+
+  it('still illuminates and advances a blocked draft exactly once', () => {
+    const game = newGame()
+    game.choosePattern(PATTERN)
+    game.draftPool.clear()
+    game.forfeitRound()
+    expect(game.round).toBe(2)
+    expect(game.roundScores).toEqual([0])
+    expect(game.draftPool.size).toBe(5)
   })
 })
 

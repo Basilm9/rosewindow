@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('first-run tutorial walks through draft, place, and the rules', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
-  await page.goto('/') // organic visit: no seed → tutorial appears
+  await page.goto('/') // a first launch starts the tutorial on its own
 
   // Step 1 (setup screen): welcome card waits for the pattern choice
   await expect(page.getByTestId('tutorial-card')).toContainText('Welcome, glazier')
@@ -30,7 +30,7 @@ test('first-run tutorial walks through draft, place, and the rules', async ({ pa
   // Finished: card gone, and it never comes back on reload
   await expect(page.getByTestId('tutorial-card')).toHaveCount(0)
   await page.reload()
-  await page.getByTestId('pattern-novice-rose').click()
+  await expect(page.getByTestId('die-r0c0')).toBeVisible() // the run resumes
   await expect(page.getByTestId('tutorial-card')).toHaveCount(0)
 })
 

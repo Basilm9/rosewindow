@@ -27,7 +27,7 @@ test('illegal placement shakes the cell, alerts, and keeps the die in hand', asy
   await page.getByTestId('draft-die-0').click()
 
   await page.getByTestId('cell-r1c1').click() // interior: first-placement law
-  await expect(page.getByTestId('rejection-hint')).toContainText('illegalFirstPlacement')
+  await expect(page.getByTestId('rejection-hint')).toContainText('Start at the edge')
   await expect(page.getByTestId('cell-r1c1')).toHaveAttribute('data-rejected', 'true')
   await expect(page.getByTestId('draft-hint')).toContainText('in hand')
   await expect(page.getByTestId('die-r1c1')).toHaveCount(0)
@@ -69,7 +69,7 @@ test('completing two placements advances the round with a fresh pool', async ({ 
   await expect(page.getByTestId('die-r0c0')).toBeVisible()
   await page.getByTestId('draft-die-0').click()
   await page.getByTestId('cell-r0c2').click()
-  await expect(page.getByTestId('rejection-hint')).toContainText('disconnectedPlacement')
+  await expect(page.getByTestId('rejection-hint')).toContainText('Keep the glass connected')
   await page.getByTestId('cell-r0c1').click()
   await expect(page.getByTestId('die-r0c1')).toBeVisible()
   await expect(page.getByTestId('round-indicator')).toHaveText('ROUND 2/8')

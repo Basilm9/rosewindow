@@ -4,6 +4,7 @@ import type { Actor } from 'xstate'
 import { beamMachine } from '../machine/beamMachine'
 import type { BeamPath, BeamSegment } from '../engine/beamTracer'
 import { sfx } from '../dev/sfx'
+import { MULTIPLIER_HEAT } from './palette'
 
 /**
  * The beam animation (pitch §13): an SVG overlay in the board's coordinate space
@@ -14,7 +15,8 @@ import { sfx } from '../dev/sfx'
  * leave `illuminate`.
  */
 
-export const STEP_MS = 430
+export const STEP_MS = 400
+
 const TAIL_MS = 450
 
 /** Cell center in board units: 3% inset, 2% gaps, 22-unit cells. */
@@ -28,6 +30,8 @@ interface FloatScore {
   readonly y: number
   readonly points: number
   readonly multiplier: number
+  /** The beam turned inside this die (drawn as a spinning ring). */
+  readonly bent: boolean
 }
 
 export function BeamLayer({
@@ -44,18 +48,20 @@ export function BeamLayer({
   const [finished, setFinished] = useState(false)
   const [floats, setFloats] = useState<FloatScore[]>([])
   const floatId = useRef(0)
+  const strikes = useRef(0)
 
   useEffect(() => {
     const actor: Actor<typeof beamMachine> = createActor(beamMachine, {
       input: { path },
     }).start()
 
+    let tailTimer: ReturnType<typeof setTimeout> | undefined
     const timer = setInterval(() => {
       const snap = actor.getSnapshot()
       if (snap.status === 'done') {
         clearInterval(timer)
         setFinished(true)
-        setTimeout(onDone, TAIL_MS)
+        tailTimer = setTimeout(onDone, TAIL_MS)
         return
       }
       const before = snap.context.index
@@ -67,6 +73,10 @@ export function BeamLayer({
         if (segment.die !== null) {
           const scoringMultiplier =
             segment.die.value > 0 ? Math.round(segment.points / segment.die.value) : 1
+          // Presentation only: the tracer already decided the path; a direction
+          // change on the next segment means this die turned the light.
+          const nextSegment = path.segments[before + 1]
+          const bent = nextSegment !== undefined && nextSegment.direction !== segment.direction
           floatId.current += 1
           const center = cellCenter(segment.position)
           setFloats((f) => [
@@ -77,16 +87,20 @@ export function BeamLayer({
               y: center.y,
               points: segment.points,
               multiplier: scoringMultiplier,
+              bent,
             },
           ])
           onStrike?.(segment, before, scoringMultiplier)
-          sfx.strike(scoringMultiplier)
+          sfx.strike(scoringMultiplier, strikes.current)
+          if (bent) sfx.bend()
+          strikes.current += 1
         }
       }
     }, STEP_MS)
 
     return () => {
       clearInterval(timer)
+      clearTimeout(tailTimer)
       actor.stop()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,14 +113,18 @@ export function BeamLayer({
     .map((s) => cellCenter(s.position))
     .map((c) => `${c.x},${c.y}`)
     .join(' ')
-  const head = index > 0 ? cellCenter(path.segments[Math.min(index, path.segments.length) - 1]!.position) : null
+  const head =
+    index > 0
+      ? cellCenter(path.segments[Math.min(index, path.segments.length) - 1]!.position)
+      : null
 
   const frame =
     'pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-1000'
 
   /**
-   * Twin layers so the beam runs BEHIND the translucent glass panes while the
-   * head, entry flash, and score floats stay readable above them.
+   * Twin layers: the light itself is screen-blended over the glass (so it tints
+   * and brightens the panes it crosses), while the head, entry flash, and score
+   * floats sit on top at full strength.
    */
   return (
     <>
@@ -116,7 +134,7 @@ export function BeamLayer({
         data-testid="beam-layer"
         data-settled={finished ? 'true' : undefined}
         aria-hidden
-        className={`${frame} z-10 ${finished ? 'opacity-80' : 'opacity-100'}`}
+        className={`${frame} beam-light ${finished ? 'opacity-80' : 'opacity-100'}`}
       >
         <defs>
           <filter id="beam-glow" x="-80%" y="-80%" width="260%" height="260%">
@@ -128,8 +146,9 @@ export function BeamLayer({
             </feMerge>
           </filter>
           <radialGradient id="beam-head">
-            <stop offset="0%" stopColor="#fffbeb" />
-            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="35%" stopColor="#fff4cc" />
+            <stop offset="100%" stopColor="#ffc94a" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -142,20 +161,20 @@ export function BeamLayer({
                   key={`bead-${i}`}
                   cx={c.x}
                   cy={c.y}
-                  r={s.die !== null ? 8.5 : 6}
-                  fill={s.die !== null ? 'url(#beam-head)' : '#f59e0b'}
-                  opacity={s.die !== null ? 0.85 : 0.4}
+                  r={s.die !== null ? 10 : 5}
+                  fill={s.die !== null ? 'url(#beam-head)' : '#ffc94a'}
+                  opacity={s.die !== null ? 0.9 : 0.35}
                   data-testid={`bead-${i}`}
                 />
               )
             })}
             <g className={finished ? 'beam-settled-halo' : undefined}>
-              <polyline points={points} stroke="#d97706" strokeWidth={11} opacity={0.3} />
-              <polyline points={points} stroke="#f59e0b" strokeWidth={6.5} opacity={0.85} />
+              <polyline points={points} stroke="#ff9d2e" strokeWidth={12} opacity={0.22} />
+              <polyline points={points} stroke="#ffc94a" strokeWidth={5} opacity={0.9} />
               <polyline
                 points={points}
-                stroke="#fffbeb"
-                strokeWidth={2.6}
+                stroke="#fffaf0"
+                strokeWidth={1.8}
                 data-testid="beam-core"
                 className="beam-flow"
               />
@@ -171,9 +190,9 @@ export function BeamLayer({
         className={`${frame} z-30`}
       >
         {head !== null && !finished && (
-          <g>
-            <circle cx={head.x} cy={head.y} r={8.5} fill="url(#beam-head)" opacity={0.95} />
-            <circle cx={head.x} cy={head.y} r={2.4} fill="#fffbeb" />
+          <g key={index} className="beam-head">
+            <circle cx={head.x} cy={head.y} r={11} fill="url(#beam-head)" opacity={0.95} />
+            <circle cx={head.x} cy={head.y} r={2.6} fill="#ffffff" />
           </g>
         )}
 
@@ -181,25 +200,41 @@ export function BeamLayer({
           <circle
             cx={entry.x}
             cy={entry.y}
-            r={7}
+            r={8}
             fill="none"
-            stroke="#fde68a"
-            strokeWidth={1.2}
+            stroke="#ffc94a"
+            strokeWidth={1.6}
             className="animate-entry-flash"
           />
         )}
 
+        {floats
+          .filter((f) => f.bent)
+          .map((f) => (
+            <circle
+              key={`bend-${f.id}`}
+              cx={f.x}
+              cy={f.y}
+              r={9}
+              fill="none"
+              stroke="#fff4cc"
+              strokeWidth={1.4}
+              strokeDasharray="5 3"
+              className="beam-bend-ring"
+            />
+          ))}
         {floats.map((f) => (
           <g key={f.id} className="animate-score-rise" data-testid={`score-float-${f.id}`}>
             <text
               x={f.x}
-              y={f.y - 7}
+              y={f.y - 5}
               textAnchor="middle"
-              fontSize={5.4}
-              fontWeight="bold"
-              fill="#fde68a"
-              stroke="#451a03"
-              strokeWidth={0.5}
+              className="beam-float"
+              fontSize={f.points >= 12 ? 9 : 7.5}
+              fill="#fff4cc"
+              stroke="#0a0612"
+              strokeWidth={1.5}
+              strokeLinejoin="round"
               paintOrder="stroke"
             >
               +{f.points}
@@ -207,13 +242,14 @@ export function BeamLayer({
             {f.multiplier > 1 && (
               <text
                 x={f.x}
-                y={f.y - 2.2}
+                y={f.y + 2.4}
                 textAnchor="middle"
-                fontSize={3.6}
-                fontWeight="bold"
-                fill="#fbbf24"
-                stroke="#451a03"
-                strokeWidth={0.4}
+                className="beam-float"
+                fontSize={4.6}
+                fill={MULTIPLIER_HEAT[Math.min(f.multiplier, 5)]}
+                stroke="#0a0612"
+                strokeWidth={1.1}
+                strokeLinejoin="round"
                 paintOrder="stroke"
               >
                 ×{f.multiplier}

@@ -252,4 +252,8 @@ describe('assertPlacementValid', () => {
       /outside the grid/,
     )
   })
+
+  it.each([0.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects non-integer coordinate %s before placement', (row) => {
+    expect(() => assertPlacementValid(check({ target: { row, col: 0 } }))).toThrow(/outside the grid/)
+  })
 })

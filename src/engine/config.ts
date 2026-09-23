@@ -1,3 +1,5 @@
+import { normalizeSeed } from './rng'
+
 /**
  * Immutable per-run parameters. Beam behavior (colors, lockout V−1, multiplier cap)
  * is rule law except where explicitly tunable here; thresholds are provisional until
@@ -27,12 +29,13 @@ export interface GameConfig {
 /** Provisional tier thresholds; revisit after the phase-5 playtest. */
 export const PROVISIONAL_TIERS: TierThresholds = { bronze: 40, silver: 65, gold: 90 }
 
+/** Creates one run's parameters with a canonical seed shared by links and the RNG. */
 export function createGameConfig(
   seed: number,
   overrides: Partial<Omit<GameConfig, 'seed'>> = {},
 ): GameConfig {
   return {
-    seed,
+    seed: normalizeSeed(seed),
     rounds: 8,
     gridSize: 4,
     draftSize: 5,

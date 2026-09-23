@@ -1,181 +1,195 @@
-import { useEffect, useState } from 'react'
-import { statePath, useGame } from './hooks/useGame'
-import { GlassBoard } from './view/GlassBoard'
-import { DraftPool } from './view/DraftPool'
-import { Objectives } from './view/Objectives'
-import { ScorePanel } from './view/ScorePanel'
-import SetupScreen from './view/SetupScreen'
-import { GameOverScreen } from './view/GameOverScreen'
-import { TutorialOverlay } from './view/TutorialOverlay'
-import { useTutorial } from './hooks/useTutorial'
-import { sfx } from './dev/sfx'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { clearSession, loadSession, saveSession } from './hooks/runSession'
+import type { RunSession } from './hooks/runSession'
+import { GameScreen } from './view/GameScreen'
+import { RoseArt } from './view/RoseArt'
+import { getLevel, loadProfile, recordRun, saveProfile } from './progression/profile'
+import type { PlayerProfile } from './progression/profile'
+import { challengeUrl, createChallenge, dailyChallenge, decodeChallenge } from './progression/challenges'
+import type { Game } from './engine/game'
 
-function SoundToggle() {
-  const [muted, setMuted] = useState(sfx.muted)
-  return (
-    <button
-      type="button"
-      data-testid="sound-toggle"
-      aria-pressed={!muted}
-      aria-label={muted ? 'unmute sounds' : 'mute sounds'}
-      onClick={() => setMuted(sfx.toggleMute())}
-      className="rounded-lg border-2 border-black/60 bg-black/40 px-2 py-1 text-sm text-neutral-300 transition hover:text-amber-200"
-    >
-      {muted ? '🔇' : '🔊'}
-    </button>
-  )
+type RunRewards = ReturnType<typeof recordRun>
+
+const TUTORIAL_KEY = 'rosewindow-tutorial'
+
+/** Works on plain-http LAN addresses too, where crypto.randomUUID is unavailable. */
+function newId(): string {
+  const bytes = crypto.getRandomValues(new Uint32Array(2))
+  return `${Date.now().toString(36)}-${bytes[0]!.toString(36)}${bytes[1]!.toString(36)}`
+}
+
+function newSession(overrides: Partial<RunSession> = {}): RunSession {
+  return {
+    id: newId(),
+    seed: crypto.getRandomValues(new Uint32Array(1))[0]!,
+    mode: 'free',
+    targetRound: 1,
+    tutorial: false,
+    actions: [],
+    ...overrides,
+  }
+}
+
+function sessionFromUrl(): RunSession | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('challenge')) {
+    const challenge = decodeChallenge(params.get('challenge') ?? '')
+    return challenge ? newSession({ ...challenge, mode: 'challenge' }) : null
+  }
+  if (!params.has('seed') && !params.has('round') && params.get('tutorial') !== '1') return null
+  const seed = Number(params.get('seed') ?? 3)
+  const round = Number(params.get('round') ?? 1)
+  return newSession({
+    seed: Number.isFinite(seed) ? Math.trunc(seed) >>> 0 : 3,
+    targetRound: Number.isFinite(round) ? Math.max(1, Math.min(9, Math.trunc(round))) : 1,
+    tutorial: params.get('tutorial') === '1',
+  })
+}
+
+function tutorialSeen(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === 'done'
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Boot order, like any mobile game: a link's run, else the run you left, else a
+ * fresh window (first launch starts the guided tutorial on the teaching seed).
+ */
+function bootSession(profile: PlayerProfile): RunSession {
+  const fromUrl = sessionFromUrl()
+  if (fromUrl) return fromUrl
+  const saved = loadSession()
+  // A resumed first-run keeps coaching only until the tutorial is finished or skipped.
+  if (saved) return { ...saved, tutorial: saved.tutorial && !tutorialSeen() }
+  const firstRun = profile.totalRuns === 0 && !tutorialSeen()
+  return firstRun ? newSession({ seed: 3, tutorial: true }) : newSession()
 }
 
 export default function App() {
-  const {
-    game,
-    snapshot,
-    send,
-    seed,
-    legalPreview,
-    rejection,
-    lastPlaced,
-    lastLit,
-    shakeKey,
-    forfeitNotice,
-    beam,
-    litCells,
-    animating,
-    onBeamDone,
-    onBeamStrike,
-  } = useGame()
-  const path = statePath(snapshot)
+  const [profile, setProfile] = useState(loadProfile)
+  const profileRef = useRef(profile)
+  const [session, setSession] = useState<RunSession>(() => bootSession(profileRef.current))
+  const [toast, setToast] = useState('')
+  const [rewards, setRewards] = useState<RunRewards | null>(null)
 
-  const tutorial = useTutorial(game, path)
-
-  const [shaking, setShaking] = useState(false)
   useEffect(() => {
-    if (shakeKey === 0) return
-    setShaking(true)
-    const t = setTimeout(() => setShaking(false), 470)
-    return () => clearTimeout(t)
-  }, [shakeKey])
+    if (!toast) return
+    const timer = setTimeout(() => setToast(''), 3200)
+    return () => clearTimeout(timer)
+  }, [toast])
 
-  if (path === 'setup') {
-    return (
-      <>
-        <SetupScreen game={game} onChoose={(id) => send({ type: 'CHOOSE_PATTERN', id })} />
-        {tutorial.active && (
-          <TutorialOverlay step={tutorial.step} onNext={tutorial.next} onSkip={tutorial.skip} />
-        )}
-      </>
-    )
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('challenge') && !decodeChallenge(params.get('challenge') ?? '')) {
+      setToast('That challenge link is incomplete. Here’s a fresh window instead.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  const updateProfile = useCallback((next: PlayerProfile) => {
+    profileRef.current = next
+    setProfile(next)
+    if (!saveProfile(next)) setToast('Progress can’t be saved in this browser, so it resets on reload.')
+  }, [])
+
+  const start = useCallback((overrides: Partial<RunSession> = {}) => {
+    const run = newSession(overrides)
+    setRewards(null)
+    saveSession(run)
+    setSession(run)
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [])
+
+  const complete = useCallback(
+    (game: Game, run: RunSession) => {
+      if (run.targetRound > 1 || !game.report || !game.window) return
+      const result = recordRun(profileRef.current, {
+        id: run.id,
+        seed: game.config.seed,
+        patternId: game.window.pattern.id,
+        mode: run.mode,
+        score: game.report.total,
+        beamTotal: game.report.beamTotal,
+        completedAt: new Date().toISOString(),
+      })
+      if (result.recorded) {
+        updateProfile(result.profile)
+        setRewards(result)
+        clearSession()
+      }
+    },
+    [updateProfile],
+  )
+
+  const share = async (game: Game) => {
+    if (!game.report || !game.window) return
+    const challenge = createChallenge({
+      seed: session.seed,
+      patternId: game.window.pattern.id,
+      targetScore: game.report.total,
+    })
+    const url = challengeUrl(challenge, window.location.href)
+    const text = `I lit ${game.report.total} on this Rose Window. Can you beat it?`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Rose Window', text, url })
+        return
+      }
+      await navigator.clipboard.writeText(`${text} ${url}`)
+      setToast('Challenge link copied. Send it to a friend.')
+    } catch (error) {
+      if ((error as DOMException)?.name === 'AbortError') return
+      setToast('Couldn’t share from this browser. Try copying the page link instead.')
+    }
   }
 
-  if (snapshot.status === 'done' || game.phase === 'gameOver') {
-    return (
-      <GameOverScreen
-        game={game}
-        onRestart={() => {
-          window.location.search = `?seed=${seed + 1}`
-        }}
-      />
-    )
+  const daily = () => {
+    const today = dailyChallenge(new Date())
+    start({ mode: 'daily', seed: today.seed, patternId: today.patternId })
   }
 
   return (
-    <div
-      className={`mx-auto flex h-[100dvh] w-full max-w-7xl flex-col gap-3 overflow-hidden p-3 sm:gap-4 sm:p-5 ${
-        shaking ? 'animate-shake-screen' : ''
-      }`}
-    >
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        {/* ===== sidebar ===== */}
-        <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-0.5">
-          <div className="panel px-4 py-3">
-            <div className="flex items-center justify-between">
-              <h1 className="font-serif text-xl tracking-wide text-amber-200 [text-shadow:0_2px_0_rgba(0,0,0,0.7)]">
-                Rose Window
-              </h1>
-              <SoundToggle />
-            </div>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-neutral-500">
-              {game.window?.pattern.name} · seed {seed}
-            </p>
-          </div>
-          <button
-            type="button"
-            data-testid="tutorial-replay"
-            aria-label="replay tutorial"
-            onClick={() => {
-              window.location.search = '?tutorial=1'
-            }}
-            className="panel px-3 py-2 text-left text-xs font-bold text-neutral-300 transition hover:text-amber-200"
-          >
-            ? How to play
-          </button>
-
-          <ScorePanel game={game} seed={seed} />
-          <Objectives game={game} />
-
-          <div className="flex flex-col gap-2">
-            {forfeitNotice !== null && (
-              <p
-                data-testid="forfeit-banner"
-                className="rounded-lg border-2 border-orange-900/70 bg-orange-950/50 px-3 py-2 text-xs font-semibold text-orange-200"
-                role="status"
-              >
-                Round {forfeitNotice} forfeited — no legal placements. The beam still scores.
-              </p>
-            )}
-            {snapshot.context.lastError !== null && (
-              <p
-                data-testid="rejection-hint"
-                className="animate-reject rounded-lg border-2 border-red-900/70 bg-red-950/60 px-3 py-2 text-xs font-semibold text-red-200"
-                role="alert"
-              >
-                Rejected: {snapshot.context.lastError}
-              </p>
-            )}
-          </div>
-        </aside>
-
-        {/* ===== play area ===== */}
-        <main className="flex min-h-0 flex-col items-center justify-center gap-3">
-          <p
-            className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300/80"
-            data-testid="entry-hint"
-          >
-            {animating
-              ? 'the beam scores the window…'
-              : forfeitNotice !== null
-                ? `round ${forfeitNotice} forfeited`
-                : `beam enters at row ${game.currentEntry.position.row}, column ${game.currentEntry.position.col}, heading ${game.currentEntry.direction}`}
-          </p>
-          <GlassBoard
-            game={game}
-            legalPreview={legalPreview}
-            rejection={rejection}
-            lastPlaced={lastPlaced}
-            lastLit={lastLit}
-            beam={beam}
-            litCells={litCells}
-            animating={animating}
-            onCellClick={(position) => {
-              if (game.hand !== null) send({ type: 'PLACE_DIE', position })
-            }}
-            onBeamDone={onBeamDone}
-            onBeamStrike={onBeamStrike}
-          />
-          <DraftPool
-            game={game}
-            statePath={path}
-            onPick={(die) => {
-              sfx.pickup()
-              send({ type: 'SELECT_DIE', die })
-            }}
-          />
-        </main>
-
-        {tutorial.active && (
-          <TutorialOverlay step={tutorial.step} onNext={tutorial.next} onSkip={tutorial.skip} />
-        )}
+    <div className="app">
+      <div className="backdrop" aria-hidden>
+        <RoseArt className="backdrop__rose" />
+        <div className="backdrop__motes">
+          {Array.from({ length: 14 }, (_, i) => (
+            <span key={i} style={{ ["--i" as string]: i }} />
+          ))}
+        </div>
       </div>
+      <GameScreen
+        key={session.id}
+        session={session}
+        level={getLevel(profile.xp).level}
+        best={profile.bestScore}
+        xp={profile.xp}
+        rewards={rewards}
+        onComplete={complete}
+        onNew={() => start()}
+        onDaily={daily}
+        onRestart={() =>
+          start(
+            session.mode === 'free'
+              ? {}
+              : {
+                  mode: session.mode,
+                  seed: session.seed,
+                  patternId: session.patternId,
+                  targetScore: session.targetScore,
+                },
+          )
+        }
+        onShare={(game) => void share(game)}
+      />
+      {toast && (
+        <div role="status" className="toast" data-testid="app-toast">
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

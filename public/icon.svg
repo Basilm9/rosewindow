@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <title>Rose Window</title>
+  <rect width="512" height="512" rx="108" fill="#213c39"/>
+  <circle cx="256" cy="256" r="184" fill="#152e2c" stroke="#d8ba77" stroke-width="7"/>
+  <circle cx="256" cy="256" r="161" stroke="#d8ba77" stroke-width="3"/>
+  <g stroke="#e7ce91" stroke-width="7" stroke-linejoin="round">
+    <path d="M256 109 292 196 256 239 220 196Z" fill="#ecb960"/>
+    <path d="M360 152 324 239 263 249 273 188Z" fill="#d47d68"/>
+    <path d="M403 256 316 292 273 256 316 220Z" fill="#b98aab"/>
+    <path d="M360 360 273 324 263 263 324 273Z" fill="#8c9fc3"/>
+    <path d="M256 403 220 316 256 273 292 316Z" fill="#87b9c0"/>
+    <path d="M152 360 188 273 249 263 239 324Z" fill="#74aaa0"/>
+    <path d="M109 256 196 220 239 256 196 292Z" fill="#a4b882"/>
+    <path d="M152 152 239 188 249 249 188 239Z" fill="#d4ba74"/>
+  </g>
+  <circle cx="256" cy="256" r="35" fill="#f4e2b3" stroke="#213c39" stroke-width="7"/>
+  <circle cx="256" cy="256" r="12" fill="#c58e49"/>
+</svg>

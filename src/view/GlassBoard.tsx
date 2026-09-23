@@ -1,55 +1,56 @@
-import { useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useRef, useState } from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
 import type { Game } from '../engine/game'
 import type { PlacementViolation } from '../engine/errors'
 import type { CellConstraint, Die, Direction, Position } from '../engine/types'
-import { DIE_STYLES } from './palette'
 import { DieFace } from './Die'
 import { BeamLayer } from './BeamLayer'
 import type { BeamPath, BeamSegment } from '../engine/beamTracer'
+import './gameplay.css'
+
+const HELD_VAR = {
+  red: 'ruby',
+  yellow: 'amber',
+  blue: 'cobalt',
+  green: 'emerald',
+  purple: 'amethyst',
+} as const
 
 function cellKeyOf(position: Position): string {
   return `${position.row},${position.col}`
 }
 
-const ARROW_BY_DIRECTION: Record<Direction, string> = {
-  north: '↑',
-  east: '→',
-  south: '↓',
-  west: '←',
-}
-
-const ARROW_POSITION: Record<Direction, string> = {
-  north: 'top-[1%] left-1/2 -translate-x-1/2',
-  south: 'bottom-[1%] left-1/2 -translate-x-1/2',
-  east: 'right-[1%] top-1/2 -translate-y-1/2',
-  west: 'left-[1%] top-1/2 -translate-y-1/2',
-}
 
 function describeConstraint(constraint: CellConstraint): string {
-  if (constraint.kind === 'color') return `demands ${constraint.color} glass`
-  if (constraint.kind === 'value') return `demands value ${constraint.value}`
-  return 'no demand'
+  if (constraint.kind === 'color') return `requires ${constraint.color} glass`
+  if (constraint.kind === 'value') return `requires value ${constraint.value}`
+  return 'any color or value'
 }
 
-function ConstraintMark({ constraint }: { constraint: CellConstraint }) {
-  if (constraint.kind === 'color') {
-    const style = DIE_STYLES[constraint.color]
-    return (
-      <span
-        title={`demands ${constraint.color}`}
-        className={`absolute left-[6%] top-[6%] z-10 h-[16%] w-[16%] rounded-full ${style.fill} ring-1 ${style.ring}`}
-      />
-    )
-  }
-  if (constraint.kind === 'value') {
-    return (
-      <span className="absolute left-[6%] top-[5%] z-10 flex h-[20%] min-w-[20%] items-center justify-center rounded-[20%] bg-neutral-950/90 px-[3%] text-[min(2.4cqw,0.65rem)] font-semibold text-neutral-300 ring-1 ring-neutral-700">
-        {constraint.value}
-      </span>
-    )
-  }
-  return null
+function ConstraintMark({
+  constraint,
+  occupied,
+}: {
+  constraint: CellConstraint
+  occupied: boolean
+}) {
+  if (constraint.kind === 'open') return null
+  return (
+    <span
+      title={describeConstraint(constraint)}
+      aria-hidden
+      className={`glass-constraint ${occupied ? 'glass-constraint--occupied' : ''} ${constraint.kind === 'color' ? `glass-${constraint.color}` : 'glass-constraint--value'}`}
+    >
+      {constraint.kind === 'color' ? (
+        <>
+          <span className="glass-constraint__gem" />
+          <span className="glass-constraint__label">{constraint.color}</span>
+        </>
+      ) : (
+        constraint.value
+      )}
+    </span>
+  )
 }
 
 export interface GlassBoardProps {
@@ -63,7 +64,7 @@ export interface GlassBoardProps {
   animating: boolean
   onCellClick: (position: Position) => void
   onBeamDone: () => void
-  onBeamStrike: (segment: BeamSegment) => void
+  onBeamStrike: (segment: BeamSegment, index: number, multiplier: number) => void
 }
 
 function Cell({
@@ -80,9 +81,11 @@ function Cell({
   lit,
   justLit,
   onHover,
+  onFocus,
   onClick,
   rejecting,
   justPlaced,
+  tabIndex,
 }: {
   row: number
   col: number
@@ -97,47 +100,43 @@ function Cell({
   lit: boolean
   justLit: number
   onHover: (position: Position | null) => void
+  onFocus: (position: Position) => void
   onClick: (position: Position) => void
   rejecting: boolean
   justPlaced: number
+  tabIndex: number
 }) {
   const position: Position = { row, col }
   const showGhost = hovered && die === null && hand !== null
   const legal = preview === null
   const hint = die === null && hand !== null && legal
 
-  const hoverRing = showGhost
-    ? legal
-      ? 'ring-emerald-400/90'
-      : 'ring-red-500/90'
-    : isEntry
-      ? 'ring-amber-400/90'
-      : ''
-
   return (
     <div
       role="gridcell"
+      tabIndex={tabIndex}
+      aria-rowindex={row + 1}
+      aria-colindex={col + 1}
       aria-label={
         die !== null
           ? `row ${row}, column ${col}, ${die.color} ${die.value} die`
-          : `row ${row}, column ${col}, empty`
+          : `row ${row}, column ${col}, empty, ${describeConstraint(constraint)}${hand !== null ? `, ${legal ? 'legal placement' : 'unavailable placement'}` : ''}`
       }
       data-testid={`cell-r${row}c${col}`}
+      data-row={row}
+      data-col={col}
       data-rejected={rejecting ? 'true' : undefined}
       data-offending={isOffending ? 'true' : undefined}
+      data-legal={hand !== null && die === null ? String(legal) : undefined}
       title={describeConstraint(constraint)}
       onMouseEnter={() => onHover(position)}
       onMouseLeave={() => onHover(null)}
+      onFocus={() => onFocus(position)}
+      onBlur={() => onHover(null)}
       onClick={() => onClick(position)}
-      className={`cell-press relative z-20 flex items-center justify-center overflow-hidden rounded-[12%] bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 ring-2 ring-neutral-950 transition-[box-shadow,background-color] duration-200 ${
-        hoverRing || ''
-      } ${rejecting ? 'animate-reject !bg-red-900/50' : ''} ${
-        hint ? 'cell-hint' : ''
-      } ${justPlaced ? 'animate-place' : ''} ${
-        die === null && hand !== null ? 'cursor-pointer' : ''
-      } ${isOffending ? 'ring-4 ring-red-400' : ''}`}
+      className={`glass-cell ${die !== null ? 'glass-cell--occupied' : ''} ${isEntry ? 'glass-cell--entry' : ''} ${hint ? 'glass-cell--legal' : ''} ${rejecting ? 'glass-cell--rejected animate-reject' : ''} ${isOffending ? 'glass-cell--offending' : ''} ${justPlaced ? 'animate-place' : ''}`}
     >
-      <ConstraintMark constraint={constraint} />
+      <ConstraintMark constraint={constraint} occupied={die !== null} />
       {die !== null && (
         <DieFace
           die={die}
@@ -148,11 +147,24 @@ function Cell({
         />
       )}
       {justPlaced > 0 && (
-        <span key={`burst-${justPlaced}`} className="burst-ring" data-testid={`burst-r${row}c${col}`}>
+        <span
+          key={`burst-${justPlaced}`}
+          className="burst-ring"
+          data-testid={`burst-r${row}c${col}`}
+        >
           <span className="spark" style={{ '--dx': '-56%', '--dy': '-64%' } as CSSProperties} />
-          <span className="spark" style={{ '--dx': '58%', '--dy': '-52%', animationDelay: '40ms' } as CSSProperties} />
-          <span className="spark" style={{ '--dx': '-48%', '--dy': '58%', animationDelay: '80ms' } as CSSProperties} />
-          <span className="spark" style={{ '--dx': '62%', '--dy': '48%', animationDelay: '120ms' } as CSSProperties} />
+          <span
+            className="spark"
+            style={{ '--dx': '58%', '--dy': '-52%', animationDelay: '40ms' } as CSSProperties}
+          />
+          <span
+            className="spark"
+            style={{ '--dx': '-48%', '--dy': '58%', animationDelay: '80ms' } as CSSProperties}
+          />
+          <span
+            className="spark"
+            style={{ '--dx': '62%', '--dy': '48%', animationDelay: '120ms' } as CSSProperties}
+          />
         </span>
       )}
       {justLit > 0 && <span key={`flash-${justLit}`} className="strike-flash" />}
@@ -160,19 +172,13 @@ function Cell({
         <span
           data-testid={`ghost-r${row}c${col}`}
           data-legal={legal ? 'true' : 'false'}
-          aria-label={`preview ${hand!.color} ${hand!.value}, ${legal ? 'legal' : 'illegal'}`}
-          className={`pointer-events-none absolute inset-0 z-10 rounded-[12%] outline-2 outline-dashed ${
-            legal
-              ? 'bg-emerald-400/15 outline-emerald-300/90'
-              : 'bg-red-500/25 outline-red-400/90'
-          }`}
+          aria-label={`preview ${hand.color} ${hand.value}, ${legal ? 'legal' : 'illegal'}`}
+          className={`glass-ghost ${legal ? 'glass-ghost--legal' : 'glass-ghost--illegal'}`}
         >
-          <span className={`absolute inset-0 ${legal ? 'opacity-85' : 'opacity-60 grayscale-[30%]'}`}>
-            <DieFace die={hand} fluid />
-          </span>
+          <DieFace die={hand} fluid />
           {!legal && (
-            <span className="absolute right-[5%] top-[3%] text-[min(4cqw,1rem)] font-bold text-red-400 drop-shadow">
-              ✕
+            <span className="glass-ghost__cross" aria-hidden>
+              ×
             </span>
           )}
         </span>
@@ -181,9 +187,13 @@ function Cell({
         <span
           aria-label={`beam enters heading ${entryDirection}`}
           data-testid="entry-arrow"
-          className={`absolute ${ARROW_POSITION[entryDirection]} z-30 animate-arrow text-[min(3.8cqw,1rem)] text-amber-300 drop-shadow`}
+          className={`glass-entry glass-entry--${entryDirection}`}
         >
-          {ARROW_BY_DIRECTION[entryDirection]}
+          <span className="glass-entry__rays" aria-hidden />
+          <span className="glass-entry__sun" aria-hidden />
+          <svg className="glass-entry__chevron" viewBox="0 0 24 24" aria-hidden>
+            <path d="M5 8l7 8 7-8" />
+          </svg>
         </span>
       )}
     </div>
@@ -203,67 +213,117 @@ export function GlassBoard({
   onBeamDone,
   onBeamStrike,
 }: GlassBoardProps) {
-  const window = game.window
+  const boardRef = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState<Position | null>(null)
+  const [activeCell, setActiveCell] = useState<Position>({ row: 0, col: 0 })
+  const window = game.window
   if (window === null) return null
-  const entry = game.currentEntry
+  const entry = (animating ? beam?.path.segments[0] : undefined) ?? game.currentEntry
   const hand = game.hand
   const hoveredPreview =
-    hovered !== null && hand !== null ? legalPreview.get(cellKeyOf(hovered)) ?? null : null
-  const offendingCells: Position[] =
-    hoveredPreview?.kind === 'adjacencyViolation' ? [...hoveredPreview.offendingNeighbors] : []
+    hovered !== null && hand !== null ? (legalPreview.get(cellKeyOf(hovered)) ?? null) : null
+  const offendingCells =
+    hoveredPreview?.kind === 'adjacencyViolation' ? hoveredPreview.offendingNeighbors : []
+
+  function onBoardKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target === event.currentTarget) return
+    const size = game.config.gridSize
+    let { row, col } = activeCell
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      if (!animating) onCellClick(activeCell)
+      return
+    }
+    switch (event.key) {
+      case 'ArrowUp':
+        row = Math.max(0, row - 1)
+        break
+      case 'ArrowDown':
+        row = Math.min(size - 1, row + 1)
+        break
+      case 'ArrowLeft':
+        col = Math.max(0, col - 1)
+        break
+      case 'ArrowRight':
+        col = Math.min(size - 1, col + 1)
+        break
+      case 'Home':
+        col = 0
+        if (event.ctrlKey) row = 0
+        break
+      case 'End':
+        col = size - 1
+        if (event.ctrlKey) row = size - 1
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    boardRef.current?.querySelector<HTMLElement>(`[data-testid="cell-r${row}c${col}"]`)?.focus()
+  }
 
   return (
-    <div className="relative aspect-square h-auto w-full max-w-[min(92vw,560px)] lg:h-full lg:max-h-full lg:w-auto lg:max-w-full">
-      {/* cathedral bloom behind the lead came */}
-      <div className="pointer-events-none absolute inset-[-4%] rounded-[8%] bg-[radial-gradient(circle_at_50%_42%,rgba(251,191,36,0.10)_0%,rgba(168,85,247,0.06)_45%,transparent_70%)]" />
+    <div
+      className={`glass-board-frame ${animating ? 'glass-board-frame--beam' : ''}`}
+      style={hand !== null ? ({ '--held': `var(--${HELD_VAR[hand.color]})` } as CSSProperties) : undefined}
+    >
+      <span className="glass-board-frame__rivet glass-board-frame__rivet--tl" aria-hidden />
+      <span className="glass-board-frame__rivet glass-board-frame__rivet--tr" aria-hidden />
+      <span className="glass-board-frame__rivet glass-board-frame__rivet--bl" aria-hidden />
+      <span className="glass-board-frame__rivet glass-board-frame__rivet--br" aria-hidden />
       <div
+        ref={boardRef}
         role="grid"
         aria-label={`Glass window pattern: ${window.pattern.name}`}
+        aria-rowcount={game.config.gridSize}
+        aria-colcount={game.config.gridSize}
+        aria-busy={animating}
         data-testid="glass-board"
-        className="@container absolute inset-0 grid grid-cols-4 grid-rows-4 gap-[2%] rounded-[4%] bg-neutral-950 p-[3%] ring-4 ring-neutral-800 shadow-[inset_0_0_46px_rgba(0,0,0,0.85),0_0_0_1px_rgba(251,191,36,0.14),0_18px_60px_rgba(0,0,0,0.6)]"
+        className={`glass-board ${hand !== null && !animating ? 'glass-board--holding' : ''}`}
+        onKeyDown={onBoardKeyDown}
       >
-      {/* beam runs BEHIND the glass panes: cells and dice (translucent) sit above it */}
-      {beam !== null && (
-        <BeamLayer
-          key={beam.key}
-          path={beam.path}
-          onDone={onBeamDone}
-          onStrike={(segment) => onBeamStrike(segment)}
-        />
-      )}
-      {window.constraints.map((rowConstraints, row) =>
-        rowConstraints.map((constraint, col) => {
-          const position: Position = { row, col }
-          return (
-            <Cell
-              key={`${row}-${col}`}
-              row={row}
-              col={col}
-              constraint={constraint}
-              die={window.dieAt(position)}
-              isEntry={entry.position.row === row && entry.position.col === col}
-              entryDirection={entry.direction}
-              hand={animating ? null : hand}
-              preview={animating ? null : (legalPreview.get(cellKeyOf(position)) ?? null)}
-              hovered={hovered?.row === row && hovered?.col === col}
-              isOffending={offendingCells.some((n) => n.row === row && n.col === col)}
-              lit={litCells.has(cellKeyOf(position))}
-              justLit={
-                lastLit?.position.row === row && lastLit?.position.col === col ? lastLit.key : 0
-              }
-              onHover={setHovered}
-              onClick={onCellClick}
-              rejecting={rejection?.position.row === row && rejection?.position.col === col}
-              justPlaced={
-                lastPlaced?.position.row === row && lastPlaced?.position.col === col
-                  ? lastPlaced.key
-                  : 0
-              }
-            />
-          )
-        }),
-      )}
+        {beam !== null && (
+          <BeamLayer key={beam.key} path={beam.path} onDone={onBeamDone} onStrike={onBeamStrike} />
+        )}
+        {window.constraints.map((rowConstraints, row) =>
+          rowConstraints.map((constraint, col) => {
+            const position: Position = { row, col }
+            return (
+              <Cell
+                key={`${row}-${col}`}
+                row={row}
+                col={col}
+                constraint={constraint}
+                die={window.dieAt(position)}
+                isEntry={entry.position.row === row && entry.position.col === col}
+                entryDirection={entry.direction}
+                hand={animating ? null : hand}
+                preview={animating ? null : (legalPreview.get(cellKeyOf(position)) ?? null)}
+                hovered={hovered?.row === row && hovered?.col === col}
+                isOffending={offendingCells.some((n) => n.row === row && n.col === col)}
+                lit={litCells.has(cellKeyOf(position))}
+                justLit={
+                  lastLit?.position.row === row && lastLit?.position.col === col ? lastLit.key : 0
+                }
+                onHover={setHovered}
+                onFocus={(position) => {
+                  setActiveCell(position)
+                  setHovered(position)
+                }}
+                onClick={(position) => {
+                  if (!animating) onCellClick(position)
+                }}
+                rejecting={rejection?.position.row === row && rejection?.position.col === col}
+                justPlaced={
+                  lastPlaced?.position.row === row && lastPlaced?.position.col === col
+                    ? lastPlaced.key
+                    : 0
+                }
+                tabIndex={activeCell.row === row && activeCell.col === col ? 0 : -1}
+              />
+            )
+          }),
+        )}
       </div>
     </div>
   )

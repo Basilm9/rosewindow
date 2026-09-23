@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { createGameConfig, PROVISIONAL_TIERS } from '../../src/engine/config'
 
 describe('createGameConfig', () => {
+  it.each([
+    [Number.NaN, 0],
+    [Number.POSITIVE_INFINITY, 0],
+    [-1, 4294967295],
+    [3.8, 3],
+    [4294967299, 3],
+  ])('normalizes seed %s to the actual RNG seed %s', (seed, expected) => {
+    expect(createGameConfig(seed).seed).toBe(expected)
+  })
+
   it('applies the pitch defaults (§2, §4, §5)', () => {
     const config = createGameConfig(7)
     expect(config).toMatchObject({

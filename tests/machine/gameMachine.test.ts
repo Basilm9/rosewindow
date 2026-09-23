@@ -69,6 +69,65 @@ describe('gameMachine — setup', () => {
 })
 
 describe('gameMachine — selection and placement', () => {
+  it('does not forfeit after selecting the only remaining playable die', () => {
+    const { game, actor } = makeActor()
+    actor.send({ type: 'CHOOSE_PATTERN', id: PATTERN })
+    const pair = bestPair(game)!
+    game.draftPool.clear()
+    game.draftPool.putBack([pair.die])
+    actor.send({ type: 'SELECT_DIE', die: pair.die })
+    expect(statePath(actor.getSnapshot())).toBe('round.place')
+    expect(game.round).toBe(1)
+    expect(game.hand).toEqual(pair.die)
+  })
+
+  it('resumes a model that already has a selected die in the place state', () => {
+    const game = new Game(createGameConfig(SEED))
+    game.choosePattern(PATTERN)
+    const pair = bestPair(game)!
+    game.selectDie(pair.die)
+    const actor = createActor(gameMachine, { input: { game } }).start()
+    expect(statePath(actor.getSnapshot())).toBe('round.place')
+    actor.send({ type: 'PLACE_DIE', position: pair.target })
+    expect(game.window!.placedCount).toBe(1)
+    expect(actor.getSnapshot().context.heldDie).toBeNull()
+  })
+
+  it.each([
+    { row: -1, col: 0 },
+    { row: 4, col: 0 },
+    { row: 0.5, col: 0 },
+    { row: Number.NaN, col: 0 },
+  ])('rejects malformed coordinates %j without stopping the actor', (position) => {
+    const { game, actor } = makeActor()
+    actor.send({ type: 'CHOOSE_PATTERN', id: PATTERN })
+    const pair = bestPair(game)!
+    actor.send({ type: 'SELECT_DIE', die: pair.die })
+    actor.send({ type: 'PLACE_DIE', position })
+    expect(actor.getSnapshot().status).toBe('active')
+    expect(actor.getSnapshot().context.lastError).toBe('target is outside the grid')
+    expect(game.hand).toEqual(pair.die)
+    actor.send({ type: 'PLACE_DIE', position: pair.target })
+    expect(game.window!.placedCount).toBe(1)
+    expect(actor.getSnapshot().context.heldDie).toBeNull()
+  })
+
+  it('allows one refresh and cancellation using phase-gated controls', () => {
+    const { game, actor } = makeActor()
+    expect(actor.getSnapshot().can({ type: 'REFRESH_DRAFT' })).toBe(false)
+    actor.send({ type: 'CHOOSE_PATTERN', id: PATTERN })
+    expect(actor.getSnapshot().can({ type: 'REFRESH_DRAFT' })).toBe(true)
+    actor.send({ type: 'SELECT_DIE', die: game.draftPool.dice[0]! })
+    expect(actor.getSnapshot().can({ type: 'CANCEL_SELECTION' })).toBe(true)
+    actor.send({ type: 'CANCEL_SELECTION' })
+    expect(statePath(actor.getSnapshot())).toBe('round.draft')
+    expect(actor.getSnapshot().context.heldDie).toBeNull()
+    expect(actor.getSnapshot().can({ type: 'CANCEL_SELECTION' })).toBe(false)
+    actor.send({ type: 'REFRESH_DRAFT' })
+    expect(game.refreshesRemaining).toBe(0)
+    expect(actor.getSnapshot().can({ type: 'REFRESH_DRAFT' })).toBe(false)
+  })
+
   it('moves draft -> place on SELECT_DIE and back to draft after a legal placement', () => {
     const { game, actor } = makeActor()
     actor.send({ type: 'CHOOSE_PATTERN', id: PATTERN })
