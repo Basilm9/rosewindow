@@ -1,5 +1,5 @@
 import { assign, enqueueActions, setup } from 'xstate'
-import { findPlacementViolation } from '../engine/placementValidator'
+import { findPlacementViolation, isInsideGrid } from '../engine/placementValidator'
 import type { Game } from '../engine/game'
 import type { ScoreReport } from '../engine/scoreCalculator'
 import type { PlacementViolation } from '../engine/errors'
@@ -42,6 +42,8 @@ export type GameMachineEvent =
   | { readonly type: 'CHOOSE_PATTERN'; readonly id: string }
   | { readonly type: 'SELECT_DIE'; readonly die: Die }
   | { readonly type: 'PLACE_DIE'; readonly position: Position }
+  | { readonly type: 'CANCEL_SELECTION' }
+  | { readonly type: 'REFRESH_DRAFT' }
   | { readonly type: 'BEAM_ANIMATION_DONE' }
   | { readonly type: 'DIE_PLACED' }
   | { readonly type: 'ROUND_COMPLETED' }
@@ -51,6 +53,7 @@ function rejectionAt(game: Game, position: Position): {
   violation: PlacementViolation
 } | null {
   if (game.phase !== 'place') return null
+  if (!isInsideGrid(position, game.window!.gridSize)) return null
   const hand = game.hand
   if (hand === null) return null
   const violation = findPlacementViolation({
@@ -66,6 +69,7 @@ function rejectionAt(game: Game, position: Position): {
 function rejectionText(game: Game, position: Position): string {
   if (game.phase !== 'place') return `cannot place during phase "${game.phase}"`
   if (game.hand === null) return 'no die is in hand'
+  if (!isInsideGrid(position, game.window!.gridSize)) return 'target is outside the grid'
   return rejectionAt(game, position)?.violation.kind ?? 'unknown rejection'
 }
 
@@ -88,6 +92,7 @@ export const gameMachine = setup({
       ),
     placementLegal: ({ context, event }) => {
       if (context.game.phase !== 'place' || event.type !== 'PLACE_DIE') return false
+      if (!isInsideGrid(event.position, context.game.window!.gridSize)) return false
       const hand = context.game.hand
       if (hand === null) return false
       return (
@@ -101,6 +106,10 @@ export const gameMachine = setup({
       )
     },
     isGameOver: ({ context }) => context.game.phase === 'gameOver',
+    isHoldingDie: ({ context }) => context.game.phase === 'place' && context.game.hand !== null,
+    refreshAvailable: ({ context }) =>
+      (context.game.phase === 'draft' || context.game.phase === 'place') &&
+      context.game.refreshesRemaining > 0,
     skipAnimations: ({ context }) => context.skipAnimations,
     /** A pre-advanced game (dev demo mode) boots past the setup screen. */
     gameAlreadyInRound: ({ context }) => context.game.phase !== 'patternSelection',
@@ -113,7 +122,15 @@ export const gameMachine = setup({
     /** Deadlock escape: refresh without placements; the beam still illuminates. */
     forfeitRound: assign(({ context }) => {
       context.game.forfeitRound()
-      return { heldDie: null }
+      return { heldDie: null, lastError: null, lastRejection: null }
+    }),
+    refreshDraft: assign(({ context }) => {
+      context.game.refreshDraft()
+      return { heldDie: null, lastError: null, lastRejection: null }
+    }),
+    cancelSelection: assign(({ context }) => {
+      context.game.cancelSelection()
+      return { heldDie: null, lastError: null, lastRejection: null }
     }),
     choosePattern: ({ context, event }) => {
       if (event.type === 'CHOOSE_PATTERN') context.game.choosePattern(event.id)
@@ -121,7 +138,7 @@ export const gameMachine = setup({
     /** Mutates the model and mirrors the held die into context so React sees it. */
     selectDie: assign(({ context, event }) => {
       if (event.type === 'SELECT_DIE') context.game.selectDie(event.die)
-      return { heldDie: context.game.hand, lastError: null }
+      return { heldDie: context.game.hand, lastError: null, lastRejection: null }
     }),
     /** Mutates only after `placementLegal`; routes via raised events. */
     performPlacement: enqueueActions(({ context, event, enqueue }) => {
@@ -130,7 +147,7 @@ export const gameMachine = setup({
       context.game.placeDie(event.position)
       const roundCompleted =
         context.game.phase === 'gameOver' || context.game.round !== roundBefore
-      enqueue.assign({ lastError: null, lastRejection: null })
+      enqueue.assign({ heldDie: null, lastError: null, lastRejection: null })
       enqueue.raise({ type: roundCompleted ? 'ROUND_COMPLETED' : 'DIE_PLACED' })
     }),
     storeReport: assign({
@@ -153,6 +170,7 @@ export const gameMachine = setup({
       /** Boots in sync with the model: a pre-advanced game (dev demo mode) skips setup. */
       always: [
         { guard: 'isGameOver', target: '#game.finalScoring' },
+        { guard: 'isHoldingDie', target: '#game.round.place' },
         { guard: 'gameAlreadyInRound', target: 'round' },
       ],
       on: {
@@ -168,6 +186,7 @@ export const gameMachine = setup({
         draft: {
           always: [{ guard: 'noLegalMoves', target: 'illuminate', actions: 'forfeitRound' }],
           on: {
+            REFRESH_DRAFT: { guard: 'refreshAvailable', target: 'draft', reenter: true, actions: 'refreshDraft' },
             SELECT_DIE: [
               { guard: 'selectLegal', target: 'place', actions: 'selectDie' },
               { actions: assign({ lastError: 'die not in pool or wrong phase' }) },
@@ -177,6 +196,8 @@ export const gameMachine = setup({
         place: {
           always: [{ guard: 'noLegalMoves', target: 'illuminate', actions: 'forfeitRound' }],
           on: {
+            REFRESH_DRAFT: { guard: 'refreshAvailable', target: 'draft', actions: 'refreshDraft' },
+            CANCEL_SELECTION: { guard: 'isHoldingDie', target: 'draft', actions: 'cancelSelection' },
             PLACE_DIE: [
               { guard: 'placementLegal', actions: 'performPlacement' },
               {

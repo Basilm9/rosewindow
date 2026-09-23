@@ -50,12 +50,24 @@ export function isOnBorderRing(position: Position, size: number): boolean {
   )
 }
 
+/** Whether both coordinates are integer cell indexes inside a square grid. */
+export function isInsideGrid(position: Position, size: number): boolean {
+  return (
+    Number.isInteger(position.row) &&
+    Number.isInteger(position.col) &&
+    position.row >= 0 &&
+    position.row < size &&
+    position.col >= 0 &&
+    position.col < size
+  )
+}
+
 /** Returns the first rule violation for this placement, or null if it is legal. */
 export function findPlacementViolation(check: PlacementCheck): PlacementViolation | null {
   const { grid, constraints, pool, die, target } = check
   const size = grid.length
 
-  if (target.row < 0 || target.row >= size || target.col < 0 || target.col >= size) {
+  if (!isInsideGrid(target, size)) {
     throw new Error(`target ${JSON.stringify(target)} is outside the grid`)
   }
 

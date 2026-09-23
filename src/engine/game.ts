@@ -10,7 +10,7 @@ import { mulberry32 } from './rng'
 import { offerPatterns } from './patterns'
 import { sample } from './sample'
 import { traceBeam } from './beamTracer'
-import { allEntryPoints } from './types'
+import { allEntryPoints, sameDie } from './types'
 import { dealObjectives } from './objectives'
 import type { DealtObjectives } from './objectives'
 import { calculateScore } from './scoreCalculator'
@@ -42,6 +42,7 @@ export class Game {
   #draftPool = new DraftPool([])
   #hand: Die | null = null
   #placementsThisRound = 0
+  #refreshesRemaining = 1
   #roundScores: number[] = []
   #totalScore = 0
   #report: ScoreReport | null = null
@@ -84,6 +85,16 @@ export class Game {
 
   get hand(): Die | null {
     return this.#hand
+  }
+
+  /** One optional seeded recast is available each run. */
+  get refreshesRemaining(): number {
+    return this.#refreshesRemaining
+  }
+
+  /** Placements left before the current round illuminates. */
+  get placementsRemaining(): number {
+    return this.config.placementsPerRound - this.#placementsThisRound
   }
 
   /** The entry point announced for the current round. */
@@ -132,12 +143,40 @@ export class Game {
     if (this.#phase !== 'draft' && this.#phase !== 'place') {
       throw new GameError({ kind: 'invalidPhase' })
     }
+    // Take first so a rejected selection cannot discard or reorder the hand.
+    const selected = this.#draftPool.take(die)
     if (this.#hand !== null) {
       this.#draftPool.putBack([this.#hand])
-      this.#hand = null
     }
-    this.#hand = this.#draftPool.take(die)
+    this.#hand = selected
     this.#phase = 'place'
+  }
+
+  /** Returns the selected die to the visible pool without consuming a turn. */
+  cancelSelection(): void {
+    this.#requirePhase('place')
+    if (this.#hand !== null) this.#draftPool.putBack([this.#hand])
+    this.#hand = null
+    this.#phase = 'draft'
+  }
+
+  /**
+   * Recasts the unplaced draft once per run, using the same seeded bag order.
+   * The held die returns too. A partial round keeps its placements and draws
+   * only its existing number of unplaced dice; this never adds turns or score.
+   */
+  refreshDraft(): void {
+    if (this.#phase !== 'draft' && this.#phase !== 'place') {
+      throw new GameError({ kind: 'invalidPhase' })
+    }
+    if (this.#refreshesRemaining === 0) throw new GameError({ kind: 'refreshSpent' })
+    const unplaced = [...this.#draftPool.dice, ...(this.#hand === null ? [] : [this.#hand])]
+    this.#bag.return(unplaced)
+    this.#draftPool = new DraftPool(this.#bag.draw(unplaced.length))
+    this.#hand = null
+    this.#refreshesRemaining -= 1
+    this.#phase = 'draft'
+    this.#emit({ kind: 'draftPoolRefreshed', dice: this.#draftPool.dice })
   }
 
   /**
@@ -189,6 +228,7 @@ export class Game {
     if (this.#phase !== 'draft' && this.#phase !== 'place') {
       throw new GameError({ kind: 'invalidPhase' })
     }
+    if (this.hasLegalMove()) throw new GameError({ kind: 'legalMovesRemain' })
     if (this.#hand !== null) {
       this.#draftPool.putBack([this.#hand])
       this.#hand = null
@@ -200,29 +240,31 @@ export class Game {
     this.#illuminateAndAdvance()
   }
 
-  /** True when at least one visible die has at least one legal placement. */
-  hasLegalMove(): boolean {
+  /** All legal cells for an available or held die; empty outside active gameplay. */
+  legalPlacementsFor(die: Die): readonly Position[] {
     const window = this.#window
-    if (window === null) return false
-    for (const die of this.#draftPool.dice) {
-      for (let row = 0; row < window.gridSize; row++) {
-        for (let col = 0; col < window.gridSize; col++) {
-          const target: Position = { row, col }
-          if (
-            findPlacementViolation({
-              grid: window.dice,
-              constraints: window.constraints,
-              pool: [die],
-              die,
-              target,
-            }) === null
-          ) {
-            return true
-          }
+    if (window === null || (this.#phase !== 'draft' && this.#phase !== 'place')) return []
+    const available = [...this.#draftPool.dice, ...(this.#hand === null ? [] : [this.#hand])]
+    if (!available.some((candidate) => sameDie(candidate, die))) return []
+    const positions: Position[] = []
+    const grid = window.dice
+    for (let row = 0; row < window.gridSize; row++) {
+      for (let col = 0; col < window.gridSize; col++) {
+        const target: Position = { row, col }
+        if (
+          findPlacementViolation({ grid, constraints: window.constraints, pool: [die], die, target }) === null
+        ) {
+          positions.push(target)
         }
       }
     }
-    return false
+    return positions
+  }
+
+  /** True if any visible OR held die fits; selecting the last legal die cannot forfeit it. */
+  hasLegalMove(): boolean {
+    const available = [...this.#draftPool.dice, ...(this.#hand === null ? [] : [this.#hand])]
+    return available.some((die) => this.legalPlacementsFor(die).length > 0)
   }
 
   #beginRoundDraft(): void {

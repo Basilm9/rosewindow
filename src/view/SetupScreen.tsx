@@ -1,74 +1,114 @@
 import type { Game } from '../engine/game'
 import type { CellConstraint } from '../engine/types'
-import { DIE_STYLES } from './palette'
+import { sfx } from '../dev/sfx'
+import { Icon } from './Icon'
 
 function MiniCell({ constraint }: { constraint: CellConstraint }) {
   if (constraint.kind === 'color') {
-    const style = DIE_STYLES[constraint.color]
-    return (
-      <span
-        className={`h-full w-full rounded-full ${style.fill} ${style.ring} ring-1`}
-        title={`demands ${constraint.color}`}
-      />
-    )
+    return <span className={`mini-cell glass-${constraint.color}`} title={`needs ${constraint.color}`} />
   }
   if (constraint.kind === 'value') {
     return (
-      <span
-        className="flex h-full w-full items-center justify-center rounded-md bg-neutral-700 text-[9px] font-semibold text-neutral-200"
-        title={`demands value ${constraint.value}`}
-      >
+      <span className="mini-cell mini-cell--value" title={`needs a ${constraint.value}`}>
         {constraint.value}
       </span>
     )
   }
-  return <span className="h-full w-full rounded-md bg-neutral-800 ring-1 ring-neutral-900" />
+  return <span className="mini-cell" title="anything goes" />
 }
 
-function SetupScreen({ game, onChoose }: { game: Game; onChoose: (id: string) => void }) {
+/** How demanding a pattern is: count of printed cells, shown as 1–3 gems. */
+function difficulty(constraints: readonly (readonly CellConstraint[])[]): number {
+  const printed = constraints.flat().filter((c) => c.kind !== 'open').length
+  return printed <= 5 ? 1 : printed <= 9 ? 2 : 3
+}
+
+function SetupScreen({
+  game,
+  onChoose,
+  patternId,
+  mode = 'free',
+  level,
+  best,
+  targetScore,
+}: {
+  game: Game
+  onChoose: (id: string) => void
+  patternId?: string
+  mode?: 'free' | 'daily' | 'challenge'
+  level: number
+  best: number
+  targetScore?: number
+}) {
+  const patterns =
+    patternId === undefined
+      ? game.offeredPatterns
+      : game.offeredPatterns.filter((pattern) => pattern.id === patternId)
+  const locked = patternId !== undefined
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-[radial-gradient(ellipse_at_top,#2b2836_0%,#161519_70%)] p-5 sm:p-8">
-      <header className="text-center">
-        <h1 className="bg-gradient-to-b from-amber-100 to-amber-300 bg-clip-text font-serif text-4xl tracking-wide text-transparent sm:text-5xl">
-          Rose Window
-        </h1>
-        <p className="mt-3 text-sm text-neutral-400">Choose your window pattern</p>
-      </header>
+    <main className="pick">
+      <div className="pick__title">
+        <p className="pick__logo">Rose Window</p>
+        <div className="pick__chips">
+          <span className="chip">
+            <Icon name="spark" size={14} /> Level {level}
+          </span>
+          {best > 0 && (
+            <span className="chip">
+              <Icon name="trophy" size={14} /> Best {best}
+            </span>
+          )}
+          {mode === 'daily' && (
+            <span className="chip chip--gold">
+              <Icon name="calendar" size={14} /> Daily window
+            </span>
+          )}
+          {targetScore !== undefined && (
+            <span className="chip chip--gold">
+              <Icon name="trophy" size={14} /> Beat {targetScore}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <h2 className="pick__prompt">{locked ? 'Your window' : 'Pick a window'}</h2>
       <div
-        className="grid w-full max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2"
+        className={`pick__cards${patterns.length === 1 ? ' pick__cards--single' : ''}`}
         data-testid="patterns-offered"
       >
-        {game.offeredPatterns.map((pattern) => (
-          <button
-            key={pattern.id}
-            type="button"
-            data-testid={`pattern-${pattern.id}`}
-            aria-label={`choose pattern ${pattern.name}`}
-            onClick={() => onChoose(pattern.id)}
-            className="group rounded-3xl bg-neutral-900/80 p-6 text-left ring-1 ring-neutral-800 backdrop-blur-sm transition duration-200 hover:-translate-y-1 hover:ring-amber-500/70"
-          >
-            <p className="font-serif text-2xl text-amber-100">{pattern.name}</p>
-            <p className="mt-1 min-h-10 text-sm leading-relaxed text-neutral-400">
-              {pattern.description}
-            </p>
-            <div
-              className="mx-auto mt-5 grid aspect-square w-44 grid-cols-4 grid-rows-4 gap-[6%] rounded-xl bg-neutral-950 p-[6%] ring-1 ring-neutral-800 transition group-hover:ring-neutral-700"
-              aria-label={`${pattern.name} constraint layout`}
+        {patterns.map((pattern, i) => {
+          const level = difficulty(pattern.constraints)
+          return (
+            <button
+              key={pattern.id}
+              type="button"
+              data-testid={`pattern-${pattern.id}`}
+              aria-label={`choose pattern ${pattern.name}`}
+              onClick={() => {
+                sfx.place()
+                onChoose(pattern.id)
+              }}
+              className="pick-card"
+              style={{ animationDelay: `${120 + i * 110}ms` }}
             >
-              {pattern.constraints.flatMap((row, r) =>
-                row.map((constraint, c) => (
-                  <span key={`${r}-${c}`} className="flex items-center justify-center">
-                    <MiniCell constraint={constraint} />
-                  </span>
-                )),
-              )}
-            </div>
-          </button>
-        ))}
+              <span className="pick-card__grid" aria-label={`${pattern.name} layout`}>
+                {pattern.constraints.flatMap((row, r) =>
+                  row.map((constraint, c) => <MiniCell key={`${r}-${c}`} constraint={constraint} />),
+                )}
+              </span>
+              <span className="pick-card__name">{pattern.name}</span>
+              <span className="pick-card__gems" aria-label={`difficulty ${level} of 3`}>
+                {[1, 2, 3].map((n) => (
+                  <Icon key={n} name="gem" size={15} className={n <= level ? 'on' : ''} />
+                ))}
+              </span>
+              <span className="pick-card__desc">{pattern.description}</span>
+            </button>
+          )
+        })}
       </div>
-      <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600">
-        seed {game.config.seed}
-      </p>
+      <p className="pick__seed">Window #{game.config.seed}</p>
     </main>
   )
 }

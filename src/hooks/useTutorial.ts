@@ -15,30 +15,30 @@ export interface TutorialStep {
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     title: 'Welcome, glazier',
-    body: 'Fill the 4×4 window with dice, then a beam of light scores every pane it passes through. Pick one of the two window patterns to begin.',
+    body: 'Fill the window with glass dice, then bend a beam of light through them for points. Pick a window to begin.',
     requires: 'pattern',
   },
   {
     title: 'Draft a die',
-    body: 'Five dice are drawn from the bag each round. Click any die in the hand below to pick it up.',
+    body: 'Tap any die in your tray to lift it.',
     requires: 'draft',
   },
   {
     title: 'Place it',
-    body: 'Hover the window: panes breathe green where the die may go, red where the law forbids it. Click a glowing pane to set the glass.',
+    body: 'Glowing panes can take it. Your first die goes on the outer edge. Tap one.',
     requires: 'placed1',
   },
   {
     title: 'The beam',
-    body: 'After 2 placements the beam enters from the marked edge and walks the window, scoring every die: value × multiplier. Warm glass (red, yellow) bends it clockwise; cool glass (blue, green) counter-clockwise; purple passes straight.',
+    body: 'After 2 dice, light enters at the sun. Red and yellow turn it right, blue and green turn it left, purple lets it pass straight. Every die it passes scores.',
   },
   {
     title: 'Lockout & multiplier',
-    body: 'A bend of value V locks the beam straight for V−1 panes — a 1 bends again instantly, a 6 commits to a long run. Every bend raises the multiplier by 1, capped at ×5.',
+    body: 'Each turn raises the multiplier, up to ×5. After a turn on a die showing N, the light goes straight for N−1 panes.',
   },
   {
     title: 'Objectives & the end',
-    body: 'Three public objectives and your private color goal score when the window is full after round 8. If no die fits anywhere, the round is forfeited — the beam still fires, so plan ahead.',
+    body: 'The four goals under the score pay out after round 8. Dice side by side can’t share a color or number, so plan ahead.',
     cta: 'Start building',
   },
 ]
@@ -57,18 +57,27 @@ export interface Tutorial {
  * flag unset), can be forced with `?tutorial=1`, and never shows again once
  * skipped or finished.
  */
-export function useTutorial(game: Game, path: string): Tutorial {
+export function useTutorial(game: Game, path: string, enabled?: boolean): Tutorial {
   const [active, setActive] = useState(() => {
+    if (enabled !== undefined) return enabled
     const params = new URLSearchParams(window.location.search)
     if (params.get('tutorial') === '1') return true
     const organic = !params.has('seed') && !params.has('round') && !params.has('tutorial')
-    return organic && localStorage.getItem(STORAGE_KEY) !== 'done'
+    try {
+      return organic && localStorage.getItem(STORAGE_KEY) !== 'done'
+    } catch {
+      return organic
+    }
   })
   const [step, setStep] = useState(0)
   const placedSeen = useRef(false)
 
   const finish = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, 'done')
+    try {
+      localStorage.setItem(STORAGE_KEY, 'done')
+    } catch {
+      /* Tutorial works without storage. */
+    }
     setActive(false)
   }, [])
 

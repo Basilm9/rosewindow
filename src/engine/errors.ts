@@ -13,8 +13,8 @@ export type PlacementViolation =
   | { readonly kind: 'illegalFirstPlacement' }
   | { readonly kind: 'disconnectedPlacement' }
 
-/** All game rejections: the placement family plus the orchestration-level two. */
-export type GameViolation = PlacementViolation | { readonly kind: 'emptyBag' | 'invalidPhase' }
+/** All game rejections: placement laws, phase/draw guards, and the once-per-run refresh. */
+export type GameViolation = PlacementViolation | { readonly kind: 'emptyBag' | 'invalidPhase' | 'refreshSpent' | 'legalMovesRemain' }
 
 function describe(violation: GameViolation): string {
   switch (violation.kind) {
@@ -34,6 +34,10 @@ function describe(violation: GameViolation): string {
       return 'the bag cannot satisfy the draw request'
     case 'invalidPhase':
       return 'operation not permitted in the current game phase'
+    case 'refreshSpent':
+      return 'the draft refresh has already been used this run'
+    case 'legalMovesRemain':
+      return 'a legal move remains in this draft'
   }
 }
 

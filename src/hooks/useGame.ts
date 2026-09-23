@@ -4,10 +4,15 @@ import { Game } from '../engine/game'
 import { findPlacementViolation } from '../engine/placementValidator'
 import type { PlacementViolation } from '../engine/errors'
 import type { BeamPath, BeamSegment } from '../engine/beamTracer'
+import { traceBeam } from '../engine/beamTracer'
+import { calculateScore } from '../engine/scoreCalculator'
+import type { ScoreLine } from '../engine/scoreCalculator'
 import type { Position } from '../engine/types'
 import { gameMachine } from '../machine/gameMachine'
 import { fastForward } from '../dev/autoPlayer'
 import { sfx } from '../dev/sfx'
+import { replaySession, saveSession } from './runSession'
+import type { RunSession } from './runSession'
 
 type UseMachineResult = ReturnType<typeof useGameActor>
 
@@ -37,7 +42,13 @@ export interface UseGameResult {
   /** The machine's illuminate gate calls this when the beam animation finishes. */
   onBeamDone: () => void
   /** Fires per struck die during the beam animation (lights the glass). */
-  onBeamStrike: (segment: BeamSegment) => void
+  onBeamStrike: (segment: BeamSegment, index: number, multiplier: number) => void
+  /** Running tally of the beam currently animating: points so far and the live multiplier. */
+  beamRun: { points: number; multiplier: number; strikes: number }
+  /** The round the beam just finished scoring, shown as a celebration burst. */
+  roundBurst: { round: number; delta: number; key: number } | null
+  /** Objective points the window would earn right now (engine scorer, presentation only). */
+  objectiveLines: readonly ScoreLine[]
 }
 
 function useGameActor(game: Game, skipAnimations: boolean) {
@@ -55,12 +66,22 @@ export function cellKey(position: Position): string {
  * fast-forwards with the dev auto-player so any board state is reproducible —
  * the property that makes screenshots deterministic for agents and humans.
  */
-export function useGame(): UseGameResult {
+export function useGame(session?: RunSession): UseGameResult {
   const params = useMemo(() => new URLSearchParams(window.location.search), [])
-  const seed = Number(params.get('seed') ?? '3')
-  const targetRound = Math.min(9, Math.max(1, Number(params.get('round') ?? '1')))
+  const rawSeed = session?.seed ?? Number(params.get('seed') ?? '3')
+  const seed = Number.isFinite(rawSeed) ? Math.trunc(rawSeed) >>> 0 : 3
+  const rawRound = session?.targetRound ?? Number(params.get('round') ?? '1')
+  const targetRound = Number.isFinite(rawRound) ? Math.min(9, Math.max(1, Math.trunc(rawRound))) : 1
 
-  const game = useMemo(() => fastForward(seed, targetRound), [seed, targetRound])
+  const initialActions = useRef(session?.actions ?? [])
+  const actions = useRef([...initialActions.current])
+  const game = useMemo(
+    () =>
+      initialActions.current.length > 0
+        ? replaySession(seed, initialActions.current)
+        : fastForward(seed, targetRound),
+    [seed, targetRound],
+  )
 
   const [eventCount, setEventCount] = useState(0)
   const [rejection, setRejection] = useState<UseGameResult['rejection']>(null)
@@ -70,13 +91,51 @@ export function useGame(): UseGameResult {
   const [lastLit, setLastLit] = useState<UseGameResult['lastLit']>(null)
   const [shakeKey, setShakeKey] = useState(0)
   const [forfeitNotice, setForfeitNotice] = useState<number | null>(null)
+  const [beamRun, setBeamRun] = useState<UseGameResult['beamRun']>({
+    points: 0,
+    multiplier: 1,
+    strikes: 0,
+  })
+  const [roundBurst, setRoundBurst] = useState<UseGameResult['roundBurst']>(null)
+  const pendingRound = useRef<{ round: number; delta: number } | null>(null)
   const flashKey = useRef(0)
   const beamKey = useRef(0)
 
-  const [snapshot, send] = useGameActor(game, false)
+  const [snapshot, actorSend, actorRef] = useGameActor(game, false)
+  const send: UseMachineResult[1] = useCallback(
+    (event) => {
+      if (!actorRef.getSnapshot().can(event)) return
+      actorSend(event)
+      if (
+        session &&
+        targetRound === 1 &&
+        ['CHOOSE_PATTERN', 'SELECT_DIE', 'PLACE_DIE', 'REFRESH_DRAFT', 'CANCEL_SELECTION'].includes(
+          event.type,
+        )
+      ) {
+        actions.current.push(event)
+        saveSession({ ...session, actions: actions.current })
+      }
+    },
+    [actorSend, actorRef, session, targetRound],
+  )
 
   const path = statePath(snapshot)
   const animating = path === 'round.illuminate'
+
+  // A resumed/pre-advanced blocked draft can illuminate during actor startup,
+  // before React installs the event subscription. Recover that exact beam from
+  // the immutable entry sequence and unchanged board so the animation gate can finish.
+  useEffect(() => {
+    if (!animating || beam !== null || game.window === null) return
+    const entry = game.entrySequence[game.roundScores.length - 1]
+    if (!entry) return
+    beamKey.current += 1
+    setBeam({
+      path: traceBeam(game.window.dice, entry, game.config.multiplierCap),
+      key: beamKey.current,
+    })
+  }, [animating, beam, game])
 
   // The machine guards illegal placements before the engine sees them, so its
   // context is the authoritative rejection source for the view.
@@ -113,27 +172,37 @@ export function useGame(): UseGameResult {
         case 'beamTraced':
           beamKey.current += 1
           setBeam({ path: event.path, key: beamKey.current })
+          setBeamRun({ points: 0, multiplier: 1, strikes: 0 })
           break
         case 'roundForfeited':
           setForfeitNotice(event.round)
           break
         case 'roundScored':
-          sfx.roundScored(event.delta)
-          if (event.delta >= 15) setShakeKey((k) => k + 1)
-          break
-        case 'gameOver':
-          sfx.roundScored(99)
+          pendingRound.current = { round: event.round, delta: event.delta }
           break
       }
     })
   }, [game])
 
   const onBeamDone = useCallback(() => {
+    const scored = pendingRound.current
+    if (scored !== null) {
+      pendingRound.current = null
+      flashKey.current += 1
+      setRoundBurst({ ...scored, key: flashKey.current })
+      sfx.roundScored(scored.delta)
+      if (scored.delta >= 25) setShakeKey((k) => k + 1)
+    }
     send({ type: 'BEAM_ANIMATION_DONE' })
   }, [send])
 
-  const onBeamStrike = useCallback((segment: BeamSegment) => {
+  const onBeamStrike = useCallback((segment: BeamSegment, _index: number, multiplier: number) => {
     if (segment.die !== null) {
+      setBeamRun((run) => ({
+        points: run.points + segment.points,
+        multiplier,
+        strikes: run.strikes + 1,
+      }))
       setLitCells((prev) => {
         const next = new Set(prev)
         next.add(cellKey(segment.position))
@@ -173,6 +242,16 @@ export function useGame(): UseGameResult {
     }
   }
 
+  const objectiveLines =
+    game.window === null
+      ? []
+      : calculateScore({
+          grid: game.window.dice,
+          objectives: game.objectives,
+          beamTotal: 0,
+          tiers: game.config.tiers,
+        }).lines
+
   return {
     game,
     snapshot,
@@ -190,6 +269,9 @@ export function useGame(): UseGameResult {
     animating,
     onBeamDone,
     onBeamStrike,
+    beamRun,
+    roundBurst,
+    objectiveLines,
   }
 }
 
