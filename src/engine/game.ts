@@ -5,15 +5,15 @@ import { GameError } from './errors'
 import type { PlacementError, PlacementViolation } from './errors'
 import type { GameEvent, GameListener } from './events'
 import { GlassWindow } from './glassWindow'
-import { assertPlacementValid, findPlacementViolation } from './placementValidator'
-import { mulberry32 } from './rng'
+import { PlacementValidator } from './placementValidator'
+import { SeededRandom } from './rng'
 import { offerPatterns } from './patterns'
 import { sample } from './sample'
-import { traceBeam } from './beamTracer'
+import { BeamTracer } from './beamTracer'
 import { allEntryPoints, sameDie } from './types'
 import { dealObjectives } from './objectives'
 import type { DealtObjectives } from './objectives'
-import { calculateScore } from './scoreCalculator'
+import { ScoreCalculator } from './scoreCalculator'
 import type { ScoreReport } from './scoreCalculator'
 import type { Die, EntryPoint, Position, WindowPattern } from './types'
 
@@ -23,7 +23,7 @@ export type GamePhase = 'patternSelection' | 'draft' | 'place' | 'gameOver'
 /**
  * The model's public API (pitch §8.2 `Game`): round clock, phase orchestration,
  * and the semantic event stream. Every rule is delegated to the pure engine
- * functions; this class only sequences them. Playable with no view attached.
+ * services; this class only sequences them. Playable with no view attached.
  *
  * Round flow (pitch §4): draw `draftSize` dice -> select one -> place -> repeat
  * until `placementsPerRound` are placed -> refresh (unselected dice return) ->
@@ -48,10 +48,15 @@ export class Game {
   #report: ScoreReport | null = null
   #bag: DiceBag
   #listeners = new Set<GameListener>()
+  readonly #validator = new PlacementValidator()
+  readonly #beamTracer: BeamTracer
+  readonly #scoreCalculator: ScoreCalculator
 
   constructor(config: GameConfig) {
     this.config = config
-    const rng = mulberry32(config.seed)
+    const rng = new SeededRandom(config.seed).next
+    this.#beamTracer = new BeamTracer(config.multiplierCap)
+    this.#scoreCalculator = new ScoreCalculator(config.tiers)
     this.#bag = new DiceBag(config, rng)
     this.offeredPatterns = offerPatterns(rng)
     this.objectives = dealObjectives(rng)
@@ -188,7 +193,7 @@ export class Game {
     const die = this.#hand
     if (die === null) throw new GameError({ kind: 'invalidPhase' })
     try {
-      assertPlacementValid({
+      this.#validator.assertValid({
         grid: this.#window!.dice,
         constraints: this.#window!.constraints,
         pool: [die],
@@ -252,7 +257,13 @@ export class Game {
       for (let col = 0; col < window.gridSize; col++) {
         const target: Position = { row, col }
         if (
-          findPlacementViolation({ grid, constraints: window.constraints, pool: [die], die, target }) === null
+          this.#validator.findViolation({
+            grid,
+            constraints: window.constraints,
+            pool: [die],
+            die,
+            target,
+          }) === null
         ) {
           positions.push(target)
         }
@@ -283,7 +294,7 @@ export class Game {
 
   #illuminateAndAdvance(): void {
     // Illuminate: trace the beam from the announced entry and score the path.
-    const path = traceBeam(this.#window!.dice, this.currentEntry, this.config.multiplierCap)
+    const path = this.#beamTracer.trace(this.#window!.dice, this.currentEntry)
     this.#emit({ kind: 'beamTraced', path })
     this.#roundScores.push(path.totalScore)
     this.#totalScore += path.totalScore
@@ -291,11 +302,10 @@ export class Game {
 
     if (this.#round === this.config.rounds) {
       // Final scoring: objectives over the finished window + beam totals (pitch §4).
-      this.#report = calculateScore({
+      this.#report = this.#scoreCalculator.calculate({
         grid: this.#window!.dice,
         objectives: this.objectives,
         beamTotal: this.#totalScore,
-        tiers: this.config.tiers,
       })
       this.#phase = 'gameOver'
       this.#emit({ kind: 'gameOver', report: this.#report })

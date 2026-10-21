@@ -4,6 +4,13 @@
 **Decision date:** 2026-09-01
 **Working AI tools:** opencode + Claude Code
 
+**Assignment update (2026-10-21):** The project requires at least **15 distinct
+concrete classes**. This requirement replaces any earlier interpretation of a
+class budget; the approximately 15-module file budget still applies separately.
+The existing engine now implements 15 classes without adding engine modules.
+See [the implemented class structure](class-structure.md) for the inventory,
+verification command, and how the supplied co-author proposals relate to this change.
+
 ---
 
 ## 1. Executive summary
@@ -166,4 +173,4 @@ The pitch's sequencing wisdom is preserved: the game is fully playable and grade
 | Beam animation in CSS/SVG is less frame-precise than a game loop | It's a step-wise traversal (pitch §7 forbids frame loops anyway); requestAnimationFrame only inside BeamLayer if needed |
 | React re-render noise during animation | BeamLayer animates via CSS classes/SVG attributes, not React state per frame |
 | Two AI tools (opencode + Claude Code) drifting conventions | Single `AGENTS.md` symlinked as `CLAUDE.md`; both get identical context; both run the same verification commands |
-| Agents over-engineering | Class/package budget from pitch §15 restated in AGENTS.md; engine stays ~15 modules |
+| Agents over-engineering | Keep meaningful responsibilities and ~15 engine modules while satisfying the assignment's minimum of 15 concrete classes; enforce with `pnpm check:classes` |

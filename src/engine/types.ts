@@ -55,14 +55,23 @@ export function counterClockwise(direction: Direction): Direction {
 }
 
 /** An immutable colored die. Value is the printed face, 1–6. */
-export interface Die {
-  readonly color: DieColor
-  readonly value: number
+export class Die {
+  constructor(
+    readonly color: DieColor,
+    readonly value: number,
+  ) {
+    Object.freeze(this)
+  }
+
+  /** Value equality also accepts plain color/value data restored from a recording. */
+  static equals(a: Die, b: Die): boolean {
+    return a.color === b.color && a.value === b.value
+  }
 }
 
 /** Structural equality: same color and same value. */
 export function sameDie(a: Die, b: Die): boolean {
-  return a.color === b.color && a.value === b.value
+  return Die.equals(a, b)
 }
 
 /** The four orthogonal neighbor offsets — the adjacency law (pitch §2) uses only these. */
@@ -82,21 +91,61 @@ export const DIAGONAL_DELTAS: readonly Position[] = [
 ]
 
 /** The printed demand on a window cell: a required color, a required value, or nothing. */
-export type CellConstraint =
-  | { readonly kind: 'open' }
-  | { readonly kind: 'color'; readonly color: DieColor }
-  | { readonly kind: 'value'; readonly value: number }
+export type CellConstraint = OpenConstraint | ColorConstraint | ValueConstraint
 
+/** A pane without a printed demand; it accepts every die. */
+export class OpenConstraint {
+  readonly kind = 'open'
+
+  constructor() {
+    Object.freeze(this)
+  }
+
+  /** Open panes impose no color or value restriction. */
+  readonly accepts: (die: Die) => boolean = () => true
+}
+
+/** A printed color demand, independent of the die's value. */
+export class ColorConstraint {
+  readonly kind = 'color'
+
+  constructor(readonly color: DieColor) {
+    Object.freeze(this)
+  }
+
+  /** Whether this die matches the pane's printed color. */
+  accepts(die: Die): boolean {
+    return die.color === this.color
+  }
+}
+
+/** A printed value demand, independent of the die's color. */
+export class ValueConstraint {
+  readonly kind = 'value'
+
+  constructor(readonly value: number) {
+    Object.freeze(this)
+  }
+
+  /** Whether this die matches the pane's printed value. */
+  accepts(die: Die): boolean {
+    return die.value === this.value
+  }
+}
+
+/** Creates an immutable open-pane demand. */
 export function openConstraint(): CellConstraint {
-  return { kind: 'open' }
+  return new OpenConstraint()
 }
 
+/** Creates an immutable printed color demand. */
 export function colorConstraint(color: DieColor): CellConstraint {
-  return { kind: 'color', color }
+  return new ColorConstraint(color)
 }
 
+/** Creates an immutable printed value demand. */
 export function valueConstraint(value: number): CellConstraint {
-  return { kind: 'value', value }
+  return new ValueConstraint(value)
 }
 
 /** A named 4×4 arrangement of printed cell demands; two are offered per run. */

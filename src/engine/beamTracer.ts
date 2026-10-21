@@ -1,10 +1,6 @@
+import { DEFAULT_MULTIPLIER_CAP } from './config'
 import type { DieGrid } from './placementValidator'
-import {
-  DELTA_BY_DIRECTION,
-  REFRACTION_BY_COLOR,
-  clockwise,
-  counterClockwise,
-} from './types'
+import { DELTA_BY_DIRECTION, REFRACTION_BY_COLOR, clockwise, counterClockwise } from './types'
 import type { Die, Direction, EntryPoint, Position } from './types'
 
 /**
@@ -30,8 +26,8 @@ export interface BeamPath {
   readonly termination: 'exitedGrid' | 'cycle'
 }
 
-/** Multiplier ceiling from pitch §5; overridable for rule tuning experiments. */
-export const DEFAULT_MULTIPLIER_CAP = 5
+/** Compatibility export; the shared ceiling is defined in the run configuration. */
+export { DEFAULT_MULTIPLIER_CAP } from './config'
 
 /**
  * The beam tracer (pitch §5, §11) — pure and iterative. From a window grid and an
@@ -55,53 +51,67 @@ export const DEFAULT_MULTIPLIER_CAP = 5
  *
  * Bounded by grid area x 4 directions (each (cell, direction) pair at most once).
  */
+export class BeamTracer {
+  constructor(readonly multiplierCap: number = DEFAULT_MULTIPLIER_CAP) {}
+
+  /**
+   * Scores on entry before applying a bend; lockout lasts V−1 cells, including
+   * empty panes. A repeated (cell, incoming direction) ends traversal before
+   * that entry is recorded or scored. All traversal state belongs to this call.
+   */
+  trace(grid: DieGrid, entry: EntryPoint): BeamPath {
+    const size = grid.length
+    const dieAt = (p: Position): Die | null => grid[p.row]?.[p.col] ?? null
+    const pairKey = (p: Position, d: Direction): string => `${p.row}:${p.col}:${d}`
+
+    const segments: BeamSegment[] = []
+    let totalScore = 0
+    let multiplier = 1
+    let lockout = 0
+    let position = entry.position
+    let direction = entry.direction
+    const visited = new Set<string>([pairKey(position, direction)])
+    let termination: BeamPath['termination'] = 'exitedGrid'
+
+    for (;;) {
+      const die = dieAt(position)
+      const points = die === null ? 0 : die.value * multiplier
+      totalScore += points
+      segments.push({ position, direction, die, points })
+
+      const refraction = die === null ? 'straight' : REFRACTION_BY_COLOR[die.color]
+      if (die !== null && lockout === 0 && refraction !== 'straight') {
+        direction = refraction === 'clockwise' ? clockwise(direction) : counterClockwise(direction)
+        multiplier = Math.min(multiplier + 1, this.multiplierCap)
+        lockout = die.value - 1
+      } else if (lockout > 0) {
+        lockout -= 1
+      }
+
+      const delta = DELTA_BY_DIRECTION[direction]
+      const next: Position = { row: position.row + delta.row, col: position.col + delta.col }
+      if (next.row < 0 || next.row >= size || next.col < 0 || next.col >= size) {
+        termination = 'exitedGrid'
+        break
+      }
+      const nextKey = pairKey(next, direction)
+      if (visited.has(nextKey)) {
+        termination = 'cycle'
+        break
+      }
+      visited.add(nextKey)
+      position = next
+    }
+
+    return { segments, totalScore, termination }
+  }
+}
+
+/** Function API for callers that supply the multiplier ceiling per trace. */
 export function traceBeam(
   grid: DieGrid,
   entry: EntryPoint,
   multiplierCap: number = DEFAULT_MULTIPLIER_CAP,
 ): BeamPath {
-  const size = grid.length
-  const dieAt = (p: Position): Die | null => grid[p.row]?.[p.col] ?? null
-  const pairKey = (p: Position, d: Direction): string => `${p.row}:${p.col}:${d}`
-
-  const segments: BeamSegment[] = []
-  let totalScore = 0
-  let multiplier = 1
-  let lockout = 0
-  let position = entry.position
-  let direction = entry.direction
-  const visited = new Set<string>([pairKey(position, direction)])
-  let termination: BeamPath['termination'] = 'exitedGrid'
-
-  for (;;) {
-    const die = dieAt(position)
-    const points = die === null ? 0 : die.value * multiplier
-    totalScore += points
-    segments.push({ position, direction, die, points })
-
-    const refraction = die === null ? 'straight' : REFRACTION_BY_COLOR[die.color]
-    if (die !== null && lockout === 0 && refraction !== 'straight') {
-      direction = refraction === 'clockwise' ? clockwise(direction) : counterClockwise(direction)
-      multiplier = Math.min(multiplier + 1, multiplierCap)
-      lockout = die.value - 1
-    } else if (lockout > 0) {
-      lockout -= 1
-    }
-
-    const delta = DELTA_BY_DIRECTION[direction]
-    const next: Position = { row: position.row + delta.row, col: position.col + delta.col }
-    if (next.row < 0 || next.row >= size || next.col < 0 || next.col >= size) {
-      termination = 'exitedGrid'
-      break
-    }
-    const nextKey = pairKey(next, direction)
-    if (visited.has(nextKey)) {
-      termination = 'cycle'
-      break
-    }
-    visited.add(nextKey)
-    position = next
-  }
-
-  return { segments, totalScore, termination }
+  return new BeamTracer(multiplierCap).trace(grid, entry)
 }

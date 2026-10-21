@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GameError, PlacementError } from '../../src/engine/errors'
+import { openConstraint } from '../../src/engine/types'
 
 describe('error hierarchy (pitch §9)', () => {
   it('PlacementError is a GameError is an Error', () => {
@@ -22,10 +23,7 @@ describe('error hierarchy (pitch §9)', () => {
   })
 
   it('GameError covers the non-placement family', () => {
-    for (const violation of [
-      { kind: 'emptyBag' },
-      { kind: 'invalidPhase' },
-    ] as const) {
+    for (const violation of [{ kind: 'emptyBag' }, { kind: 'invalidPhase' }] as const) {
       const err = new GameError(violation)
       expect(err.name).toBe('GameError')
       expect(err.violation).toEqual(violation)
@@ -37,7 +35,7 @@ describe('error hierarchy (pitch §9)', () => {
     const samples = [
       new PlacementError({ kind: 'cellOccupied' }),
       new PlacementError({ kind: 'dieNotInPool' }),
-      new PlacementError({ kind: 'constraintMismatch', expected: { kind: 'open' } }),
+      new PlacementError({ kind: 'constraintMismatch', expected: openConstraint() }),
       new PlacementError({ kind: 'adjacencyViolation', offendingNeighbors: [] }),
       new PlacementError({ kind: 'illegalFirstPlacement' }),
       new PlacementError({ kind: 'disconnectedPlacement' }),

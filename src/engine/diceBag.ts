@@ -1,8 +1,7 @@
 import type { GameConfig } from './config'
 import { GameError } from './errors'
 import { shuffled } from './sample'
-import { DIE_COLORS } from './types'
-import type { Die } from './types'
+import { DIE_COLORS, Die } from './types'
 import type { Rng } from './rng'
 
 /**
@@ -19,7 +18,7 @@ export class DiceBag {
     for (const color of DIE_COLORS) {
       for (let value = 1; value <= 6; value++) {
         for (let copy = 0; copy < config.copiesPerDie; copy++) {
-          all.push({ color, value })
+          all.push(new Die(color, value))
         }
       }
     }

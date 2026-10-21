@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "check:classes": "node scripts/check-classes.mjs",
+    "test": "pnpm check:classes && vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test"
   },

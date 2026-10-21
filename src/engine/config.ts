@@ -11,7 +11,14 @@ export interface TierThresholds {
   readonly gold: number
 }
 
-export interface GameConfig {
+/** Multiplier ceiling from pitch §5; shared by configuration and beam playback. */
+export const DEFAULT_MULTIPLIER_CAP = 5
+
+/** Provisional tier thresholds; revisit after the phase-5 playtest. */
+export const PROVISIONAL_TIERS: TierThresholds = Object.freeze({ bronze: 40, silver: 65, gold: 90 })
+
+/** Immutable run parameters, including a canonical seed and a snapshot of tier settings. */
+export class GameConfig {
   /** Master seed. Every random draw of the run derives from this one number. */
   readonly seed: number
   readonly rounds: number
@@ -24,25 +31,34 @@ export interface GameConfig {
   readonly multiplierCap: number
   /** Final-score tiers. TUNABLE — provisional until playtesting. */
   readonly tiers: TierThresholds
-}
 
-/** Provisional tier thresholds; revisit after the phase-5 playtest. */
-export const PROVISIONAL_TIERS: TierThresholds = { bronze: 40, silver: 65, gold: 90 }
+  constructor(seed: number, overrides: Partial<Omit<GameConfig, 'seed'>> = {}) {
+    const settings = {
+      rounds: 8,
+      gridSize: 4,
+      draftSize: 5,
+      placementsPerRound: 2,
+      copiesPerDie: 3,
+      multiplierCap: DEFAULT_MULTIPLIER_CAP,
+      tiers: PROVISIONAL_TIERS,
+      ...overrides,
+    }
+    this.seed = normalizeSeed(seed)
+    this.rounds = settings.rounds
+    this.gridSize = settings.gridSize
+    this.draftSize = settings.draftSize
+    this.placementsPerRound = settings.placementsPerRound
+    this.copiesPerDie = settings.copiesPerDie
+    this.multiplierCap = settings.multiplierCap
+    this.tiers = Object.freeze({ ...settings.tiers })
+    Object.freeze(this)
+  }
+}
 
 /** Creates one run's parameters with a canonical seed shared by links and the RNG. */
 export function createGameConfig(
   seed: number,
   overrides: Partial<Omit<GameConfig, 'seed'>> = {},
 ): GameConfig {
-  return {
-    seed: normalizeSeed(seed),
-    rounds: 8,
-    gridSize: 4,
-    draftSize: 5,
-    placementsPerRound: 2,
-    copiesPerDie: 3,
-    multiplierCap: 5,
-    tiers: PROVISIONAL_TIERS,
-    ...overrides,
-  }
+  return new GameConfig(seed, overrides)
 }
