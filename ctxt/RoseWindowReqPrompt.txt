@@ -1,0 +1,136 @@
+Requirements for Rose Window, a single-player stained-glass puzzle game with a refracting light beam
+
+Source documents: RoseWindow_SRS_Group18 (Revision 1.2, 18 Nov 2026) and rose-window-pitch.md.
+Requirement IDs in brackets (FR-n.m, NFR-n.m) refer to the SRS, which is the authority if anything here disagrees with it.
+
+### Requirements ###
+
+Develop a single-player puzzle game that runs entirely in a web browser, using the "push" Model View Controller architectural style (a view receives updates from the model by events), an exception mechanism for rule violations, and a unit-testing framework. The language is TypeScript in strict mode; the build tool is Vite; the GUI is React; phase control is a statechart implemented with XState v5; unit tests use Vitest and end-to-end tests use Playwright.
+
+The game: over eight rounds the player drafts colored dice and places them into a 4x4 stained-glass window under placement laws. At the end of each round a beam of light enters the window at an announced edge cell, refracts through the placed dice according to their colors, and scores the dice it passes through. After round eight the finished window is also scored against objective cards.
+
+Dice
+•	A die has a color (red, yellow, blue, green, purple) and a value (1-6). Dice are immutable.
+•	The bag holds 3 copies of every (color, value) pair: 90 dice.
+•	Every random element of a run (pattern offer, objectives, dice drawn, beam entry points) is derived from a single numeric seed through one seeded random number generator, so two runs with the same seed are identical in every respect [FR-1.4, NFR-1.1, NFR-1.2]. No other source of randomness may be used.
+
+Starting a run (a "commission")
+•	On start up the system offers exactly two distinct window patterns, showing for each its name, description and the printed demand of all sixteen cells [FR-1.1, FR-1.2].
+•	A printed demand is one of: a specific color, a specific value, or nothing (open cell).
+•	Choosing a pattern begins a run of eight rounds on it [FR-1.3].
+•	The player may supply a seed in the game's link (?seed=); the seed in effect is displayed throughout the run [FR-1.5]. Any supplied seed is reduced to a canonical whole number in a fixed range, and a stable default replaces an invalid value, so no seed can prevent a run from starting [FR-1.6].
+•	At the end of a run the player can begin a new run at a different seed [FR-1.7].
+•	The game opens straight into play with no landing page: the run a link names, else the run in progress, else a new pattern choice [FR-1.8].
+
+Objectives
+•	Each run is dealt three distinct public objectives from a set of eight, and one private objective from a set of five (one per glass color) [FR-2.1, FR-2.2].
+•	The name and scoring rule of every assigned objective is viewable at any time without disturbing the run [FR-2.3].
+•	Each public objective scores exactly as its displayed rule states; the private objective scores the sum of the values of placed dice of its color [FR-2.4, FR-2.5].
+•	During play each objective shows the points it would award if the run ended now [FR-2.6].
+
+Drafting
+•	Each round presents five dice drawn from the bag (the draft pool) [FR-3.1].
+•	Selecting a die moves it from the pool into the player's hand. At most one die is held; selecting a second die returns the held one to the pool first [FR-3.2, FR-3.3].
+•	Selecting a die that is not in the pool is rejected and leaves the state unchanged [FR-3.4].
+•	The held die can be returned to the pool without consuming a placement [FR-3.6].
+•	Unselected dice return to the bag at the end of the round [FR-3.5].
+
+Placement
+•	Exactly two placements are made per round; the round then proceeds to illumination [FR-4.14].
+•	A placement succeeds only if every law holds; the die then leaves the hand and occupies the cell [FR-4.1]. The laws, evaluated in this fixed order with the first violation reported [FR-4.9]:
+	1. cellOccupied: the target cell must be empty [FR-4.2]
+	2. dieNotInPool: the die must be one made visible this round [FR-4.3]
+	3. constraintMismatch: a cell demanding a color accepts only that color, and a cell demanding a value accepts only that value [FR-4.4, FR-4.5]
+	4. adjacencyViolation: no orthogonal neighbor may share the die's color or value; the violation lists the offending neighbor positions [FR-4.6]
+	5. illegalFirstPlacement: when the window is empty, the die must go on the outer ring [FR-4.7]
+	6. disconnectedPlacement: when the window is not empty, the die must touch a placed die orthogonally or diagonally [FR-4.8]
+	This order is locked by the existing tests in tests/engine/placementValidator.test.ts. Other game-level rejection reasons: emptyBag, invalidPhase, refreshSpent (second recast), legalMovesRemain (forfeit refused).
+•	A rejected placement leaves the die in hand and the window unchanged [FR-4.10, NFR-2.1].
+•	Every rejection is raised as an exception from a class in the model, carrying a machine-readable reason distinct from every other rejection [NFR-2.2]; the controller catches it and the view shows which law was broken [FR-4.11] and, for the adjacency law, outlines the offending neighbors [FR-4.12].
+•	Rejection feedback appears at the location of the attempt and never as a modal dialog that must be dismissed [NFR-5.1, NFR-5.2].
+•	Before committing, the view shows whether the held die may legally occupy the cell under the pointer (legality preview) [FR-4.13].
+•	The model can report every cell where a given die could legally be placed [FR-4.15].
+
+The beam (illumination)
+•	The entry point of the coming beam (edge cell and inward direction) is announced before the round is played [FR-5.1].
+•	The beam enters at the announced cell and direction [FR-5.2] and visits cells one at a time.
+•	For each cell entered, it awards (value of the die there) x (current multiplier); an empty cell awards nothing [FR-5.3].
+•	Refraction by color: red or yellow turns the beam 90 degrees clockwise; blue or green turns it 90 degrees counterclockwise; purple does not turn it [FR-5.4].
+•	A die is scored BEFORE its own refraction is applied, at the multiplier in effect before the bend [FR-5.5].
+•	The multiplier starts at 1 and increases by one on every turn, to a ceiling of 5 [FR-5.6].
+•	Lockout: after a turn caused by a die of value V, the beam cannot turn again for V-1 cells; dice inside the lockout are still scored [FR-5.7].
+•	The beam terminates when it would leave the window [FR-5.8], or when it would enter a cell in a direction in which it already entered that cell during this traversal; that repeated entry is not scored [FR-5.9]. Traversal therefore always terminates, in at most four visits per cell [NFR-1.4, NFR-3.1].
+•	The view animates the beam through the window in the order cells are struck [FR-5.10].
+•	Each round's beam points are added to the run's beam total [FR-5.11].
+
+Deadlocked rounds
+•	Before requiring a placement, the system checks whether any available die (pool or hand) has a legal placement [FR-6.1].
+•	If none does, the round is forfeited, unplaced dice return to the bag [FR-6.2], and the window is still illuminated and scored [FR-6.4]. A round with a legal move left cannot be forfeited [FR-6.3].
+•	The player is told the round was forfeited and why [FR-6.5]. All eight rounds always complete [FR-6.6, NFR-2.5].
+
+Recast
+•	Once per run, during drafting or placing, the player may recast: every unplaced die of the current draft (including the held die) returns to the bag and the same number of replacements is drawn in the run's seeded order [FR-11.1 to FR-11.4].
+•	A recast grants no extra placement, round or point; a second recast, or a recast outside drafting/placing, is rejected; the view shows whether the recast remains [FR-11.5 to FR-11.8].
+
+Progress display
+•	The view shows the pattern name and seed, the running beam total, each completed round's score, the round number of eight, and placements remaining in the round [FR-7.1 to FR-7.5].
+
+End of run
+•	After round eight a final score is computed [FR-8.1] and reported itemized: one line per objective, the beam total as its own line, and the grand total (beam total plus all four objectives) [FR-8.2, FR-8.3].
+•	A tier (bronze, silver, gold, or none) is awarded against thresholds held in one configuration object [FR-8.4, NFR-4.4]. Provisional thresholds: bronze 40, silver 65, gold 90.
+•	The finished window is shown with the report [FR-8.5].
+
+Learning the game
+•	A first-time player gets a guided introduction (drafting, placement, beam, lockout, objectives) that advances when the player performs the described action, can be dismissed for good, can be replayed on request, and never appears in runs begun at an explicit seed [FR-9.1 to FR-9.5].
+
+Audio
+•	Distinct sounds on selecting a die, placing a die, and the beam striking a die; one control mutes and restores all sound; the preference persists across visits; no sound before the first user interaction [FR-10.1 to FR-10.4].
+
+Interrupt, resume, suspend
+•	The player's actions are recorded as a run proceeds; on return the system restores an interrupted run automatically, without asking, by REPLAYING the recorded actions through the rules, never by loading a stored board, score or bag [FR-12.1 to FR-12.3].
+•	A malformed, oversized or rule-violating record is rejected and a new run starts instead; the record is discarded when a run completes or is abandoned; the game stays fully playable when storage is unavailable [FR-12.4 to FR-12.6, NFR-2.6, NFR-2.7].
+•	A run can be paused and resumed; no drafting, placement or recast is accepted while paused [FR-17.1, FR-17.2].
+
+Secondary capabilities (implemented after the core game; none may affect dice, rules or scores) [FR-13.11, FR-14.6, NFR-4.7]
+•	Profile held on the device: each completed run recorded once, bests, experience and level, shards, four one-time achievements [FR-13.1 to FR-13.6, FR-13.10].
+•	Daily challenge: one seed and pattern per UTC calendar day, derived from the date alone, startable from the pause menu and the end of a run, recorded under its own mode [FR-15.1 to FR-15.5].
+•	Friend challenge: a portable versioned code (and a link carrying only that code) identifying seed, pattern and a target score; malformed, altered, unsupported or impossible codes are rejected; the check value is never presented as authentication and scores are self-reported; a challenge is shared through the device's share sheet where one is available, else its link is copied to the clipboard [FR-16.1 to FR-16.7].
+•	Requirements marked Deferred in the SRS (achievement list, shard balance, run history, palettes, daily goals and streaks) are implemented and tested in the model but have no interface yet. Do not add interfaces for them unless a prompt says so.
+
+Error handling
+•	Every rejection is an exception from the model. Placement violations share a common placement-exception base so the controller can catch the family and still read the specific reason.
+•	An operation requested in a phase that does not permit it raises an invalid-phase exception without altering state [NFR-2.3].
+•	A placement outside the window bounds is a defect in the caller and fails loudly [NFR-2.4].
+•	Malformed window pattern data is rejected when loaded, not during play [NFR-1.3].
+•	All stored and externally supplied data (restored runs, profiles, challenge codes) is validated before use [NFR-2.6, NFR-1.6].
+
+### Architecture and implementation ###
+
+Use the push MVC style described in MVC_RoseWindow.md (adapted from the John Hunt calculator in MVC_JohnHunt.md):
+•	ModelListener interface, ModelEvent base class, AbstractModel (listener registration and notifyChanged), AbstractController, and a View contract.
+•	The model is pure TypeScript with zero React, DOM or browser imports. It never references a view or controller type. All game rules live in the model [NFR-4.1].
+•	The model publishes semantic events (DiePlaced, PlacementRejected, DraftPoolRefreshed, BeamTraced, RoundScored, RoundForfeited, GameOver) rather than a bare "changed" notification, so views can animate instead of redrawing.
+•	Views are React components. They render model state and turn user gestures into controller calls. No game rule is evaluated in a view [NFR-4.2].
+•	Controllers translate user input into model calls, catch model exceptions, and ask the view to show rejection feedback. Phase control (setup, draft, place, illuminate, final scoring, game over, paused) is a statechart; the XState machine is owned by the controller layer, and snapshot.can() enforces which actions each phase permits.
+•	A second, smaller statechart paces the beam animation (traveling, refracting, locked straight, terminated).
+•	Model classes: see the class list in MVC_RoseWindow.md section 4. The project must have at least 15 classes; interfaces and type aliases do not count toward that number.
+•	Tunable numbers (rounds 8, grid 4, draft size 5, placements per round 2, copies per die 3, multiplier cap 5, tier thresholds) live in one GameConfig and appear nowhere else as literals [NFR-4.4].
+•	Every exported model declaration carries TSDoc stating purpose, parameters and failure conditions; ambiguity resolutions (score-before-refraction, the cycle guard) are documented where implemented [NFR-4.3, NFR-4.6].
+•	Accessibility: the window is role="grid" with role="gridcell" cells whose aria-label states row, column and contents; draft dice are labeled buttons; values are drawn as numerals so the game is playable without color vision [NFR-5.3 to NFR-5.5]. Every interactive element has a data-testid (cell-r{r}c{c}, draft-die-{i}, beam-layer).
+•	Reduced-motion preference suppresses non-essential animation; playable from 360 to 1920 px wide without horizontal scrolling [NFR-5.6, NFR-5.7].
+•	Mobile: every action works with single taps (no hover, drag, long press or keyboard); every control, die and window cell is at least 24×24 CSS px at 360 px wide; from 360×640 to 1920×1080 the window, draft, score, round, placements remaining and controls are all in view with no scrolling; where the device supports vibration, a short haptic pulse on picking up, placing or rejecting a die and on beam strikes, none while muted [NFR-5.10 to NFR-5.13].
+•	No server, no accounts, no network access needed to play; deployable as static files; all player data stays on the device [NFR-3.5, SRS 5.2].
+
+For acceptance testing:
+
+1. Seeded reproducibility (golden master): with seed 3, pattern "novice-rose", and the max-flex automatic player, the eight round scores must be exactly 5, 5, 31, 16, 2, 7, 53, 37 and the beam total exactly 156. This must hold after every increment.
+
+2. Placement laws: attempt one placement per rejection reason and confirm the specific law is named, the die stays in hand, the window is unchanged, and adjacency conflicts outline the offending neighbors. No modal dialog appears.
+
+3. Beam: on hand-built windows, confirm one turn per color rule, scoring before refraction, the multiplier ceiling of 5, lockout at values 1 and 6, termination on exit, and termination on a repeated (cell, direction) entry.
+
+4. Deadlock: on seed 7, pattern "clerestory", place blue 1 in the bottom-right corner (row 4, column 4) in round 1; with no legal move left, the round is forfeited with a message, the beam still scores, and the run reaches game over.
+
+5. Interrupt and restore: begin a run, make several placements, reload the page without the ?seed= parameter (the run restores without asking), and confirm the board, score, recast availability and round match exactly.
+
+6. Final report: after round eight the itemized lines sum to the grand total and the tier matches the thresholds.
