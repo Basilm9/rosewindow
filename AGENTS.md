@@ -10,13 +10,14 @@ Vite + React 19 + TypeScript (strict) + Tailwind CSS v4 + XState v5. Vitest for 
 
 | Command              | Purpose                                                                     |
 | -------------------- | --------------------------------------------------------------------------- |
-| `pnpm typecheck`     | `tsc --noEmit` — run after every change                                     |
+| `pnpm typecheck`     | TypeScript check + regenerate UML — run after every change                  |
 | `pnpm lint`          | ESLint                                                                      |
 | `pnpm check:classes` | Verify the assignment's 15-class minimum; list classes and source locations |
+| `pnpm uml`           | Regenerate `docs/uml-class-diagram.md` from production TypeScript           |
 | `pnpm test`          | Class-count check + Vitest, single run                                      |
 | `pnpm dev`           | Vite dev server on `localhost:5173`                                         |
 | `pnpm e2e`           | Playwright e2e (starts dev server itself)                                   |
-| `pnpm build`         | typecheck + production build                                                |
+| `pnpm build`         | typecheck + regenerate UML + production build                               |
 | `pnpm format`        | Prettier write                                                              |
 
 **Definition of done for any change:** `pnpm typecheck && pnpm lint && pnpm test` green; UI changes additionally verified visually (see Verification protocol).

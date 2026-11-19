@@ -6,6 +6,13 @@ The implementation has **15 concrete production classes** within the existing
 Interfaces, type aliases, React function components, and test fixtures do not
 contribute to the class count.
 
+The [UML class diagram](uml-class-diagram.md) shows the classes' fields,
+operations, and main relationships. It is generated from production TypeScript
+by `scripts/generate-uml.mjs` after every successful `pnpm typecheck`, including
+the check performed by `pnpm build`. Run `pnpm uml` for a standalone refresh.
+Class additions, removals, member changes, and source relationships are derived
+from the compiler; do not edit the generated diagram by hand.
+
 The six existing classes are retained. Nine responsibilities previously expressed
 as interfaces, data literals, or functions now have class implementations:
 
