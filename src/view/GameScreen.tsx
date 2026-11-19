@@ -3,6 +3,7 @@ import { statePath, useGame } from '../hooks/useGame'
 import type { RunSession } from '../hooks/runSession'
 import { useTutorial } from '../hooks/useTutorial'
 import type { Game } from '../engine/game'
+import type { CellConstraint } from '../engine/types'
 import type { recordRun } from '../progression/profile'
 import { sfx } from '../dev/sfx'
 import { GlassBoard } from './GlassBoard'
@@ -24,6 +25,21 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   adjacencyViolation: 'Neighbors clash. Side-by-side dice need a different color and number.',
   constraintMismatch: 'This pane only takes its printed color or number.',
   cellOccupied: 'That pane already has glass. Pick an empty one.',
+}
+
+/**
+ * The message for a rejection. A demand mismatch names the demand that was broken,
+ * color or value, so each placement law reads differently (FR-4.11).
+ */
+function rejectionMessage(rejection: { kind: string; expected?: CellConstraint }): string {
+  const demand = rejection.expected
+  if (rejection.kind === 'constraintMismatch' && demand?.kind === 'color') {
+    return `Wrong color. This pane only takes ${demand.color} glass.`
+  }
+  if (rejection.kind === 'constraintMismatch' && demand?.kind === 'value') {
+    return `Wrong number. This pane only takes a ${demand.value}.`
+  }
+  return FRIENDLY_ERRORS[rejection.kind] ?? 'That pane won’t take this die. Try a glowing one.'
 }
 
 type Overlay = 'pause' | 'rules' | 'goals' | null
@@ -118,10 +134,10 @@ export function GameScreen({
   }, [playing, done, game.round])
 
   // Rejection toast, visible for a moment after each refused placement.
-  const [errorShown, setErrorShown] = useState<{ kind: string; key: number } | null>(null)
+  const [errorShown, setErrorShown] = useState<{ kind: string; message: string; key: number } | null>(null)
   useEffect(() => {
     if (rejection === null) return
-    setErrorShown({ kind: rejection.kind, key: rejection.key })
+    setErrorShown({ kind: rejection.kind, message: rejectionMessage(rejection), key: rejection.key })
     const timer = setTimeout(() => setErrorShown(null), 2600)
     return () => clearTimeout(timer)
   }, [rejection])
@@ -311,7 +327,7 @@ export function GameScreen({
           data-testid="rejection-hint"
           data-error-kind={errorShown.kind}
         >
-          {FRIENDLY_ERRORS[errorShown.kind] ?? 'That pane won’t take this die. Try a glowing one.'}
+          {errorShown.message}
         </p>
       )}
       {forfeitNotice !== null && !done && (
