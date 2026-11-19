@@ -76,3 +76,19 @@ test('completing two placements advances the round with a fresh pool', async ({ 
   await expect(page.locator('[data-testid^="draft-die-"]')).toHaveCount(5)
   await expect(page.getByTestId('round-scores')).toHaveText('0')
 })
+
+test('a demand mismatch names the demand it broke: color or number (FR-4.11)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/?seed=3')
+  await page.getByTestId('pattern-novice-rose').click()
+  // Seed 3, Novice Rose: red 2 on the corner, then blue 2 tried on each printed demand.
+  await page.getByRole('button', { name: 'select red 2' }).click()
+  await page.getByTestId('cell-r0c0').click()
+  await expect(page.getByTestId('die-r0c0')).toBeVisible()
+  await page.getByRole('button', { name: 'select blue 2' }).click()
+  await page.getByTestId('cell-r2c0').click() // printed yellow
+  await expect(page.getByTestId('rejection-hint')).toContainText('only takes yellow glass')
+  await page.getByTestId('cell-r0c2').click() // printed 5
+  await expect(page.getByTestId('rejection-hint')).toContainText('only takes a 5')
+  await expect(page.getByTestId('held-die')).toBeVisible()
+})

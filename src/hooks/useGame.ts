@@ -7,7 +7,7 @@ import type { BeamPath, BeamSegment } from '../engine/beamTracer'
 import { traceBeam } from '../engine/beamTracer'
 import { calculateScore } from '../engine/scoreCalculator'
 import type { ScoreLine } from '../engine/scoreCalculator'
-import type { Position } from '../engine/types'
+import type { CellConstraint, Position } from '../engine/types'
 import { gameMachine } from '../machine/gameMachine'
 import { fastForward } from '../dev/autoPlayer'
 import { sfx } from '../dev/sfx'
@@ -25,7 +25,8 @@ export interface UseGameResult {
   seed: number
   /** Per-cell violation for the held die (null = legal). Presentational only. */
   legalPreview: Map<string, PlacementViolation | null>
-  rejection: { position: Position; kind: string; key: number } | null
+  /** The latest rejected placement; `expected` names the printed demand when the violation is a demand mismatch. */
+  rejection: { position: Position; kind: string; expected?: CellConstraint; key: number } | null
   lastPlaced: { position: Position; key: number } | null
   /** The die the beam just struck (for the strike flash/pop). */
   lastLit: { position: Position; key: number } | null
@@ -146,6 +147,9 @@ export function useGame(session?: RunSession): UseGameResult {
       setRejection({
         position: machineRejection.position,
         kind: machineRejection.violation.kind,
+        ...(machineRejection.violation.kind === 'constraintMismatch'
+          ? { expected: machineRejection.violation.expected }
+          : {}),
         key: flashKey.current,
       })
       sfx.reject()

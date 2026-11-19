@@ -56,6 +56,7 @@ export function PauseMenu({
   onNew,
   mode,
   seed,
+  patternName,
 }: {
   onResume: () => void
   onRules: () => void
@@ -63,6 +64,8 @@ export function PauseMenu({
   onNew: () => void
   mode: 'free' | 'daily' | 'challenge'
   seed: number
+  /** Name of the window pattern in play, shown beside the seed (FR-7.1). */
+  patternName?: string
 }) {
   const [confirmNew, setConfirmNew] = useState(false)
   return (
@@ -92,7 +95,8 @@ export function PauseMenu({
           {confirmNew ? 'Tap again to abandon this window' : 'New window'}
         </button>
         <p className="menu__seed">
-          {mode === 'daily' ? 'Daily window' : mode === 'challenge' ? 'Friend challenge' : 'Free play'} · window #{seed}
+          {mode === 'daily' ? 'Daily window' : mode === 'challenge' ? 'Friend challenge' : 'Free play'}
+          {patternName ? ` · ${patternName}` : ''} · window #{seed}
         </p>
       </div>
     </Sheet>
