@@ -1,6 +1,6 @@
 Requirements for Rose Window, a single-player stained-glass puzzle game with a refracting light beam
 
-Source documents: RoseWindow_SRS_Group18 (Revision 1.2, 18 Nov 2026) and rose-window-pitch.md.
+Source documents: RoseWindow_SRS_Group18 (Revision 1.3, 19 Nov 2026) and rose-window-pitch.md.
 Requirement IDs in brackets (FR-n.m, NFR-n.m) refer to the SRS, which is the authority if anything here disagrees with it.
 
 ### Requirements ###
@@ -87,7 +87,7 @@ Audio
 •	Distinct sounds on selecting a die, placing a die, and the beam striking a die; one control mutes and restores all sound; the preference persists across visits; no sound before the first user interaction [FR-10.1 to FR-10.4].
 
 Interrupt, resume, suspend
-•	The player's actions are recorded as a run proceeds; on return the system restores an interrupted run automatically, without asking, by REPLAYING the recorded actions through the rules, never by loading a stored board, score or bag [FR-12.1 to FR-12.3].
+•	The player's actions are recorded as a run proceeds; on return the system restores an interrupted run automatically, without asking, by REPLAYING the recorded actions through the rules, never by loading a stored board, score or bag [FR-12.1 to FR-12.3]. The restored run is ready for input within 1 second of the page loading [NFR-3.6].
 •	A malformed, oversized or rule-violating record is rejected and a new run starts instead; the record is discarded when a run completes or is abandoned; the game stays fully playable when storage is unavailable [FR-12.4 to FR-12.6, NFR-2.6, NFR-2.7].
 •	A run can be paused and resumed; no drafting, placement or recast is accepted while paused [FR-17.1, FR-17.2].
 
@@ -104,6 +104,13 @@ Error handling
 •	Malformed window pattern data is rejected when loaded, not during play [NFR-1.3].
 •	All stored and externally supplied data (restored runs, profiles, challenge codes) is validated before use [NFR-2.6, NFR-1.6].
 
+Safety properties (must never happen; each holds in every reachable state and is checked after every step of the automated runs) [NFR-6.1 to NFR-6.5]
+•	A rejected placement never changes the window.
+•	The beam always stops: it leaves the window or meets the cycle guard.
+•	The running beam total always equals the sum of the round scores so far.
+•	A recast never grants an extra placement, round or point.
+•	No game action (draft, place, recast) takes effect while the run is paused.
+
 ### Architecture and implementation ###
 
 Use the push MVC style described in MVC_RoseWindow.md (adapted from the John Hunt calculator in MVC_JohnHunt.md):
@@ -118,7 +125,7 @@ Use the push MVC style described in MVC_RoseWindow.md (adapted from the John Hun
 •	Every exported model declaration carries TSDoc stating purpose, parameters and failure conditions; ambiguity resolutions (score-before-refraction, the cycle guard) are documented where implemented [NFR-4.3, NFR-4.6].
 •	Accessibility: the window is role="grid" with role="gridcell" cells whose aria-label states row, column and contents; draft dice are labeled buttons; values are drawn as numerals so the game is playable without color vision [NFR-5.3 to NFR-5.5]. Every interactive element has a data-testid (cell-r{r}c{c}, draft-die-{i}, beam-layer).
 •	Reduced-motion preference suppresses non-essential animation; playable from 360 to 1920 px wide without horizontal scrolling [NFR-5.6, NFR-5.7].
-•	Mobile: every action works with single taps (no hover, drag, long press or keyboard); every control, die and window cell is at least 24×24 CSS px at 360 px wide; from 360×640 to 1920×1080 the window, draft, score, round, placements remaining and controls are all in view with no scrolling; where the device supports vibration, a short haptic pulse on picking up, placing or rejecting a die and on beam strikes, none while muted [NFR-5.10 to NFR-5.13].
+•	Mobile: every action works with single taps (no hover, drag, long press or keyboard); every control, die and window cell is at least 24×24 CSS px at 360 px wide; from 360×640 to 1920×1080 the window, draft, score, round, placements remaining and controls are all in view with no scrolling; where the device supports vibration, a short haptic pulse on picking up, placing or rejecting a die and on beam strikes, none while muted [NFR-5.10 to NFR-5.13]. Every tap gets a visible response within 100 ms [NFR-3.7].
 •	No server, no accounts, no network access needed to play; deployable as static files; all player data stays on the device [NFR-3.5, SRS 5.2].
 
 For acceptance testing:
@@ -134,3 +141,5 @@ For acceptance testing:
 5. Interrupt and restore: begin a run, make several placements, reload the page without the ?seed= parameter (the run restores without asking), and confirm the board, score, recast availability and round match exactly.
 
 6. Final report: after round eight the itemized lines sum to the grand total and the tier matches the thresholds.
+
+7. Reliability: the automatic player completes seeds 1 to 1,000 with zero failures (no crash, no stalled run, no score mismatch on replay), with the safety properties checked after every step [NFR-1.8, NFR-6.1 to NFR-6.5].
