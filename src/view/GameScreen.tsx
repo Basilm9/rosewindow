@@ -155,6 +155,7 @@ export function GameScreen({
         <PauseMenu
           mode={session.mode}
           seed={session.seed}
+          patternName={game.window?.pattern.name}
           onResume={closeOverlay}
           onRules={() => setOverlay('rules')}
           onDaily={onDaily}
