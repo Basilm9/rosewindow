@@ -1,6 +1,6 @@
 # Prompt 28: PlacementValidator Tests
 
-**CRITICAL: Write `tests/model/PlacementValidator.test.ts` with one test per placement law (six), the documented precedence cases for every constructible pair, the `outOfBounds` caller-defect cases, and branch coverage of every law method. Port EVERY test of `tests/engine/placementValidator.test.ts` and the validator case of `classes.test.ts`; none may be dropped.**
+**CRITICAL: Write `tests/model/PlacementValidator.test.ts` with one test per placement law (six), one precedence test for each of the 11 law pairs (of all 15) that can occur together, a comment naming the 4 pairs that cannot and why, the `outOfBounds` caller-defect cases, and branch coverage of every law method. Port EVERY test of `tests/engine/placementValidator.test.ts` and the validator case of `classes.test.ts`; none may be dropped.**
 
 ---
 
@@ -43,23 +43,36 @@ const find = (o?: Partial<PlacementCheck>) => new PlacementValidator().findViola
 
 **False edges (legal → `null`):** legal first placement on {0,0}; pool membership by color+value with a plain `{color:'red', value:3}`; color demand with any value (`yellow 6` on `Y`); diagonal neighbour `R5` at {1,1} (no adjacency, gives connectivity); diagonal same-colour `R2`; 5×5 border first placement {2,0}; `it.each` the 12 border cells of an empty 4×4 (replaces the reference nested loop with `continue`).
 
-**Precedence (FR-4.9) — every pair the geometry allows:**
-| Pair | Constructed to violate both | Expected |
-| --- | --- | --- |
-| cellOccupied > dieNotInPool | occupied {0,0}, pool `[blue5]` | `'cellOccupied'` |
-| dieNotInPool > constraintMismatch | demand `Y`, pool `[blue5]` | `'dieNotInPool'` |
-| constraintMismatch > adjacency | demand `Y`, `Y1` at {0,1}, die red 1 | `'constraintMismatch'` |
-| constraintMismatch > illegalFirstPlacement | 5×5, demand `Y` at {2,2} | `'constraintMismatch'` |
-| constraintMismatch > disconnectedPlacement (new) | demand `Y` at {0,0}, `B5` at {3,3} | `'constraintMismatch'` |
-| outOfBounds before every law (new) | target {4,0} with an occupied grid and empty pool | `toThrow(GameError)` |
+**Precedence (FR-4.9) — pair plan.** The six laws form C(6,2) = 15 pairs. 11 can occur together and each gets exactly one test whose input breaks BOTH laws of the pair (and no law earlier than the pair's first); the expected result is always the earlier law. Defaults unless stated: empty 4×4, open demands, die red 3, pool `[die]`, target {0,0}.
+| # | Pair (earlier wins) | Constructed to violate both | Expected |
+| --- | --- | --- | --- |
+| P1 | cellOccupied > dieNotInPool (ported) | `R2` at {0,0}, pool `[blue5]` | `'cellOccupied'` |
+| P2 | cellOccupied > constraintMismatch | `R2` at {0,0}, demand `Y` at {0,0} | `'cellOccupied'` |
+| P3 | cellOccupied > adjacencyViolation | `R2` at {0,0}, `R5` at {0,1} | `'cellOccupied'` |
+| P4 | cellOccupied > disconnectedPlacement | `R2` at {0,0} only (no die among the target's 8 neighbours) | `'cellOccupied'` |
+| P5 | dieNotInPool > constraintMismatch (ported) | demand `Y` at {0,0}, pool `[blue5]` | `'dieNotInPool'` |
+| P6 | dieNotInPool > adjacencyViolation | `R5` at {0,1}, pool `[blue5]` | `'dieNotInPool'` |
+| P7 | dieNotInPool > illegalFirstPlacement | empty grid, target {1,1}, pool `[blue5]` | `'dieNotInPool'` |
+| P8 | dieNotInPool > disconnectedPlacement | `B5` at {3,3}, pool `[blue5]` | `'dieNotInPool'` |
+| P9 | constraintMismatch > adjacencyViolation (ported) | demand `Y` at {0,0}, `Y1` at {0,1}, die red 1 | `'constraintMismatch'` |
+| P10 | constraintMismatch > illegalFirstPlacement (ported) | 5×5, demand `Y` at {2,2}, target {2,2} | `'constraintMismatch'` |
+| P11 | constraintMismatch > disconnectedPlacement | demand `Y` at {0,0}, `B5` at {3,3} | `'constraintMismatch'` |
+| — | outOfBounds before every law | target {4,0} with an occupied grid and empty pool | `toThrow(GameError)` |
 
-State in a comment why adjacency vs illegalFirst/disconnected is not constructible (an orthogonal neighbour means the grid is non-empty and the die is connected).
+The other 4 pairs cannot occur together. Put this comment above the precedence `describe` in the test file, listing each with its reason:
+```typescript
+// Precedence pairs that cannot occur together (15 pairs − 11 tested = 4):
+// - cellOccupied × illegalFirstPlacement: illegalFirst needs an empty window; an occupied target means it is not empty.
+// - adjacencyViolation × illegalFirstPlacement: an offending orthogonal neighbour means the window is not empty.
+// - adjacencyViolation × disconnectedPlacement: an orthogonal neighbour already connects the die.
+// - illegalFirstPlacement × disconnectedPlacement: illegalFirst applies only to an empty window, disconnected only to a non-empty one.
+```
 
 **Error kinds raised:** six `PlacementViolation` kinds via `assertValid` → `expect(() => v.assertValid(check(o))).toThrow(PlacementError)` once per kind (`it.each` over the six law inputs above); `outOfBounds` → `it.each([{row:4,col:0}, {row:0.5,col:0}, {row:Number.NaN,col:0}, {row:Number.POSITIVE_INFINITY,col:0}])` with `toThrow(GameError)` and `toThrow(/outside the grid/)`, plus one test that the thrown error is `not.toBeInstanceOf(PlacementError)` (NFR-2.4).
 
 **Other cases:** `assertValid` silent on a legal check; message `/printed demand/` for a 2×2 `['R.','..']` mismatch then `not.toThrow()` at {0,1} with the same validator (statelessness, from `classes.test.ts`); inputs unchanged — `grid` and `pool` `toEqual` their pre-call snapshots after a rejection (NFR-2.1); `PlacementValidator.isOnBorderRing({row:1,col:1}, 4) === false`, `countPlaced(parseGrid(['R1 ..', '.. B2'])) === 2`.
 
-**Ported (none dropped):** all 18 cases of "individual laws", the 4 "documented precedence" cases, and the 4 `assertPlacementValid` cases (the `try/catch` + `expect.unreachable` case becomes `toThrow(PlacementError)` plus a `violation.kind` check through a file-level `catchError` helper).
+**Ported (none dropped):** all 18 cases of "individual laws", the 4 "documented precedence" cases (P1, P5, P9, P10), and the 4 `assertPlacementValid` cases (the `try/catch` + `expect.unreachable` case becomes `toThrow(PlacementError)` plus a `violation.kind` check through a file-level `catchError` helper).
 
 **JUnit-style rules:** fresh validator and check per test; no `if`/`for`/`try`/`continue` in `it` bodies (tables via `it.each`); compare with literal kinds, positions and constraint objects; exceptions with `toThrow(ErrorClass)`.
 
@@ -71,12 +84,12 @@ pnpm typecheck && pnpm lint && pnpm test
 pnpm vitest run tests/engine/game.test.ts -t "golden master"
 git commit -am "test(model): inc 28 PlacementValidator tests" && git tag inc-28-green
 ```
-- [ ] ≥ 45 tests (counting `it.each` rows), 100 % pass; criterion comment present
+- [ ] ≥ 51 tests (counting `it.each` rows), 100 % pass; criterion comment present
 - [ ] One test per law, one `assertValid` throw per violation kind, one per out-of-bounds partition
-- [ ] All six constructible precedence pairs present
+- [ ] All 11 co-occurring precedence pairs P1–P11 present (one test each, earlier law wins) plus the outOfBounds-first test; the comment lists the 4 pairs that cannot occur together with their reasons (11 + 4 = 15)
 - [ ] No control flow in test bodies
 - [ ] typecheck 0, lint 0/0, golden master 5,5,31,16,2,7,53,37 / 156, `check:classes` ≥ 18
 
 ---
 
-**CRITICAL: Each of the six laws, every constructible precedence pair, the outOfBounds caller defect and statelessness are tested with fresh fixtures and literal expectations, and every reference validator test is ported; golden master stays 5,5,31,16,2,7,53,37 / 156.**
+**CRITICAL: Each of the six laws, all 11 precedence pairs that can occur together (the other 4 of the 15 documented as impossible), the outOfBounds caller defect and statelessness are tested with fresh fixtures and literal expectations, and every reference validator test is ported; golden master stays 5,5,31,16,2,7,53,37 / 156.**

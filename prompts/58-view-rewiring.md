@@ -1,6 +1,6 @@
 # Prompt 58: View Rewiring (state only through GameController and useModelEvents)
 
-**CRITICAL: Rewire every React view so it receives state only through `GameController` (snapshot + read model + queries) and model events only through `useModelEvents`, and sends every gesture to a controller — no view imports `src/engine`, `src/machine`, `src/hooks/useGame` or calls a model mutator. The screenshots in `mockups/` are authoritative: every screen keeps the same layout, wording and visual style. Fix F-03 (grid rows, 1-based labels). Golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**
+**CRITICAL: Rewire every React view so it receives state only through `GameController` (snapshot + read model + queries) and model events only through `useModelEvents`, and sends every gesture to a controller — no view imports `src/engine`, `src/machine`, `src/hooks/useGame` or calls a model mutator. The screenshots in `mockups/` are authoritative: every screen keeps the same layout, wording and visual style. Fix F-03 (grid rows, 1-based labels) and F-04 (a `Replay tutorial` button in the How to play sheet restarts the guided tutorial without touching the run, FR-9.4). Golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**
 
 ---
 
@@ -9,19 +9,19 @@
 - **Dependencies:** Prompts 03, 50, 53, 55, 56, 57
 - **Reference implementation:** `src/hooks/useGame.ts` (all presentation state: `rejection`, `lastPlaced`, `lastLit`, `shakeKey`, `forfeitNotice`, `beam`, `litCells`, `beamRun`, `roundBurst`, sfx calls), `src/view/*.tsx`, `src/App.tsx`; tests `tests/e2e/*.spec.ts` (23 tests)
 - **Context to attach (MANDATORY — attach the images, not just names):** `ctxt/GUI_mockupsRoseWindow.md` and
-  `mockups/01-setup.png` (SetupScreen) · `02-board-round1.png`, `03-legal-preview.png`, `04-placement-rejected.png` (GameScreen, ScorePanel, Objectives, GlassBoard, DraftPool) · `05-beam.png` (BeamLayer) · `06-goal-sheet.png` (GoalDetails sheet) · `07-pause-menu.png`, `12-pause-abandon-confirm.png` (Menus/PauseMenu) · `08-round-forfeit.png` (Fx forfeit banner) · `09-final-report.png`, `11-challenge-share.png` (GameOverScreen) · `10-tutorial.png` (TutorialOverlay); `ctxt/MVC_RoseWindow.md` sections 1, 2, 5; `ctxt/acceptance_tests.md` (F-03, AT-11, AT-17)
-- **Requirements:** NFR-4.2, NFR-5.1–NFR-5.4, NFR-5.6, FR-17.1, FR-17.2, FR-5.10, FR-7.1–FR-7.5
+  `mockups/01-setup.png` (SetupScreen) · `02-board-round1.png`, `03-legal-preview.png`, `04-placement-rejected.png` (GameScreen, ScorePanel, Objectives, GlassBoard, DraftPool) · `05-beam.png` (BeamLayer) · `06-goal-sheet.png` (GoalDetails sheet) · `07-pause-menu.png`, `12-pause-abandon-confirm.png` (Menus/PauseMenu) · `08-round-forfeit.png` (Fx forfeit banner) · `09-final-report.png`, `11-challenge-share.png` (GameOverScreen) · `10-tutorial.png` (TutorialOverlay); `ctxt/MVC_RoseWindow.md` sections 1, 2, 5; `ctxt/acceptance_tests.md` (F-03, F-04, AT-11, AT-12, AT-17)
+- **Requirements:** NFR-4.2, NFR-5.1–NFR-5.4, NFR-5.6, FR-17.1, FR-17.2, FR-5.10, FR-7.1–FR-7.5, FR-9.4
 
 ### MANDATORY: Sandwich Requirement
 - **Start:** Change how views get data, never what they show. Where an ASCII sketch and its screenshot disagree, the screenshot wins.
-- **End:** ESLint forbids legacy imports in `src/view`, all 23 existing e2e tests plus the new F-03 spec pass, and side-by-side screenshots match all 12 mockups.
+- **End:** ESLint forbids legacy imports in `src/view`, all 23 existing e2e tests plus the new F-03 and F-04 specs pass, and side-by-side screenshots match all 12 mockups.
 
 ---
 
 ### 1. Capability Specification
-- **Adds:** `src/view/GameControllerContext.tsx`; `src/view/useControllerView.ts`; `tests/e2e/grid-rows.spec.ts`.
+- **Adds:** `src/view/GameControllerContext.tsx`; `src/view/useControllerView.ts`; `tests/e2e/grid-rows.spec.ts`; `tests/e2e/tutorial-replay.spec.ts`; F-04: a `Replay tutorial` button (`data-testid="tutorial-restart"`) inside the How to play sheet (`rules-sheet`, opened from the pause menu's `tutorial-replay` or the setup screen's `setup-rules`) that closes the sheet and restarts the guided first-run tutorial at step 1 on the current screen (FR-9.4), without resetting or altering the run in progress.
 - **Changes:** `GameScreen` replaces `useGame(session)` with controller hooks; `App.tsx` (composition root) builds `Game` (via `RunRecorder.restore` or the dev fast-forward), `GameController`, `BeamAnimationController`, `PlayerProfile`, `ChallengeCodec`; the pause overlay now calls `controller.pause()` / `resume()` (AT-11: a click outside only closes the menu and resumes, nothing is placed).
-- **Unchanged:** CSS, markup classes, `data-testid`s (`cell-r{r}c{c}` stays 0-based), wording, animations, sounds.
+- **Unchanged:** CSS, markup classes, `data-testid`s (`cell-r{r}c{c}` stays 0-based), wording (the only addition is the F-04 `Replay tutorial` button), animations, sounds.
 
 ### 2. Implementation Instructions
 ```ts
@@ -42,19 +42,28 @@ export function useControllerView(controller: AbstractController<AbstractModel<M
 - Tighten ESLint `src/view/**`: add `**/engine/*`, `**/machine/*`, `**/hooks/useGame`, `**/hooks/runSession` and value imports of `@progression` to the restricted patterns.
 - TSDoc on each new export.
 
+- **F-04 fix (Replay tutorial, FR-9.4):**
+  - `src/hooks/useTutorial.ts`: the `Tutorial` interface gains `restart(): void` and `showNext: boolean`. `restart` sets `step` to 0 and `active` to true; it calls no controller or model method and leaves the session and the run untouched (finishing or skipping again writes `rosewindow-tutorial = 'done'` as today). At restart, record which `requires` conditions (`pattern`, `draft`, `placed1`) already hold and set `placedSeen.current` from the current `placedCount`, so neither the auto-advance effect nor the placement jump skips past step 1; a step whose condition already held at restart advances with the button instead. `showNext` is `requires === undefined || <condition held at restart>`; on a first run it equals today's `requires === undefined`.
+  - `src/view/TutorialOverlay.tsx`: new prop `showNext` replaces its `current.requires === undefined` test for rendering `tutorial-next` (label still `Got it` / `cta`).
+  - `src/view/Menus.tsx`: `RulesContent` gains optional prop `onReplayTutorial?: () => void`; when given, it renders after the four rule cards `<button type="button" className="btn btn--wide" data-testid="tutorial-restart" onClick={onReplayTutorial}>Replay tutorial</button>`. The pause menu's `tutorial-replay` ("How to play") button is unchanged.
+  - `src/view/GameScreen.tsx`: the `overlay === 'rules'` `Sheet` (`testId="rules-sheet"`) renders `<RulesContent onReplayTutorial={() => { closeOverlay(); tutorial.restart() }} />` (closing behaves exactly like the sheet's close button, so a paused run resumes as usual); pass `showNext={tutorial.showNext}` to `TutorialOverlay` in `coach` (`tutorial.active && !done`). `tutorial` stays `useTutorial(game, path, session.tutorial)`.
+
 `tests/e2e/grid-rows.spec.ts` (`?seed=3`, choose Novice Rose): `getByRole('row')` count 4; each row has 4 `gridcell`s; first cell label starts `row 1, column 1`; last starts `row 4, column 4`.
+
+`tests/e2e/tutorial-replay.spec.ts` (`?seed=3`, choose Novice Rose, click `draft-die-0` then the first `[role="gridcell"][data-legal="true"]`; note `round-indicator` text and the count of `[data-testid^="die-r"]`): `game-menu` → `tutorial-replay`; `rules-sheet` contains `tutorial-restart` with text `Replay tutorial`; click it → `rules-sheet` count 0, `tutorial-card` contains `1/6` and `Welcome, glazier`; `round-indicator` text and placed-die count unchanged.
 
 ### 3. Verification Protocol
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
-pnpm e2e                                   # 23 existing + 1 new = 24, 100 %
+pnpm e2e                                   # 23 existing + 2 new = 25, 100 %
 pnpm vitest run -t "golden"                # 156
 grep -rnE "from '\.\./(engine|machine)/|hooks/useGame|hooks/runSession" src/view | wc -l     # 0
 grep -rnE "game\.(choosePattern|selectDie|placeDie|cancelSelection|refreshDraft|forfeitRound)\(" src/view | wc -l   # 0
 git commit -am "refactor(view): inc 58 views through GameController" && git tag inc-58-green
 ```
-- [ ] Playwright MCP at 360×640 (`?seed=3`): capture each of the 12 screens to `docs/mockup-compare/NN-*.png` and compare with the same-numbered mockup; layout, wording ("Pick a window", "Window #3", "ROUND 1/8", "Pick your glass", "Paused", "Challenge link copied. Send it to a friend.") and colours identical
+- [ ] Playwright MCP at 360×640 (`?seed=3`): capture each of the 12 screens to `docs/mockup-compare/NN-*.png` and compare with the same-numbered mockup; layout, wording ("Pick a window", "Window #3", "ROUND 1/8", "Pick your glass", "Paused", "Challenge link copied. Send it to a friend.") and controls must match (missing or wrong content, or a broken layout, is a failure); purely cosmetic differences such as exact colours or spacing are noted, not failed, per the mockup policy in prompt 62
 - [ ] Pause menu covers draft and recast; clicking the board while paused places nothing (AT-11)
+- [ ] F-04: `tutorial-replay.spec.ts` passes — the How to play sheet has a `Replay tutorial` button (`tutorial-restart`) that closes the sheet and shows tutorial step `1/6` (`Welcome, glazier`) with the run's round and placed dice unchanged (FR-9.4)
 - [ ] Tracking: typecheck 0, lint 0/0, unit 100 %, golden exact, **E2E ≥ 90 % yellow / 100 % green**, classes ≥ 36
 
 ### 4. CRITICAL Checkpoint
@@ -67,4 +76,4 @@ git commit -am "refactor(view): inc 58 views through GameController" && git tag 
 
 ---
 
-**CRITICAL: Views now get state only via `GameController` and `useModelEvents`, send gestures only to controllers, look exactly like the 12 mockups, and expose the grid with row elements and 1-based labels (F-03 fixed). Golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**
+**CRITICAL: Views now get state only via `GameController` and `useModelEvents`, send gestures only to controllers, look exactly like the 12 mockups, expose the grid with row elements and 1-based labels (F-03 fixed), and offer a Replay tutorial button in the How to play sheet that restarts the tutorial at step 1 without touching the run (F-04 fixed, FR-9.4). Golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**

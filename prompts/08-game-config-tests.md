@@ -1,6 +1,6 @@
 # Prompt 08: GameConfig Tests
 
-**CRITICAL: Write `tests/model/GameConfig.test.ts` that pins every default, the seed-normalization partitions, deep immutability and the `invalidArgument` rejection. Import only from `src/model/`; port every case of `tests/engine/config.test.ts` and the GameConfig case of `tests/engine/classes.test.ts`.**
+**CRITICAL: Write `tests/model/GameConfig.test.ts` that pins every default, the seed-normalization partitions, deep immutability and the `invalidArgument` rejection for every validated field (`rounds`, `gridSize`, `draftSize`, `placementsPerRound`, `copiesPerDie`, `multiplierCap`, tiers). Import only from `src/model/`; port every case of `tests/engine/config.test.ts` and the GameConfig case of `tests/engine/classes.test.ts`.**
 
 ---
 
@@ -41,11 +41,11 @@ Header comment:
 | 10 | `createGameConfig(-1, {tiers})` then `tiers.gold = 999` | `config.tiers.gold === 30`; `instanceof GameConfig` |
 | 11 | frozen | `Object.isFrozen(config)` and `Object.isFrozen(config.tiers)` both `true` |
 | 12 | provisional ordering | `PROVISIONAL_TIERS.bronze < silver < gold` (two assertions) |
-| 13–16 | `it.each([['rounds',0],['draftSize',-1],['gridSize',2.5],['multiplierCap',0]])` | `expect(() => new GameConfig(1, {[field]: value})).toThrow(GameError)` |
-| 17 | tiers `{bronze:50, silver:40, gold:90}` | `toThrow(GameError)` and `toThrow(/invalid argument/)` |
-| 18 | seed override attempt via cast `{ seed: 9 } as never` | `.seed === 1` (seed cannot be overridden) |
+| 13–18 | `it.each([['rounds',0],['draftSize',-1],['gridSize',2.5],['multiplierCap',0],['placementsPerRound',0],['copiesPerDie',-3]])` | `expect(() => new GameConfig(1, {[field]: value})).toThrow(GameError)` |
+| 19 | tiers `{bronze:50, silver:40, gold:90}` | `toThrow(GameError)` and `toThrow(/invalid argument/)` |
+| 20 | seed override attempt via cast `{ seed: 9 } as never` | `.seed === 1` (seed cannot be overridden) |
 
-Error kinds raised by `GameConfig`: only `invalidArgument` → cases 13–17 cover it (one test per field family plus tiers).
+Error kinds raised by `GameConfig`: only `invalidArgument` → cases 13–19 cover it (one test per validated field — all six positive-integer fields of Prompt 07 rule 4 — plus tiers).
 
 **Ported from the reference:** every `it` in `config.test.ts` (cases 1–9, 12) and "creates immutable run parameters without retaining mutable tier overrides" from `classes.test.ts` (cases 10–11). None may be dropped.
 
@@ -62,11 +62,11 @@ pnpm typecheck && pnpm lint && pnpm test
 pnpm vitest run tests/engine/game.test.ts -t "golden master"
 git commit -am "test(model): inc 08 GameConfig tests" && git tag inc-08-green
 ```
-- [ ] ≥ 18 tests, 100 % pass; header criterion comment present
-- [ ] One test per seed partition and per invalid-override partition
+- [ ] ≥ 20 tests, 100 % pass; header criterion comment present
+- [ ] One test per seed partition and per invalid-override partition; one rejection test for each of `rounds`, `gridSize`, `draftSize`, `placementsPerRound`, `copiesPerDie`, `multiplierCap` and tiers
 - [ ] No control flow inside test bodies
 - [ ] typecheck 0, lint 0/0, golden master 5,5,31,16,2,7,53,37 / 156, `check:classes` ≥ 15
 
 ---
 
-**CRITICAL: Every default, every seed partition, deep immutability and the invalidArgument rejection are pinned by constants; all reference config tests are ported; golden master stays 5,5,31,16,2,7,53,37 / 156.**
+**CRITICAL: Every default, every seed partition, deep immutability and the invalidArgument rejection of every validated field (including placementsPerRound and copiesPerDie) are pinned by constants; all reference config tests are ported; golden master stays 5,5,31,16,2,7,53,37 / 156.**

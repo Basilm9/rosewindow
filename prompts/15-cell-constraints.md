@@ -16,7 +16,7 @@
 - **End:** `pnpm test` 100 % green, golden master unchanged, `check:classes` ≥ **16**.
 
 ### 1. Capability Specification
-- **Changes:** the forward declaration from Prompt 05 becomes the real interface (`accepts(die: Die)`); the three classes move from `engine/types.ts`.
+- **Changes:** the forward declaration from Prompt 05 becomes the real interface (`accepts(die: DieData)` — plain die data, which a `Die` instance also satisfies); the three classes move from `engine/types.ts`.
 - **Adds:** argument validation (`ColorConstraint` rejects an unknown color, `ValueConstraint` a value outside 1–6) via `GameError` `invalidArgument`; `describe()` for rejection toasts (FR-4.11).
 - **Unchanged:** acceptance rules — color demand ignores value, value demand ignores color, open accepts everything.
 

@@ -64,7 +64,7 @@ export class PlacementError extends GameError {
 
 **`CellConstraint` forward declaration.** The real interface arrives in Prompt 15. In this increment create `src/model/CellConstraint.ts` containing only:
 ```typescript
-/** Provisional; Prompt 15 narrows `accepts` to `(die: Die) => boolean`. */
+/** Provisional; Prompt 15 narrows `accepts` to `(die: DieData) => boolean`. */
 export interface CellConstraint {
   readonly kind: 'open' | 'color' | 'value'
   accepts(die: { readonly color: string; readonly value: number }): boolean
@@ -75,7 +75,7 @@ The engine constraint classes satisfy it structurally (method parameters are biv
 **Behaviour rules (from `engine/errors.ts`):**
 1. Copy the ten existing messages verbatim (e.g. `dieNotInPool` → "die is not in the current draft pool").
 2. New messages: `outOfBounds` → `` `target ${JSON.stringify(target)} is outside the grid` ``; `malformedPattern` → `` `malformed window pattern: ${reason}` ``; `unknownPattern` → `` `unknown pattern id: "${id}"` ``; `invalidArgument` → `` `invalid argument: ${detail}` ``.
-3. `outOfBounds` is a `GameError`, **not** a `PlacementError`: it is a caller defect, not a broken placement law.
+3. `outOfBounds` is a `GameError`, **not** a `PlacementError`: it is a caller defect, not a broken placement law. Conversely every `PlacementViolation` kind is always raised as a `PlacementError`, wherever it occurs — including `dieNotInPool` from `DraftPool.take` (Prompt 25).
 4. TSDoc on both classes, the field, the constructor and `describe`, including when each is thrown.
 5. Shim: `src/engine/errors.ts` becomes `export { GameError, PlacementError } from '../model/GameError'` plus `export type { GameViolation, PlacementViolation }`; `engine/types.ts` re-exports `Position` from `src/model/Position`.
 

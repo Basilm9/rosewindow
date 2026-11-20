@@ -37,7 +37,7 @@ export class Game extends AbstractModel<GameEvent> {
   get roundScores(): readonly number[]; get totalScore(): number; get report(): ScoreReport | null
   /** @throws GameError invalidPhase | unknownPattern */
   choosePattern(id: string): void
-  /** @throws GameError invalidPhase | dieNotInPool */
+  /** @throws GameError invalidPhase; @throws PlacementError dieNotInPool */
   selectDie(die: Die): void
   /** @throws GameError invalidPhase */
   cancelSelection(): void

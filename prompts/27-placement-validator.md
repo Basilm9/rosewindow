@@ -6,7 +6,7 @@
 
 ### INCREMENT 27: Placement laws in fixed order
 - **Status:** CRITICAL checkpoint
-- **Dependencies:** Prompts 05, 11, 13, 15, 21, 25
+- **Dependencies:** Prompts 05, 11, 13, 15, 21, 25 (`DraftPool.contains`)
 - **Reference implementation:** `src/engine/placementValidator.ts` and `tests/engine/placementValidator.test.ts`, `tests/engine/classes.test.ts` ("reuses a validator…")
 - **Context to attach:** `ctxt/MVC_RoseWindow.md` §4 (row 13), §5; `ctxt/RoseWindowReqPrompt.txt` (placement laws)
 - **Requirements:** FR-4.2–FR-4.9, FR-4.12, FR-4.15, NFR-2.1, NFR-2.2, NFR-2.4
@@ -17,16 +17,16 @@
 
 ### 1. Capability Specification
 - **Adds:** `src/model/PlacementValidator.ts` with `PlacementCheck` and statics `isInsideGrid`, `isOnBorderRing`, `countPlaced`.
-- **Changes:** out-of-grid → `GameError({ kind: 'outOfBounds', target })`; the law sequence is an explicit ordered list of private checks.
+- **Changes:** out-of-grid → `GameError({ kind: 'outOfBounds', target })`; the law sequence is an explicit ordered list of private checks; the dieNotInPool law delegates to `DraftPool.contains` (Prompt 25) instead of scanning the list itself.
 - **Unchanged:** the laws, their order, `adjacencyViolation.offendingNeighbors` listing every offending orthogonal neighbour in `ORTHOGONAL_DELTAS` order (N, S, W, E), diagonal contact counting for connectivity only, statelessness between calls.
 
 ### 2. Implementation Instructions
 ```typescript
-// src/model/PlacementValidator.ts — imports ./GlassWindow (DieGrid type), ./CellConstraint, ./Die, ./Position, ./GameError
+// src/model/PlacementValidator.ts — imports ./GlassWindow (DieGrid type), ./CellConstraint, ./Die, ./DraftPool, ./Position, ./GameError
 export interface PlacementCheck {
   readonly grid: DieGrid
   readonly constraints: readonly (readonly CellConstraint[])[]
-  readonly pool: readonly DieData[]   // membership by color+value
+  readonly pool: readonly DieData[]   // membership by color+value via DraftPool.contains
   readonly die: DieData
   readonly target: Position
 }
@@ -52,7 +52,7 @@ export class PlacementValidator {
 
 **Behaviour rules (copy from the reference):**
 1. `size = grid.length`; if `!isInsideGrid(target, size)` throw `outOfBounds` (integer check on both coordinates; `0.5`, `NaN`, `Infinity` are outside).
-2. cellOccupied: `grid[r][c] !== null`. dieNotInPool: `!pool.some(p => Die.equals(p, die))`. constraintMismatch: `demand !== undefined && !demand.accepts(die)` → `{ kind, expected: demand }` (the constraint instance itself).
+2. cellOccupied: `grid[r][c] !== null`. dieNotInPool: `!DraftPool.contains(pool, die)` — the pool-membership rule Prompt 25 defines; do not re-implement it with `pool.some(...)`. (Same color+value result as the reference `sameDie` scan, so precedence and the golden master are unchanged.) constraintMismatch: `demand !== undefined && !demand.accepts(die)` → `{ kind, expected: demand }` (the constraint instance itself).
 3. adjacency: for each of `ORTHOGONAL_DELTAS`, neighbour non-null and (same color **or** same value) → collect `{row, col}`; non-empty list → violation.
 4. illegalFirstPlacement: `countPlaced(grid) === 0 && !isOnBorderRing(target, size)`. disconnected: `countPlaced(grid) > 0` and no die at any of the 8 orthogonal+diagonal neighbours.
 5. Neighbour reads use `grid[r]?.[c] ?? null` (outside = empty).
@@ -70,6 +70,7 @@ git commit -am "feat(model): inc 27 PlacementValidator" && git tag inc-27-green
 ```
 - [ ] Every reference test in `placementValidator.test.ts` passes unchanged (the out-of-bounds tests match `/outside the grid/`)
 - [ ] `assertValid` on an out-of-grid target throws `GameError` that is **not** a `PlacementError`
+- [ ] The dieNotInPool law calls `DraftPool.contains`: `grep -n "DraftPool.contains" src/model/PlacementValidator.ts` prints one line and `grep -n "pool.some" src/model/PlacementValidator.ts` prints nothing
 - [ ] typecheck 0; lint 0/0; unit 100 %; golden master 5,5,31,16,2,7,53,37 / 156; `check:classes` ≥ 18
 
 ### 4. CRITICAL Checkpoint

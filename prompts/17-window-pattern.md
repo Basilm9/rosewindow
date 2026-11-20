@@ -1,6 +1,6 @@
 # Prompt 17: WindowPattern
 
-**CRITICAL: Turn `WindowPattern` from an interface into a class in `src/model/WindowPattern.ts` that parses and VALIDATES its hand-authored rows at load time (NFR-1.3), throwing `GameError` kind `malformedPattern` — the reference `patterns.ts` still uses `throw new Error(...)` and that must not survive. The six catalog patterns, their order and their rows are frozen data: changing any of them moves the golden master.**
+**CRITICAL: Turn `WindowPattern` from an interface into a class in `src/model/WindowPattern.ts` that parses and VALIDATES its hand-authored rows at load time (NFR-1.3), throwing `GameError` kind `malformedPattern` — the reference `patterns.ts` still uses `throw new Error(...)` and that must not survive. The six catalog patterns, their order and their rows are frozen data: changing any of them moves the golden master. The one permitted catalog edit is TEXT ONLY: novice-rose's description says "Three demands" instead of "Four demands".**
 
 ---
 
@@ -18,7 +18,8 @@
 ### 1. Capability Specification
 - **Adds:** class `WindowPattern`, constant `ALL_PATTERNS`, statics `offer` and `byId`.
 - **Changes:** the three `throw new Error(...)` sites in `patterns.ts` (lines 28, 42, 53) become `throw new GameError({ kind: 'malformedPattern', reason })` with reasons `'constraint grid must be square'`, `` `invalid pattern character: "${ch}"` ``, `` `pattern "${id}" must have ${gridSize} rows` ``.
-- **Unchanged:** grid letters (`R Y B G P` colors, `1`–`6` values, `.` open), the six patterns in the order novice-rose, lancet, quatrefoil, tracery, clerestory, rose-majestic, their names/descriptions/rows, and `offer` drawing two via `SeededRandom.sample(ALL_PATTERNS, 2, rng)`.
+- **Changes (text only):** novice-rose's description becomes `'A sparse first commission. Three demands, mostly free panes.'` (the reference says "Four demands", but its rows hold 3).
+- **Unchanged:** grid letters (`R Y B G P` colors, `1`–`6` values, `.` open), the six patterns in the order novice-rose, lancet, quatrefoil, tracery, clerestory, rose-majestic, their names and rows, every other description, and `offer` drawing two via `SeededRandom.sample(ALL_PATTERNS, 2, rng)`.
 
 ### 2. Implementation Instructions
 ```typescript
@@ -57,7 +58,7 @@ export const ALL_PATTERNS: readonly WindowPattern[]
 1. Character parsing per cell: `.` → `new OpenConstraint()`, `'1'..'6'` → `new ValueConstraint(Number(ch))`, `R/Y/B/G/P` → `new ColorConstraint(color)`, anything else → `malformedPattern`.
 2. Square check after parsing every row (`row.length !== rows.length`).
 3. `Object.freeze` each row array, the outer array and the instance. Own data stays `{id, name, description, constraints}` so `GlassWindow.fromPattern` and existing views work unchanged.
-4. Keep catalog rows verbatim, e.g. novice-rose `['..5.', '....', 'Y...', '.3..']`. Note: its description says "Four demands" but the rows hold 3; do **not** edit rows; flag the text in the commit body for the team.
+4. Keep catalog rows verbatim, e.g. novice-rose `['..5.', '....', 'Y...', '.3..']`. Its description must change to exactly `'A sparse first commission. Three demands, mostly free panes.'` (the reference says "Four demands" but the rows hold 3); change only that string — do **not** edit any row, so the golden master cannot move. Mention the correction in the commit body.
 5. TSDoc on the class, all fields, constructor, every static and method, with `@throws`.
 6. **Shims:** `src/engine/patterns.ts` → `export { ALL_PATTERNS } from '../model/WindowPattern'`; `parseConstraints = WindowPattern.parseConstraints`; `offerPatterns = (rng) => WindowPattern.offer(rng)`. `src/engine/types.ts` → `export type { WindowPattern } from '../model/WindowPattern'` (replaces the interface; the class has the same four fields).
 
@@ -71,9 +72,10 @@ git commit -am "feat(model): inc 17 WindowPattern" && git tag inc-17-green
 ```
 - [ ] `ALL_PATTERNS.map(p => p.id)` equals the six ids in catalog order
 - [ ] `ALL_PATTERNS.map(p => p.demandCount)` equals `[3, 6, 8, 10, 11, 14]`
+- [ ] `WindowPattern.byId('novice-rose').description === 'A sparse first commission. Three demands, mostly free panes.'` and its rows are unchanged
 - [ ] `WindowPattern.parseConstraints(['R.', 'X.'])` throws `GameError` kind `malformedPattern`
 - [ ] typecheck 0; lint 0/0; unit 100 %; golden master 5,5,31,16,2,7,53,37 / 156; `check:classes` ≥ 17
 
 ---
 
-**CRITICAL: WindowPattern is a class that validates its data at load and throws GameError malformedPattern (never `new Error`), with the six catalog patterns byte-identical and in order; golden master stays 5,5,31,16,2,7,53,37 / 156.**
+**CRITICAL: WindowPattern is a class that validates its data at load and throws GameError malformedPattern (never `new Error`), with the six catalog patterns' rows byte-identical and in order (only novice-rose's description text corrected to "Three demands"); golden master stays 5,5,31,16,2,7,53,37 / 156.**

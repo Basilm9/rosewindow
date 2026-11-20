@@ -48,14 +48,14 @@ Generated on 19 Nov 2026 by Claude (model `claude-opus-5-5`, in Claude Cowork) b
 | 15 | `15-cell-constraints.md` | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint — Replace the provisional `CellConstraint` with the real interface in `src/model/CellConstraint.ts` and move the three implementing classes there, so a … | ✔ |
 | 16 | `16-cell-constraint-tests.md` | CellConstraint Tests — Write `tests/model/CellConstraint.test.ts` that pins the acceptance table of all three constraint classes against a fixed set of dice, their own-data … |  |
 | 17 | `17-window-pattern.md` | WindowPattern — Turn `WindowPattern` from an interface into a class in `src/model/WindowPattern.ts` that parses and VALIDATES its hand-authored rows at load time (NFR… |  |
-| 18 | `18-window-pattern-tests.md` | WindowPattern Tests — Write `tests/model/WindowPattern.test.ts` that freezes the six-pattern catalog (ids, order, 4×4 shape, demand counts), the deterministic offer for fix… |  |
+| 18 | `18-window-pattern-tests.md` | WindowPattern Tests — Write `tests/model/WindowPattern.test.ts` that freezes the six-pattern catalog (ids, order, 4×4 shape, demand counts, the corrected novice-rose descri… |  |
 | 19 | `19-window-cell.md` | WindowCell — Create the immutable `WindowCell` class in `src/model/WindowCell.ts` (a printed `CellConstraint` plus zero-or-one `Die`) that replaces the reference `… |  |
 | 20 | `20-window-cell-tests.md` | WindowCell Tests — Write `tests/model/WindowCell.test.ts` covering every branch of `WindowCell` (empty / occupied for each method), its immutability and data shape, dele… |  |
 | 21 | `21-glass-window.md` | GlassWindow — Rebuild `GlassWindow` in `src/model/GlassWindow.ts` as a grid of immutable `WindowCell`s with bounds and occupancy queries, and make it the class the … | ✔ |
 | 22 | `22-glass-window-tests.md` | GlassWindow Tests — Write `tests/model/GlassWindow.test.ts` that pins construction from a pattern, snapshot isolation of `dice`, bounds and occupancy queries, and one tes… |  |
 | 23 | `23-dice-bag.md` | DiceBag — Move `DiceBag` into `src/model/DiceBag.ts`: 90 dice (5 colors × 6 values × `config.copiesPerDie`), built in DIE_COLORS × value × copy order and shuffl… |  |
 | 24 | `24-dice-bag-tests.md` | DiceBag Tests — Write `tests/model/DiceBag.test.ts` that pins the 90-die composition, the seeded draw order against PRECOMPUTED dice, conservation across draw/return,… |  |
-| 25 | `25-draft-pool.md` | DraftPool — Move `DraftPool` into `src/model/DraftPool.ts`: the dice visible this round, with `take` matching by color AND value (never identity) and throwing `Ga… |  |
+| 25 | `25-draft-pool.md` | DraftPool — Move `DraftPool` into `src/model/DraftPool.ts`: the dice visible this round, with `take` matching by color AND value (never identity) and throwing `Pl… |  |
 | 26 | `26-draft-pool-tests.md` | DraftPool Tests — Write `tests/model/DraftPool.test.ts` covering every branch of `take` (first match, duplicate dice, absent die), the copy semantics of the constructor… |  |
 
 ### Model: placement laws
@@ -63,7 +63,7 @@ Generated on 19 Nov 2026 by Claude (model `claude-opus-5-5`, in Claude Cowork) b
 | # | File | Purpose | CRITICAL |
 | --- | --- | --- | --- |
 | 27 | `27-placement-validator.md` | PlacementValidator — Move `PlacementValidator` into `src/model/PlacementValidator.ts` checking the six placement laws in the FIXED order cellOccupied → dieNotInPool → cons… | ✔ |
-| 28 | `28-placement-validator-tests.md` | PlacementValidator Tests — Write `tests/model/PlacementValidator.test.ts` with one test per placement law (six), the documented precedence cases for every constructible pair, th… |  |
+| 28 | `28-placement-validator-tests.md` | PlacementValidator Tests — Write `tests/model/PlacementValidator.test.ts` with one test per placement law (six), one precedence test for each of the 11 law pairs (of all 15) tha… |  |
 
 ### Model: the beam
 
@@ -148,7 +148,7 @@ Generated on 19 Nov 2026 by Claude (model `claude-opus-5-5`, in Claude Cowork) b
 | 70 | `70-at09-recast.md` | AT-09 Recast the Draft — Create `tests/e2e/acceptance/at09-recast.spec.ts` proving one recast per run returns the showing dice and the held die to the bag, deals fresh dice, k… |  |
 | 71 | `71-at10-restore.md` | AT-10 Interrupt and Restore — Create `tests/e2e/acceptance/at10-restore.spec.ts` proving that reloading plain `localhost:5173` restores an interrupted run automatically (no prompt)… |  |
 | 72 | `72-at11-suspend.md` | AT-11 Suspend a Run — Create `tests/e2e/acceptance/at11-suspend.spec.ts` proving that while paused no game action can happen: a click outside the pause menu only closes it,… |  |
-| 73 | `73-at12-tutorial.md` | AT-12 First-Time Tutorial — Create `tests/e2e/acceptance/at12-tutorial.spec.ts` proving the first-launch tutorial appears, advances when the taught action is performed, covers dr… |  |
+| 73 | `73-at12-tutorial.md` | AT-12 First-Time Tutorial — Create `tests/e2e/acceptance/at12-tutorial.spec.ts` proving the first-launch tutorial appears, advances when the taught action is performed (the three… |  |
 | 74 | `74-at13-audio.md` | AT-13 Audio Control — Create `tests/e2e/acceptance/at13-audio.spec.ts` whose automated part checks the sound calls (none before the first interaction, distinct sounds for s… |  |
 | 75 | `75-at14-daily.md` | AT-14 Daily Challenge — Create `tests/e2e/acceptance/at14-daily.spec.ts` proving today's daily window, started from the pause menu, has the same seed and pattern in two brows… |  |
 | 76 | `76-at15-challenge.md` | AT-15 Challenge Another Player — Create `tests/e2e/acceptance/at15-challenge.spec.ts` proving Challenge on the final report copies a link that carries only the challenge code, that th… |  |

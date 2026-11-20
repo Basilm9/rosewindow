@@ -1,12 +1,12 @@
 # Prompt 62: AT-01 Begin a Run at a Chosen Seed (+ shared acceptance harness)
 
-**CRITICAL: Create the shared Playwright acceptance harness and `tests/e2e/acceptance/at01-begin-run.spec.ts`; every acceptance spec from 63 to 78 reuses this harness, and no acceptance test may change game code or the golden master.**
+**CRITICAL: Create the shared Playwright acceptance harness and `tests/e2e/acceptance/at01-begin-run.spec.ts`; every acceptance spec from 63 to 78 reuses this harness and its mockup-comparison policy (Fail only for missing/wrong content or a broken layout; cosmetic differences are notes), and no acceptance test may change game code or the golden master.**
 
 ---
 
 ### INCREMENT 62: Acceptance harness + AT-01
 - **Status:** CRITICAL checkpoint
-- **Dependencies:** Prompts 58 (views rewired, F-03 fixed), 59 (`src/util/autoPlayer.ts`, `src/util/sfx.ts`), 60
+- **Dependencies:** Prompts 58 (views rewired, F-03 and F-04 fixed), 59 (`src/util/autoPlayer.ts`, `src/util/sfx.ts`), 60
 - **Reference implementation:** `tests/e2e/phase7.spec.ts`, `tests/e2e/mobile.spec.ts` (pause-menu text), `src/util/autoPlayer.ts` (`fastForward`, `bestPair`)
 - **Context to attach:** `acceptance_tests.md` (row AT-01 and header), `GUI_mockupsRoseWindow.md`, `mockups/01-setup.png`, `mockups/02-board-round1.png`, `mockups/07-pause-menu.png`
 - **Requirements:** FR-1.1 to 1.3, 1.5; FR-5.1; FR-7.1, 7.4, 7.5
@@ -30,22 +30,28 @@ export type MockupKey = keyof typeof MOCKUP;
 export async function freshPage(browser: Browser, opts?: BrowserContextOptions): Promise<{ page: Page; urls: string[] }>;
 /** goto `/?seed=N[&round=R]`, click `pattern-<id>`, wait for `glass-board[aria-busy="false"]`. */
 export async function startSeeded(page: Page, seed: number, patternId: string, round?: number): Promise<void>;
-/** Saves docs/acceptance/<AT>/<NN>-<step>.png (NN = 01, 02, ... per test); remembers the mockup to compare. */
+/** Saves docs/acceptance/<AT>/<NN>-<step>.png (NN = 01, 02, ... per test); remembers the mockup to compare
+ *  (compared under MOCKUP_POLICY below). */
 export class ShotLog { constructor(at: string); take(page: Page, step: string, mockup: MockupKey | null): Promise<string>; }
 /** Mirrors a node-side Game replica into the UI: select `select <color> <value>` (first), click `cell-r<r>c<c>`,
  *  wait for the board to settle; forfeits are applied to the replica when bestPair returns null (the UI forfeits itself). */
 export async function playMoves(page: Page, replica: Game, untilRound: number | 'end'): Promise<void>;
 /** Appends | date | AT | Pass/Fail | fault | URL(s) | screenshots → mockups | notes | to docs/acceptance/results.md
- *  (creates the header row if missing). Fail rows take nextFaultId(): next free F-nn after F-03 and any in the file. */
+ *  (creates the header row if missing). Fail rows take nextFaultId(): next free F-nn after F-04 (F-03, F-04 are known faults) and any in the file. */
 export function logResult(row: ResultRow): void;
+/** The mockup-comparison policy every AT spec (AT-01 … AT-17) applies; also written into results.md's header. */
+export const MOCKUP_POLICY: string;
 ```
+**Mockup-comparison policy (shared; every spec 62–78 that says "compare with" a mockup applies it, and `MOCKUP_POLICY` states it verbatim):**
+- A screen **Fails** (new fault ID) only for (a) missing or wrong content — text, values, controls absent, extra or wrong — or (b) a broken layout — elements overlapping, clipped, or the page scrolling where the mockup does not.
+- Purely cosmetic differences — exact colours, spacing, animation frame captured — are **not** faults: record them in the row's notes column (`cosmetic: …`) and keep the result Pass.
 Build replicas with `fastForward(seed, 1)` then `choosePattern(id)`; after every settled beam assert `beam-total` equals `replica.totalScore`. Register `test.afterEach` in each spec that calls `logResult` with Fail when `testInfo.status !== 'passed'`.
 
 **File `tests/e2e/acceptance/at01-begin-run.spec.ts` (URL `/?seed=3`):**
 1. `patterns-offered` holds exactly two `pattern-*` buttons with different ids; for each: `.pick-card__name` text, the `<name> layout` grid has 16 cells, `.pick-card__desc` visible at 1280 px. `getByText('Window #3')` visible. Shot `setup` → `MOCKUP.setup`.
 2. Click `pattern-novice-rose`. Assert `glass-board` aria-label `Glass window pattern: Novice Rose`; the 16 cell `title`s match the replica's Novice Rose constraints; `round-indicator` = `ROUND 1/8`; label `2 left to place this round`; 5 `draft-die-*`; `refresh-dice` label `Reroll dice, 1 left`; `entry-arrow` inside `cell-r<r>c<c>` of `replica.currentEntry` with label `beam enters heading <direction>`. Shot `board` → `MOCKUP.board`.
 3. Click `game-menu`; `pause-menu` contains `Free play · Novice Rose · window #3`. Shot `pause` → `MOCKUP.pause`.
-4. `logResult` Pass with URL `/?seed=3`, then open each PNG beside its mockup and note layout/wording differences in the row (a difference is a Fail with a new fault ID).
+4. `logResult` Pass with URL `/?seed=3`, then open each PNG beside its mockup and apply `MOCKUP_POLICY`: missing/wrong text, values or controls, or a broken layout (overlap, clipping, scrolling), is a Fail with a new fault ID; cosmetic differences (exact colours, spacing, animation frame) go in the notes column only.
 
 ### 3. Verification Protocol
 ```bash
@@ -53,7 +59,7 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm e2e && pnpm e2e:acceptance -g "
 ```
 - [ ] Tracking matrix green: 0 type errors, 0 lint warnings, 100 % unit and e2e, golden master exact, class count ≥ 36, 0 import violations
 - [ ] `docs/acceptance/AT01/01-setup.png`, `02-board.png`, `03-pause.png` exist
-- [ ] `results.md` has one AT-01 row with URL and mockup names
+- [ ] `results.md` has one AT-01 row with URL and mockup names; its header states `MOCKUP_POLICY`; cosmetic-only differences appear as notes, not faults
 - [ ] Commit `test(e2e): inc 62 acceptance harness and AT-01`, tag `inc-62-green`
 
 ### 4. CRITICAL Checkpoint
@@ -63,4 +69,4 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm e2e && pnpm e2e:acceptance -g "
 
 ---
 
-**CRITICAL: The harness is shared, read-only toward `src/`, and the golden master stays seed 3, novice-rose, max-flex: 5,5,31,16,2,7,53,37, beam total 156.**
+**CRITICAL: The harness and its mockup policy (content or broken layout = Fail; cosmetic = note) are shared, read-only toward `src/`, and the golden master stays seed 3, novice-rose, max-flex: 5,5,31,16,2,7,53,37, beam total 156.**

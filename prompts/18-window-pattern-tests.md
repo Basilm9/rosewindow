@@ -1,6 +1,6 @@
 # Prompt 18: WindowPattern Tests
 
-**CRITICAL: Write `tests/model/WindowPattern.test.ts` that freezes the six-pattern catalog (ids, order, 4×4 shape, demand counts), the deterministic offer for fixed seeds, and gives one test per `malformedPattern` reason plus `outOfBounds` and `unknownPattern`. Port every test of `tests/engine/patterns.test.ts` and the parse part of the constraint case in `classes.test.ts`.**
+**CRITICAL: Write `tests/model/WindowPattern.test.ts` that freezes the six-pattern catalog (ids, order, 4×4 shape, demand counts, the corrected novice-rose description), the deterministic offer for fixed seeds, and gives one test per `malformedPattern` reason plus `outOfBounds` and `unknownPattern`. Port every test of `tests/engine/patterns.test.ts` and the parse part of the constraint case in `classes.test.ts`.**
 
 ---
 
@@ -59,6 +59,7 @@ const OFFER_SEED3 = ['quatrefoil', 'tracery']
 | 19 | empty grid `new WindowPattern('e','E','',[])` | `toThrow(GameError)` |
 | 20–22 | `it.each([{row:-1,col:0},{row:0,col:4},{row:0.5,col:0}])` on novice-rose `constraintAt` | `toThrow(GameError)` (kind `outOfBounds`, `/outside the grid/`) |
 | 23 | `byId('nope')` | `toThrow(GameError)` and `toThrow(/unknown pattern id: "nope"/)` |
+| 24 | corrected novice-rose description | `WindowPattern.byId('novice-rose').description` `toBe('A sparse first commission. Three demands, mostly free panes.')` (matches its `demandCount` of 3) |
 
 Error kinds raised: `malformedPattern` (14–19, one per reason), `outOfBounds` (20–22), `unknownPattern` (23).
 
@@ -73,7 +74,7 @@ pnpm typecheck && pnpm lint && pnpm test
 pnpm vitest run tests/engine/game.test.ts -t "golden master"
 git commit -am "test(model): inc 18 WindowPattern tests" && git tag inc-18-green
 ```
-- [ ] ≥ 23 tests, 100 % pass; criterion comment present
+- [ ] ≥ 24 tests, 100 % pass; criterion comment present; the novice-rose description test (case 24) present
 - [ ] One test per malformed reason, plus outOfBounds and unknownPattern
 - [ ] No control flow in test bodies
 - [ ] typecheck 0, lint 0/0, golden master 5,5,31,16,2,7,53,37 / 156, `check:classes` ≥ 17
