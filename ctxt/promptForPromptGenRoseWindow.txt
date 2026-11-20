@@ -13,7 +13,7 @@ CRITICAL: The screenshots in mockups/ are the authoritative GUI mockups (see the
 CRITICAL: Create prompts for unit tests of the Model and Controller classes, one prompt per test class
 CRITICAL: Create a prompt for a class diagram generator: a deterministic script (not the LLM drawing the diagram) that parses src/ with the TypeScript compiler API and writes a UML class diagram showing packages, classes, interfaces, attributes, operations, generalization, realization, association and dependency, styled like a Visual Paradigm UML class diagram; it must also report any import that breaks the rules in MVC_RoseWindow.md section 5
 CRITICAL: Create a prompt to export both statecharts as diagrams
-CRITICAL: Create a prompt for each acceptance test in RoseWindowReqPrompt.txt, run with Playwright, saving a screenshot of every window and pop-up along the way and comparing each screen with its screenshot in mockups/
+CRITICAL: Create a prompt for each acceptance test AT-01 to AT-17 in Appendix C of the SRS (RoseWindow_SRS_Group18 Rev 1.4) and the acceptance test plan (acceptance_tests.md), run with Playwright, saving a screenshot of every window and pop-up along the way and comparing each screen with its screenshot in mockups/
 CRITICAL: Mark 20-40% of the prompts as CRITICAL checkpoints with risk, failure indicators, isolation testing and rollback, and include a tracking matrix with green, yellow and red thresholds for: pnpm typecheck errors, pnpm lint errors, unit test pass rate, golden master total, e2e pass rate, and class count
 CRITICAL: Create a README.md in the prompts dir listing every prompt in execution order with its purpose, like the account manager example
 
