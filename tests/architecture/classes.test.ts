@@ -13,7 +13,7 @@ it('enforces 15 distinct production classes without counting types, test fixture
     mkdirSync(join(root, 'src'))
     mkdirSync(join(root, 'tests'))
     cpSync(join(project, 'scripts/check-classes.mjs'), join(root, 'scripts/check-classes.mjs'))
-    symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'dir')
+    symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'junction')
     const source = Array.from({ length: 14 }, (_, index) => `export class Production${index} {}`)
     source.push(
       'export interface SomeInterface {}',

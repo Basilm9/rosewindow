@@ -24,7 +24,7 @@ function withProject(check: (root: string, generate: () => string) => void) {
     mkdirSync(join(root, 'src'))
     mkdirSync(join(root, 'tests'))
     cpSync(join(project, 'scripts/generate-uml.mjs'), join(root, 'scripts/generate-uml.mjs'))
-    symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'dir')
+    symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'junction')
     writeFileSync(
       join(root, 'tsconfig.json'),
       JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022' }, include: ['src'] }),
