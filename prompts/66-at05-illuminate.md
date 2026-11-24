@@ -30,7 +30,7 @@ const entry = replica.currentEntry;            // announced before any placement
 1. **Note the announced entry:** `cell-r<entry.row>c<entry.col>` contains `entry-arrow` with label `beam enters heading <entry.direction>`. Shot `entry` → `MOCKUP.board`.
 2. **Make both placements:** twice: `bestPair(replica)` → click `select <color> <value>` (first) and the target cell; apply the same move to the replica. Capture the expected path from the replica's `beamPath`/round event (`BeamPath.segments`: positions in order, points per strike).
 3. **Watch the beam:** subscribe with `page.exposeFunction` + a `MutationObserver` on `beam-layer` (installed before the second placement) that records each `bead-<i>` / `score-float-<i>` as it appears, with its timestamp. Assert:
-   - `beam-layer` visible, `glass-board` `aria-busy="true"` while drawing; shot `beam-mid` → `MOCKUP.beam` taken after the first `score-float` appears and before `data-settled`.
+   - `beam-layer` visible, `glass-board` `aria-busy="true"` while drawing; shot `beam-mid` → `MOCKUP.beam` (`shots.take(page, 'beam-mid', 'beam', { settle: false })`, because `take` otherwise waits for animations to end) taken after the first `score-float` appears and before `data-settled`.
    - The first bead sits in the entry cell and the bead order equals the replica path order (cell by cell, increasing timestamps).
    - `beam-layer` aria-label `beam path scoring 5 points, …` after `data-settled="true"`.
    - `round-scores` has `round 1 scored 5`; `beam-total` = `5` = sum of all `round N scored X` values; `round-indicator` `ROUND 2/8`.

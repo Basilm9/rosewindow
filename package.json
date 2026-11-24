@@ -18,7 +18,9 @@
     "check:classes": "node scripts/check-classes.mjs",
     "test": "pnpm check:classes && vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test --project=chromium",
+    "e2e:acceptance": "playwright test --project=acceptance",
+    "e2e:acceptance:dry": "playwright test --project=acceptance-dry"
   },
   "dependencies": {
     "@xstate/react": "^6.1.0",
