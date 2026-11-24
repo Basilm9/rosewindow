@@ -17,7 +17,21 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@mvc": ["src/mvc/index.ts"],
+      "@mvc/*": ["src/mvc/*"],
+      "@model": ["src/model/index.ts"],
+      "@model/*": ["src/model/*"],
+      "@controller": ["src/controller/index.ts"],
+      "@controller/*": ["src/controller/*"],
+      "@view/*": ["src/view/*"],
+      "@progression": ["src/progression/index.ts"],
+      "@progression/*": ["src/progression/*"],
+      "@util": ["src/util/index.ts"],
+      "@util/*": ["src/util/*"]
+    }
   },
   "include": ["src", "tests", "vite.config.ts", "playwright.config.ts"]
 }
