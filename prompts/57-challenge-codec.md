@@ -19,7 +19,7 @@
 
 ### 1. Capability Specification
 - **Adds:** class #29 (`src/progression/ChallengeCodec.ts`), exported from `src/progression/index.ts`; `tests/progression/ChallengeCodec.test.ts`.
-- **Changes:** `challenges.ts` functions become one-line delegates to a module-level `const codec = new ChallengeCodec()`; imports switch from `../engine/*` to `@model` (`Game`, `createGameConfig`).
+- **Changes:** `CHALLENGE_RULESET` and the `FriendChallenge` type move into `ChallengeCodec.ts` and `challenges.ts` re-exports them (if the codec imported them from `challenges.ts`, the two modules would import each other and `static readonly RULESET = CHALLENGE_RULESET` would throw a `ReferenceError` at load); the `challenges.ts` functions become one-line delegates to a module-level `const codec = new ChallengeCodec()`; imports switch from `../engine/*` to `@model` (`Game`, `createGameConfig`).
 - **Unchanged:** `FriendChallenge` shape, ruleset string, every error message.
 
 ### 2. Implementation Instructions

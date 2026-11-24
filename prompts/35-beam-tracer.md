@@ -37,7 +37,7 @@ export class BeamTracer {
   trace(grid: DieGrid, entry: EntryPoint): BeamPath
 }
 ```
-Add `static fromData(d: { position; direction: DirectionName }): EntryPoint` to `EntryPoint` (prompt 29) for the shim; it uses `Direction.fromName` (prompt 13, throws `invalidArgument` for an unknown name).
+The shim converts its plain entry with `EntryPoint.fromData` (prompt 29).
 
 **Loop, in this exact order (from the reference):**
 1. `multiplier = 1`, `lockout = 0`, `visited = { key(entry.position, entry.direction) }`.
@@ -46,7 +46,7 @@ Add `static fromData(d: { position; direction: DirectionName }): EntryPoint` to 
 4. Step by `direction.delta`; out of bounds → `termination = 'exitedGrid'` (FR-5.8).
 5. If `(next, direction)` is in `visited` → `termination = 'cycle'`, the repeated entry is **not** recorded or scored (FR-5.9). Otherwise add it and continue at 2.
 
-The refraction table (red/yellow clockwise, blue/green counterClockwise, purple straight) comes from the model module that prompt 11/13 created; if it is still in `src/engine/types.ts`, move `REFRACTION_BY_COLOR` into `src/model/` now and re-export it from the old file. TSDoc must document the two ambiguity resolutions (score-before-bend, cycle guard semantics) at `trace`.
+The refraction table (red/yellow clockwise, blue/green counterClockwise, purple straight) is still in `src/engine/types.ts` (prompt 13 left it for this one): move `REFRACTION_BY_COLOR` and the `Refraction` type to `src/model/Refraction.ts`, export both from `src/model/index.ts`, and re-export them from `src/engine/types.ts`. Prompts 52 and 58 import them from `@model`. TSDoc must document the two ambiguity resolutions (score-before-bend, cycle guard semantics) at `trace`.
 
 ### 3. Verification Protocol
 ```bash

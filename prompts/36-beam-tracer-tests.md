@@ -1,6 +1,6 @@
 # Prompt 36: BeamTracer Tests
 
-**CRITICAL: Write `tests/model/BeamTracer.test.ts` asserting every path CELL BY CELL (row, col, direction, points), porting all 13 reference beam cases and covering every AGENTS.md mandatory case — value-6 lockout, multiplier cap, cycle guard, immediate exit — plus one test for the `invalidArgument` error (bad entry).**
+**CRITICAL: Write `tests/model/BeamTracer.test.ts` asserting every path CELL BY CELL (row, col, direction, points), porting all 13 reference beam cases and covering every AGENTS.md mandatory case — value-6 lockout, multiplier cap, cycle guard, immediate exit — plus a test for each cause of the `invalidArgument` error, and the always-stops safety property (NFR-6.2) over random windows.**
 
 ---
 
@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 35
 - **Reference implementation:** `tests/engine/beamTracer.test.ts` (13 cases), `tests/engine/classes.test.ts` ("keeps beam settings per tracer…"), fixture `tests/helpers/board.ts` (`parseGrid`)
-- **Context to attach:** `AGENTS.md` (Testing conventions), `ctxt/RoseWindowReqPrompt.txt` (beam section), `SRS_rev1.4.txt` §3.5
+- **Context to attach:** `AGENTS.md` (Testing conventions), `ctxt/RoseWindowReqPrompt.txt` (beam section), the SRS Rev 1.4 (attach the file; it is not in the repo) §3.5
 - **Requirements:** FR-5.2–FR-5.9, NFR-1.4, NFR-6.2
 
 ### MANDATORY: Sandwich Requirement
@@ -48,7 +48,11 @@ const rows = (p: BeamPath) => p.segments.map(s => [s.position.row, s.position.co
  *  S1 segment shape: empty grid -> every die null, every points 0 (ported)
  *  P1 tracer keeps its cap and resets state: cap 3 -> 12, default -> 15, cap 3 again -> 12
  *  E1 ERROR invalidArgument: entry (1,1,E) on 4x4 throws GameError (kind 'invalidArgument')
+ *  E2 ERROR invalidArgument: empty grid []            (guard branch)
+ *  E3 ERROR invalidArgument: 2x3 grid, not square     (guard branch)
  *  B1 NFR-1.4 bound: segments.length <= 4 * gridSize^2 on the golden walk
+ *  B2 NFR-6.2 BEAM ALWAYS STOPS: 200 seeded random 4x4 windows x all 16 entries (3,200 traces):
+ *     every path has length <= 64, repeats no (cell, direction) pair and ends 'exitedGrid' or 'cycle'
  */
 ```
 
@@ -63,6 +67,7 @@ const GOLDEN_WALK = [
 ] as const
 expect(rows(path)).toEqual(GOLDEN_WALK); expect(path.totalScore).toBe(59); expect(path.termination).toBe('cycle')
 ```
+- B2: a helper above the tests, `beamStopAudit(windows): { traces: number; longest: number; repeats: number; badEndings: number }`, fills each window with `SeededRandom` (seed 1, a die with probability 0.8, else empty) and traces it from every `EntryPoint.allFor(4)`; the test asserts `traces` 3200, `repeats` 0, `badEndings` 0 and `longest <= 64`. (The automated games of prompt 48 almost never close a loop, so they do not test this property by themselves.)
 - E1: `expect(() => tracer.trace(grid, bad)).toThrow(GameError)` and `expect(() => tracer.trace(grid, bad)).toThrow(/invalid argument: .*not inward/)`; no try/catch.
 - For C2/C3 compute the expected table by hand in a comment before freezing it (C2 Y1 at (0,1): `[0,0,E,0],[0,1,E,1],[1,1,S,0],[2,1,S,0],[3,1,S,0]`, total 1; C3 G2: `[0,0,E,0],[0,1,E,2]`, total 2, exitedGrid).
 - Keep `tests/engine/beamTracer.test.ts` untouched until prompt 59.
@@ -73,9 +78,9 @@ pnpm vitest run tests/model/BeamTracer.test.ts tests/engine/beamTracer.test.ts
 pnpm typecheck && pnpm lint && pnpm test
 git add tests/model && git commit -m "test(model): inc 36 BeamTracer tests" && git tag inc-36-green
 ```
-- [ ] All 13 reference cases ported (names suffixed `(ported)`); ≥ 20 tests
+- [ ] All 13 reference cases ported (names suffixed `(ported)`); ≥ 23 tests
 - [ ] The four AGENTS.md mandatory cases are named `K1`, `M1`, `Y1`, `X2` in their titles
-- [ ] One test per error kind (`invalidArgument`)
+- [ ] One test per cause of `invalidArgument` (E1–E3); B2 covers 3,200 traces
 - [ ] Golden master 5,5,31,16,2,7,53,37 / 156; `check:classes` ≥ 21; lint 0/0
 
 ---

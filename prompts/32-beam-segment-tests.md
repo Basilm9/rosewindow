@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 31
 - **Reference implementation:** `tests/engine/beamTracer.test.ts` → `describe('traceBeam — segment shape')`
-- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4, `SRS_rev1.4.txt` §3.5
+- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4, the SRS Rev 1.4 (attach the file; it is not in the repo) §3.5
 - **Requirements:** FR-5.3, FR-5.5
 
 ### MANDATORY: Sandwich Requirement

@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 43
 - **Reference implementation:** `tests/engine/scoreCalculator.test.ts` (`tierFor`, `calculateScore`), `tests/engine/classes.test.ts` ("calculates reports with isolated tier settings and no retained run state")
-- **Context to attach:** `SRS_rev1.4.txt` §3.8, `tests/helpers/board.ts`
+- **Context to attach:** the SRS Rev 1.4 (attach the file; it is not in the repo) §3.8, `tests/helpers/board.ts`
 - **Requirements:** FR-8.1, FR-8.3, FR-8.4
 
 ### MANDATORY: Sandwich Requirement

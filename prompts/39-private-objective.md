@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompts 09 (SeededRandom / `sample`), 37
 - **Reference implementation:** `src/engine/objectives.ts` (`PrivateObjective`, `ALL_PRIVATE_OBJECTIVES`, `DealtObjectives`, `dealObjectives`), `src/engine/scoreCalculator.ts` (`scorePrivateObjective`); tests `tests/engine/objectives.test.ts`, `tests/engine/scoreCalculator.test.ts` ("private objective")
-- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4 (row 19), `SRS_rev1.4.txt` §3.2
+- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4 (row 19), the SRS Rev 1.4 (attach the file; it is not in the repo) §3.2
 - **Requirements:** FR-2.1, FR-2.2, FR-2.5, NFR-1.1, NFR-1.2
 
 ### MANDATORY: Sandwich Requirement
@@ -17,7 +17,7 @@
 
 ### 1. Capability Specification
 - **Adds:** `src/model/PrivateObjective.ts` (class + `PrivateObjective.ALL`), `src/model/objectiveDeal.ts` (`DealtObjectives` interface, `dealObjectives` function — not a class).
-- **Changes:** `src/engine/objectives.ts` becomes a re-export shim (`ALL_PRIVATE_OBJECTIVES`, `dealObjectives`, `ObjectiveCard = PublicObjective | PrivateObjective`); `scorePrivateObjective(grid, o)` delegates to `PrivateObjective.from(o).score(grid)`.
+- **Changes:** `src/engine/objectives.ts` becomes a re-export shim (`ALL_PRIVATE_OBJECTIVES`, `dealObjectives`, type `DealtObjectives` from the model, and `ObjectiveCard = PublicObjective | PrivateObjective` over the plain-data interfaces prompt 37 kept; those interfaces stay until prompt 59); `scorePrivateObjective(grid, o)` delegates to `PrivateObjective.from(o).score(grid)`.
 - **Unchanged:** ids `patron-red|yellow|blue|green|purple`, names `Patron of Red` …, descriptions, and colour order of `DIE_COLORS` (red, yellow, blue, green, purple).
 
 ### 2. Implementation Instructions

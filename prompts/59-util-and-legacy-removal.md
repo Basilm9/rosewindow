@@ -29,9 +29,11 @@
 ```bash
 grep -rnE "src/(engine|machine|dev)/|src/hooks/(useGame|runSession)|\.\./(engine|machine|dev)/" src tests scripts | wc -l   # must reach 0 before deleting
 ```
-4. Port any test from the inventory that still lacks a counterpart (e.g. the 10 `runSession` blocks into `tests/progression/RunRecorder.test.ts`, the 15 `gameMachine` blocks are already in `GameController.test.ts`), then `git rm -r src/engine src/machine src/dev src/hooks tests/engine tests/machine tests/hooks`.
+4. Port any test from the inventory that still lacks a counterpart (e.g. the 10 `runSession` blocks added to `tests/progression/RunRecorder.test.ts`, the 15 `gameMachine` blocks are already in `GameController.test.ts`), then `git rm -r src/engine src/machine src/dev src/hooks tests/engine tests/machine tests/hooks`.
 5. Tighten ESLint: drop the legacy-tolerance list; restrict `src/view` to `@controller`, `@mvc`, `@util`, `@view`, type-only `@model`.
-6. Move the TSDoc rule to cover `src/util/**` and `src/view/hooks/**`; add missing TSDoc.
+6. Update every test import that still points at a deleted path: `tests/helpers/board.ts`, `tests/progression/challenges.test.ts` and `tests/e2e/beam-resume.spec.ts` as well as the ported suites. `autoPlay` in `src/util/autoPlayer.ts` switches from `game.subscribe(…)` to `game.addModelListener({ modelChanged: … })` before the adapter goes. Plain-data interfaces kept for the old tests (prompts 37, 39) leave with `src/engine/objectives.ts`.
+7. Update the documents that still describe the old layout, because every agent session loads them: `AGENTS.md` (the architecture rules name `src/engine`, `src/machine` and `src/engine/rng.ts`, and its "engine stays ~15 modules" budget no longer applies), `docs/class-structure.md` (links to `src/engine/*`) and any path in `README.md`.
+8. Move the TSDoc rule to cover `src/util/**` and `src/view/hooks/**`; add missing TSDoc.
 
 ### 3. Verification Protocol
 ```bash
@@ -43,7 +45,7 @@ git commit -am "refactor(util): inc 59 util package and legacy removal" && git t
 ```
 - [ ] Test count after ≥ test count before minus deleted duplicates; the inventory table (old test → new test) is pasted into the commit message body
 - [ ] `grep -rn "Math.random" src` → 0; `grep -rn "subscribe(" src/model` → 0
-- [ ] UML (`docs/uml-class-diagram.md`) lists no file under `src/engine`
+- [ ] UML (`docs/uml-class-diagram.md`) lists no file under `src/engine`; `grep -rnE "src/(engine|machine|dev)" AGENTS.md README.md docs/class-structure.md` → 0
 - [ ] Tracking: typecheck 0, lint 0/0, unit 100 %, golden exact, e2e 100 %, classes ≥ 36
 
 ---

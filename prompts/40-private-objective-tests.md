@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 39
 - **Reference implementation:** `tests/engine/objectives.test.ts` (`ALL_PRIVATE_OBJECTIVES` 1 case, `dealObjectives` 3 cases), `tests/engine/scoreCalculator.test.ts` (`private objective` 1 case)
-- **Context to attach:** `SRS_rev1.4.txt` §3.2, `tests/helpers/board.ts`
+- **Context to attach:** the SRS Rev 1.4 (attach the file; it is not in the repo) §3.2, `tests/helpers/board.ts`
 - **Requirements:** FR-2.1, FR-2.2, FR-2.5, NFR-1.1
 
 ### MANDATORY: Sandwich Requirement

@@ -19,20 +19,23 @@
 
 ### 1. Capability Specification
 - **Adds:** `SKIP` event (valid in `traveling`, `refracting`, `lockedStraight`) → `terminated` with action `completeAll`; input flag `reducedMotion` → eventless transition from `traveling` to `terminated` with `completeAll`.
-- **Changes:** imports of `DEFAULT_MULTIPLIER_CAP` and `REFRACTION_BY_COLOR` come from `@model` (whatever names prompts 07 and 13/15 export for the multiplier-cap default and the colour → turn table); never redefine them.
+- **Changes:** imports of `DEFAULT_MULTIPLIER_CAP` and `REFRACTION_BY_COLOR` come from `@model` (`GameConfig.ts`, prompt 07, and `Refraction.ts`, prompt 35); never redefine them.
+- Typing the input as the model's `BeamPath` would fail `pnpm typecheck` in `tests/machine/beamMachine.test.ts` (a plain path has no `length`, `bendCount` …), and that file must stay unchanged.
 - **Unchanged:** one `ADVANCE` per beam step; `refracting` and `lockedStraight` are dwell states left by the next `ADVANCE` without consuming a segment; running out of segments in `traveling` terminates.
 
 ### 2. Implementation Instructions
 ```ts
 // src/controller/beamStatechart.ts   (imports: xstate, @model only)
+/** The only part of a path this machine reads. Model `BeamPath` satisfies it, and so does the legacy plain path the old test and `BeamLayer` still pass. */
+export interface PlayablePath { readonly segments: readonly { readonly die: DieData | null }[] }
 export interface BeamStatechartInput {
-  readonly path: BeamPath
+  readonly path: PlayablePath
   readonly multiplierCap?: number
   /** True when the viewer prefers reduced motion (NFR-5.6): finish at once. */
   readonly reducedMotion?: boolean
 }
 export interface BeamStatechartContext {
-  readonly path: BeamPath; readonly multiplierCap: number; readonly reducedMotion: boolean
+  readonly path: PlayablePath; readonly multiplierCap: number; readonly reducedMotion: boolean
   /** Index of the NEXT segment to consume. */ readonly index: number
   readonly multiplier: number; readonly lockout: number
 }

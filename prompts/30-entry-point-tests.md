@@ -1,6 +1,6 @@
 # Prompt 30: EntryPoint Tests
 
-**CRITICAL: Write `tests/model/EntryPoint.test.ts`, porting every `allEntryPoints` case from `tests/engine/types.test.ts` and adding branch-coverage cases for `allFor`, `isInwardFor`, `equals` and `toData`; the old test file must keep passing unchanged.**
+**CRITICAL: Write `tests/model/EntryPoint.test.ts`, porting every `allEntryPoints` case from `tests/engine/types.test.ts` and adding branch-coverage cases for `allFor`, `isInwardFor`, `equals`, `toData` and `fromData`; the old test file must keep passing unchanged.**
 
 ---
 
@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 29
 - **Reference implementation:** `tests/engine/types.test.ts` (`describe('allEntryPoints')`, 4 cases)
-- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4, `SRS_rev1.4.txt` §3.5
+- **Context to attach:** `ctxt/MVC_RoseWindow.md` §4, the SRS Rev 1.4 (attach the file; it is not in the repo) §3.5
 - **Requirements:** FR-5.1, FR-5.2, NFR-1.1
 
 ### MANDATORY: Sandwich Requirement
@@ -38,8 +38,10 @@ File `tests/model/EntryPoint.test.ts`. Header comment (mandatory):
  *     (0,1,east) false (parallel to its edge); (1,1,east) false (interior)
  *  E1 equals: same data true; different direction false
  *  D1 toData() returns { position:{row,col}, direction:'south' } plain object
+ *  D2 EntryPoint.fromData(entry.toData()).equals(entry) for an edge and a corner entry
  *  F1 instances are frozen
- * Error kinds: EntryPoint raises none (documented in prompt 29) — no throw test required.
+ *  X1 fromData with direction 'up' -> toThrow(GameError) and toThrow(/invalid argument/)
+ * Error kinds: invalidArgument only (X1).
  */
 ```
 
@@ -59,7 +61,7 @@ const FIRST_FIVE_4X4 = [
 expect(EntryPoint.allFor(4).slice(0, 5).map(e => e.toData())).toEqual(FIRST_FIVE_4X4)
 ```
 (Verify the constant once by running the old `allEntryPoints(4)`; then freeze it in the file.)
-- Let exceptions propagate; none are expected here.
+- Let exceptions propagate; only X1 expects one (`toThrow`, no try/catch).
 - Ported cases keep their original names, suffixed `(ported from types.test.ts)`.
 
 ### 3. Verification Protocol
@@ -68,8 +70,8 @@ pnpm vitest run tests/model/EntryPoint.test.ts tests/engine/types.test.ts
 pnpm typecheck && pnpm lint && pnpm test
 git add tests/model && git commit -m "test(model): inc 30 EntryPoint tests" && git tag inc-30-green
 ```
-- [ ] Criterion comment present and lists A1–F1
-- [ ] 4 reference cases ported; ≥ 11 tests total, 100 % pass
+- [ ] Criterion comment present and lists A1–X1
+- [ ] 4 reference cases ported; ≥ 13 tests total, 100 % pass
 - [ ] No `if`/`for`/`while` inside any `it` body (`grep -nE "^\s+(if|for|while) \(" tests/model/EntryPoint.test.ts` prints only helper lines)
 - [ ] Golden master 5,5,31,16,2,7,53,37 / 156; `check:classes` ≥ 19; lint 0/0
 

@@ -14,13 +14,13 @@
 
 ### MANDATORY: Sandwich Requirement
 - **Start:** Change how views get data, never what they show. Where an ASCII sketch and its screenshot disagree, the screenshot wins.
-- **End:** ESLint forbids legacy imports in `src/view`, all 23 existing e2e tests plus the new F-03 and F-04 specs pass, and side-by-side screenshots match all 12 mockups.
+- **End:** ESLint forbids legacy imports in `src/view`, all 23 existing e2e tests plus the new F-03, F-04 and pause/motion specs pass, and side-by-side screenshots match all 12 mockups.
 
 ---
 
 ### 1. Capability Specification
-- **Adds:** `src/view/GameControllerContext.tsx`; `src/view/useControllerView.ts`; `tests/e2e/grid-rows.spec.ts`; `tests/e2e/tutorial-replay.spec.ts`; F-04: a `Replay tutorial` button (`data-testid="tutorial-restart"`) inside the How to play sheet (`rules-sheet`, opened from the pause menu's `tutorial-replay` or the setup screen's `setup-rules`) that closes the sheet and restarts the guided first-run tutorial at step 1 on the current screen (FR-9.4), without resetting or altering the run in progress.
-- **Changes:** `GameScreen` replaces `useGame(session)` with controller hooks; `App.tsx` (composition root) builds `Game` (via `RunRecorder.restore` or the dev fast-forward), `GameController`, `BeamAnimationController`, `PlayerProfile`, `ChallengeCodec`; the pause overlay now calls `controller.pause()` / `resume()` (AT-11: a click outside only closes the menu and resumes, nothing is placed).
+- **Adds:** `src/view/GameControllerContext.tsx`; `src/view/useControllerView.ts`; `tests/e2e/grid-rows.spec.ts`; `tests/e2e/tutorial-replay.spec.ts`; `tests/e2e/pause-and-motion.spec.ts`; F-04: a `Replay tutorial` button (`data-testid="tutorial-restart"`) inside the How to play sheet (`rules-sheet`, opened from the pause menu's `tutorial-replay` or the setup screen's `setup-rules`) that closes the sheet and restarts the guided first-run tutorial at step 1 on the current screen (FR-9.4), without resetting or altering the run in progress.
+- **Changes:** `GameScreen` replaces `useGame(session)` with controller hooks; `App.tsx` (composition root) builds `Game` (via `RunRecorder.restore` or the dev fast-forward), `GameController` (with `onAction: (action) => recorder.record(action)`, otherwise nothing is saved and AT-10 fails), `BeamAnimationController` (`attach()`, then `recover()` when the game booted in `round.illuminate`), `PlayerProfile`, `ChallengeCodec`; the pause overlay now calls `controller.pause()` / `resume()` (AT-11: a click outside only closes the menu and resumes, nothing is placed).
 - **Unchanged:** CSS, markup classes, `data-testid`s (`cell-r{r}c{c}` stays 0-based), wording (the only addition is the F-04 `Replay tutorial` button), animations, sounds.
 
 ### 2. Implementation Instructions
@@ -31,11 +31,12 @@ export function useGameController(): GameController          // throws Error out
 export function useGameSnapshot(): GameSnapshot              // useSyncExternalStore over controller.subscribe/getSnapshot
 export function useBeamController(): BeamAnimationController
 // src/view/useControllerView.ts — the React form of View
-export function useControllerView(controller: AbstractController<AbstractModel<ModelEvent>>, onFeedback: (f: Feedback) => void): void
+export function useControllerView(controller: GameController, onFeedback: (f: GameFeedback) => void): void
 ```
 - Model state: `controller.game` (`GameReadModel`, import **type-only** from `@model`); events: `useModelEvents(controller.getModel(), handler)` in `GameScreen` reproduces the old `game.subscribe` switch (`diePlaced`, `beamTraced`, `roundForfeited`, `roundScored`) and its sfx calls.
-- Rejections: `useControllerView(controller, f => …)` drives the shake/red pulse/toast (mockup 04) — replaces `machineRejection`; `kind` and `position` come from `Feedback`.
-- Previews and goal points: `controller.legalPreview()`, `controller.objectiveLines()`; `Die.tsx` gets the turn symbol for a colour from a controller/read-model query instead of importing `REFRACTION_BY_COLOR`.
+- Rejections: `useControllerView(controller, f => …)` drives the shake/red pulse/toast (mockup 04) — replaces `machineRejection`; `kind`, `position` and `violation` come from `GameFeedback`. **Keep the F-02 fix (FR-4.11):** for a `constraintMismatch` pass `violation.expected` on to `rejectionMessage`, so the toast still names the demand ("Wrong color. This pane only takes red glass." / "Wrong number. This pane only takes a 5."); `kind` alone loses it. Show a toast and play `sfx.reject()` only for feedback with a `position` (a refused placement): other feedback, such as a refused selection, shows nothing today and must stay silent.
+- **While paused the screen behind the menu must not change:** `GameScreen` uses `controller.viewPath`, not `statePath`, for `setup`/`playing`/`animating` and everything derived from them. With `statePath`, pausing mid-beam makes `animating` false, so the score jumps to the round's final total, the entry arrow moves to the next round and the beam styling drops.
+- Previews and goal points: `controller.legalPreview()`, `controller.objectiveLines()`; `Die.tsx` gets the turn symbol for a colour from `refractionOf(color)` (`@controller`, prompt 50) instead of importing `REFRACTION_BY_COLOR`.
 - `GameOverScreen` gets achievements, level and rewards as props from `App` (no `@progression` value import in views).
 - Beam: `BeamLayer` registers a `BeamPlaybackListener` on `useBeamController()`; reduced motion is read once with `matchMedia('(prefers-reduced-motion: reduce)')` in `App` and passed to the controller (NFR-5.6).
 - **F-03 fix (`GlassBoard.tsx`):** wrap each row's four gridcells in `<div role="row" aria-rowindex={row + 1} className="glass-board__row">` with CSS `display: contents` (layout and look unchanged); cell `aria-label` becomes `row ${row + 1}, column ${col + 1}, …` (count from 1); keep `aria-rowindex`/`aria-colindex`; give the `BeamLayer` wrapper `aria-hidden="true"` so the grid contains only rows.
@@ -52,13 +53,16 @@ export function useControllerView(controller: AbstractController<AbstractModel<M
 
 `tests/e2e/tutorial-replay.spec.ts` (`?seed=3`, choose Novice Rose, click `draft-die-0` then the first `[role="gridcell"][data-legal="true"]`; note `round-indicator` text and the count of `[data-testid^="die-r"]`): `game-menu` → `tutorial-replay`; `rules-sheet` contains `tutorial-restart` with text `Replay tutorial`; click it → `rules-sheet` count 0, `tutorial-card` contains `1/6` and `Welcome, glazier`; `round-indicator` text and placed-die count unchanged.
 
+`tests/e2e/pause-and-motion.spec.ts` (3 tests): (1) seed 3, place two dice so the beam plays, open the pause menu mid-beam: the score shown does not change and no cell can be filled; resume: the beam finishes and round 2 opens; (2) with `page.emulateMedia({ reducedMotion: 'reduce' })`, place two dice: round 2 opens (the game is not stuck after the beam); (3) seed 3, Novice Rose: hold the blue 2 and tap `cell-r2c0` (printed yellow): `rejection-hint` reads "Wrong color. This pane only takes yellow glass." (F-02).
+
 ### 3. Verification Protocol
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
-pnpm e2e                                   # 23 existing + 2 new = 25, 100 %
+pnpm e2e                                   # 23 existing + 1 + 1 + 3 new = 28, 100 %
 pnpm vitest run -t "golden"                # 156
 grep -rnE "from '\.\./(engine|machine)/|hooks/useGame|hooks/runSession" src/view | wc -l     # 0
 grep -rnE "game\.(choosePattern|selectDie|placeDie|cancelSelection|refreshDraft|forfeitRound)\(" src/view | wc -l   # 0
+grep -rnE "(draftPool|window)[!?]*\.(take|putBack|clear|place|remove)\(" src/view | wc -l   # 0 (no mutator through the read model either)
 git commit -am "refactor(view): inc 58 views through GameController" && git tag inc-58-green
 ```
 - [ ] Playwright MCP at 360×640 (`?seed=3`): capture each of the 12 screens to `docs/mockup-compare/NN-*.png` and compare with the same-numbered mockup; layout, wording ("Pick a window", "Window #3", "ROUND 1/8", "Pick your glass", "Paused", "Challenge link copied. Send it to a friend.") and controls must match (missing or wrong content, or a broken layout, is a failure); purely cosmetic differences such as exact colours or spacing are noted, not failed, per the mockup policy in prompt 62

@@ -13,13 +13,13 @@
 
 ### MANDATORY: Sandwich Requirement
 - **Start:** Presentation arithmetic (`scoringMultiplier`, `bent`, running `points/strikes`) moves out of the view into this controller; the beam path itself still comes only from `BeamTracer` via the event.
-- **End:** `BeamLayer` renders from controller callbacks, `beam-resume.spec.ts` passes, and no timer runs when no beam is playing (NFR-3.4).
+- **End:** `BeamLayer` renders from controller callbacks, `beam-resume.spec.ts` passes (it needs `recover()`), and no timer runs when no beam is playing (NFR-3.4).
 
 ---
 
 ### 1. Capability Specification
 - **Adds:** class #26 of section 4 and its scheduler seam.
-- **Changes:** `BeamLayer.tsx` no longer creates an actor or a timer; `useGame` creates one `BeamAnimationController` per game and wires `onFinished` to `controller.beamAnimationDone()`.
+- **Changes:** `BeamLayer.tsx` no longer creates an actor or a timer; `useGame` creates one `BeamAnimationController` per game, reads `matchMedia('(prefers-reduced-motion: reduce)').matches` once for its `reducedMotion` option, wires `onFinished` to `controller.beamAnimationDone()`, and replaces its recovery effect with `recover()`.
 - **Unchanged:** beam visuals (mockup `05-beam.png`), test ids `beam-layer`, `beam-core`, `data-settled`, step timing, sounds.
 
 ### 2. Implementation Instructions
@@ -51,6 +51,7 @@ export class BeamAnimationController extends AbstractController<Game> {
   constructor(model: Game, onFinished: () => void,
               options?: { readonly scheduler?: Scheduler; readonly reducedMotion?: boolean })
   attach(): () => void           // addModelListener for 'beamTraced'; returns detach
+  recover(): boolean             // plays the last round's beam when its event was published before attach(); false if one is playing or no round is scored
   addPlaybackListener(l: BeamPlaybackListener): () => void
   play(path: BeamPath): void     // stops any running playback first
   advance(): BeamStep | null     // one ADVANCE; null when terminated (used by the timer and tests)
@@ -61,10 +62,11 @@ export class BeamAnimationController extends AbstractController<Game> {
 }
 ```
 Rules:
+- `recover()` replaces the recovery effect in `useGame` ("a resumed/pre-advanced blocked draft can illuminate during actor startup"): a run restored onto a blocked draft is forfeited while `GameController` is being created, before anything listens, so its `beamTraced` event is lost and the game would wait in `round.illuminate` for ever. It traces `model.window.dice` from `model.entrySequence[model.roundScores.length - 1]` with `BeamTracer` and plays that path; whoever creates both controllers calls it once after `attach()` when `gameController.statePath === 'round.illuminate'`.
 - On `BeamTracedEvent` → `play(event.path)`. Multiplier cap comes from `model.config` (never a literal).
-- `play`: create the actor with `{ path, multiplierCap, reducedMotion }`; notify `onStart`. If `reducedMotion` (NFR-5.6): emit every step synchronously with no interval, then `onSettled()` and `onFinished()` without the tail delay. Otherwise start `setInterval(advance, STEP_MS)`; when the actor is `done` clear it, `onSettled()`, then `setTimeout(onFinished, TAIL_MS)`.
-- `advance` mirrors `BeamLayer`: read `index` before `ADVANCE`; if it increased and the segment holds a die, compute `multiplier = die.value > 0 ? Math.round(points / die.value) : 1` and `bent` from the next segment's direction, accumulate `run`, call `onStep`; call `sfx` **not** here (controller has no audio — the view plays sounds in its `onStep`).
-- `pause`/`resume` are called by `GameController.pause()/resume()` wiring in `useGame` (FR-17.1): pausing clears the interval and any tail timeout; resuming restarts them from the current actor state.
+- `play`: create the actor with `{ path, multiplierCap, reducedMotion }`; notify `onStart`. If `reducedMotion` (NFR-5.6): the actor is `done` at once, so emit one step per `path.segments` entry (state from `classifyStep`) synchronously with no interval, then `onSettled()`, then `onFinished()` through `scheduler.setTimeout(…, 0)`. **Never call `onFinished` synchronously inside `play`:** `beamTraced` is published while the game actor is still processing `PLACE_DIE`, its snapshot is still `round.place`, `can(BEAM_ANIMATION_DONE)` is `false`, the event is dropped and the game stays in `illuminate` for ever (checked on XState 5.32.6). `roundScored` is also published after `beamTraced`. Otherwise start `setInterval(advance, STEP_MS)`; when the actor is `done` clear it, `onSettled()`, then `setTimeout(onFinished, TAIL_MS)`.
+- `advance` mirrors `BeamLayer`: read `index` before `ADVANCE`; if it increased, build the step for that segment: with a die, `multiplier = die.value > 0 ? Math.round(points / die.value) : 1`, `bent` from the next segment's direction, and accumulate `run`; for an empty cell `multiplier` 1, `bent` false, `run` unchanged. Call `onStep` for **every** consumed segment (the view draws a bead on empty cells too). If it did not increase (leaving `refracting` or `lockedStraight`, or terminating) return `null` and call nothing; call `sfx` **not** here (controller has no audio — the view plays sounds in its `onStep`).
+- `pause`/`resume` are called by `GameController.pause()/resume()` wiring in `useGame` (FR-17.1): pausing clears the interval and any tail timeout; resuming restarts them from the current actor state (including the 0 ms finish of reduced motion).
 - Default scheduler = `globalThis` timers (allowed: no DOM). TSDoc everywhere, including the reduced-motion decision and the timing constants' origin.
 - `BeamLayer.tsx` keeps its props shape for the parent but receives steps through a `BeamPlaybackListener` registered in an effect; `useGame` exposes `beamRun` and `litCells` from the same listener.
 

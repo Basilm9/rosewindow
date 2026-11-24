@@ -17,7 +17,7 @@
 
 ### 1. Capability Specification
 - **Adds:** `src/model/Objective.ts` (interface), `src/model/PublicObjective.ts` (class, strategy union, `PublicObjective.ALL`).
-- **Changes:** `src/engine/objectives.ts` re-exports `ALL_PUBLIC_OBJECTIVES = PublicObjective.ALL` and the strategy type; `scorePublicObjective(grid, o)` in `src/engine/scoreCalculator.ts` delegates to `PublicObjective.from(o).score(grid)` (old tests pass plain objects).
+- **Changes:** `src/engine/objectives.ts` re-exports `ALL_PUBLIC_OBJECTIVES = PublicObjective.ALL` and the strategy type, and **keeps its plain-data interfaces** `PublicObjective` and `PrivateObjective` (the old tests build literals of those types; a class instance is assignable to them, a literal is not assignable to the class, so re-exporting the class type fails `pnpm typecheck`); `scorePublicObjective(grid, o)` in `src/engine/scoreCalculator.ts` delegates to `PublicObjective.from(o).score(grid)` (old tests pass plain objects).
 - **Unchanged:** ids, names, descriptions, point values and the order of the eight entries (the seeded deal samples by index).
 
 ### 2. Implementation Instructions

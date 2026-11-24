@@ -41,7 +41,7 @@ export class BeamPath {
   /** Number of cells entered. */
   get length(): number
 
-  /** Number of bends: segments whose successor has a different direction. */
+  /** Number of bends seen on the path: segments whose successor has a different direction (a bend on the last segment, which exits or meets the cycle guard, is not counted). */
   get bendCount(): number
 
   /** Highest multiplier reached on the path (1 for an empty or straight path). */

@@ -13,7 +13,7 @@
 
 ### MANDATORY: Sandwich Requirement
 - **Start:** `Game` sequences model services and publishes events; it evaluates no rule itself. `#emit` is deleted; `notifyChanged` is the only publication path.
-- **End:** `src/engine/game.ts` is `export { Game } from '../model/Game'; export type { GamePhase } from '../model/Game'`; all suites green; class count **31**.
+- **End:** `src/engine/game.ts` is `export { Game } from '../model/Game'; export type { GamePhase } from '../model/Game'`, `src/engine/events.ts` re-exports the class union (`export type { GameEvent } from '../model/events'` plus `GameListener`); all suites green; class count **31**.
 
 ### 1. Capability Specification
 - **Changes:** plain event objects → `new DiePlacedEvent(this, …)` etc.; `choosePattern` with an unknown id throws `GameError({ kind: 'unknownPattern', id })` (message `unknown pattern id: "<id>"`, so `/unknown pattern/i` still matches); `entrySequence` is `readonly EntryPoint[]` from `EntryPoint.allFor`.
@@ -38,7 +38,7 @@ export class Game extends AbstractModel<GameEvent> {
   /** @throws GameError invalidPhase | unknownPattern */
   choosePattern(id: string): void
   /** @throws GameError invalidPhase; @throws PlacementError dieNotInPool */
-  selectDie(die: Die): void
+  selectDie(die: DieData): void        // plain data allowed: matched by color + value
   /** @throws GameError invalidPhase */
   cancelSelection(): void
   /** @throws GameError invalidPhase | refreshSpent */
@@ -47,7 +47,7 @@ export class Game extends AbstractModel<GameEvent> {
   placeDie(position: Position): void
   /** @throws GameError invalidPhase | legalMovesRemain */
   forfeitRound(): void
-  legalPlacementsFor(die: Die): readonly Position[]
+  legalPlacementsFor(die: DieData): readonly Position[]
   hasLegalMove(): boolean
 }
 ```
@@ -57,7 +57,15 @@ Use the model class names exactly as prompts 07–27 created them (`DiceBag`, `D
 
 **Event order (golden stream, 41 events):** `choosePattern` → `draftPoolRefreshed`; each legal `placeDie` → `diePlaced`; second placement → unplaced dice back to bag → `beamTraced` → `roundScored` → next round's `draftPoolRefreshed`, or after round 8 → `gameOver` (report = calculator over `window.dice` + `totalScore`). Rejected `placeDie` publishes `placementRejected` **then** rethrows; window, hand and pool unchanged (NFR-2.1). Publish it only when `error instanceof PlacementError` (the reference tests `'violation' in error`, which would now also catch `outOfBounds`, a caller defect that is not a placement law). `forfeitRound` → `roundForfeited` → `beamTraced` → `roundScored` → …. `refreshDraft` → `draftPoolRefreshed`.
 
-All mutable state stays in `#private` fields (never enumerable). TSDoc on every member with `@throws`. Callers needing a string direction read `currentEntry.direction.name` (one-token edits in `src/view`, listed in the commit body).
+All mutable state stays in `#private` fields (never enumerable). TSDoc on every member with `@throws`. **Call sites that read a direction as a string (edit all four, list them in the commit body; nothing else in `src/view` or `src/hooks` changes):**
+| File | Today | Becomes |
+| --- | --- | --- |
+| `src/hooks/useGame.ts` (`beamTraced` case) | `path: event.path` | `path: event.path.toData()` |
+| `src/hooks/useGame.ts` (blocked-draft recovery effect) | `traceBeam(game.window.dice, entry, …)` | `traceBeam(game.window.dice, entry.toData(), …)` |
+| `src/view/GlassBoard.tsx` (`const entry = …`) | `?? game.currentEntry` | `?? game.currentEntry.toData()` |
+| `src/view/GameScreen.tsx` (`RoundBanner`) | `game.currentEntry.direction` | `game.currentEntry.direction.name` |
+
+Without the two `toData()` calls in `useGame`, `BeamLayer` and the beam machine would receive `Direction` objects where they expect strings.
 
 ### 3. Verification Protocol
 ```bash

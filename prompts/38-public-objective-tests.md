@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 37
 - **Reference implementation:** `tests/engine/scoreCalculator.test.ts` (valueParity 2, lineDiversity 5, diagonalDiversity 3, colorQuorum 2 cases) and `tests/engine/objectives.test.ts` (`ALL_PUBLIC_OBJECTIVES` 2 cases)
-- **Context to attach:** `SRS_rev1.4.txt` §3.2, `tests/helpers/board.ts`
+- **Context to attach:** the SRS Rev 1.4 (attach the file; it is not in the repo) §3.2, `tests/helpers/board.ts`
 - **Requirements:** FR-2.1, FR-2.4
 
 ### MANDATORY: Sandwich Requirement

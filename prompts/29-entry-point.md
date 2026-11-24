@@ -48,6 +48,9 @@ export class EntryPoint {
   /** Value equality: same row, col and direction. */
   equals(other: EntryPoint): boolean
 
+  /** Rebuilds an entry from the plain shape. @throws {GameError} invalidArgument for an unknown direction name (Direction.fromName) */
+  static fromData(data: { readonly position: Position; readonly direction: DirectionName }): EntryPoint
+
   /** Legacy plain shape `{ position, direction: 'north'|'east'|'south'|'west' }` for engine shims. */
   toData(): { readonly position: Position; readonly direction: DirectionName }
 }
@@ -56,7 +59,7 @@ export class EntryPoint {
 **Behaviour rules (from `allEntryPoints`):**
 1. The push order inside each cell is **S, W, N, E** (the reference TSDoc says "N/E/S/W" and "20 entries" — both comments are wrong; the code and `types.test.ts` (16) are the oracle).
 2. `Object.freeze(this)` in the constructor; store a copy of `position`.
-3. `EntryPoint` raises **no** exception: invalid entries are reported by `isInwardFor`, and `BeamTracer` (prompt 35) rejects them.
+3. The only exception is `fromData` with an unknown direction name (`GameError` `invalidArgument`, thrown by `Direction.fromName`). Entries that do not point inward are reported by `isInwardFor`, and `BeamTracer` (prompt 35) rejects them.
 4. TSDoc on the class, both fields and every method (all visibilities).
 5. If a legacy view/hook needs the direction as a string, change that call site to `.direction.name` (one-token edit) and list it in the commit body.
 

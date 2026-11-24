@@ -17,7 +17,7 @@
 
 ### 1. Capability Specification
 - **Adds:** `src/model/ScoreCalculator.ts`.
-- **Changes:** `src/engine/scoreCalculator.ts` becomes a shim: re-exports types; `scorePublicObjective`, `scorePrivateObjective`, `colorCount` delegate to the objective classes (prompts 37/39); `tierFor(total, tiers)` = `new ScoreCalculator(tiers).tierFor(total)`; `calculateScore(input)` = `new ScoreCalculator(input.tiers).calculate(input)`; `export { ScoreCalculator }` from the model.
+- **Changes:** `src/engine/scoreCalculator.ts` becomes a shim: re-exports types; `scorePublicObjective`, `scorePrivateObjective`, `colorCount` delegate to the objective classes (prompts 37/39); `tierFor(total, tiers)` = `new ScoreCalculator(tiers).tierFor(total)`; `calculateScore(input)` first wraps the plain objectives (`publics.map(PublicObjective.from)`, `PrivateObjective.from(privateObjective)`) and then calls `new ScoreCalculator(input.tiers).calculate(…)`, because `tests/engine/scoreCalculator.test.ts` passes plain literals that have no `score` method; its parameter type keeps the plain-data interfaces of `src/engine/objectives.ts`; `export { ScoreCalculator }` from the model.
 - **Unchanged:** line order (publics in deal order, then private), totals, tier boundaries (inclusive lower bounds).
 
 ### 2. Implementation Instructions
@@ -65,7 +65,7 @@ git commit -am "feat(model): inc 43 ScoreCalculator" && git tag inc-43-green
 
 ### 4. CRITICAL Checkpoint
 - **Risk:** reordering the lines, an off-by-one at a tier boundary (`>` instead of `>=`), or tiers read from a shared mutable object would change the final report shown on the results screen (AT-08) while beam scores stay green.
-- **Failure indicators:** golden report `toEqual` fails; `tierFor(40)` returns `none`; `classes.test.ts` tier-isolation case fails; private line not last.
+- **Failure indicators:** golden report `toEqual` fails; `tierFor(40)` returns `none`; `classes.test.ts` tier-isolation case fails; private line not last; `o.score is not a function` (the shim passed plain data through unwrapped).
 - **Isolation testing protocol:**
   1. Simplified config: `new ScoreCalculator({ bronze: 1, silver: 2, gold: 3 })` on an empty 2×2 grid with beamTotal 3 → total 3, gold; beamTotal 0 → none.
   2. Components separately: score each of the four dealt seed-3 objectives on the finished golden window and compare 10 / 4 / 7 / 9.

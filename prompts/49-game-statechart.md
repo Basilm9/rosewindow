@@ -19,7 +19,7 @@
 
 ### 1. Capability Specification
 - **Adds:** pause/resume (FR-17.1); while paused, no drafting, placing or recast event is accepted (`snapshot.can(...) === false`, FR-17.2 / NFR-6.5); a named `forfeit` state for the deadlock escape.
-- **Changes:** imports move from `../engine/*` to `@model`; every non-fallback transition taken on an external event (`CHOOSE_PATTERN`, `SELECT_DIE`, `PLACE_DIE`, `CANCEL_SELECTION`, `REFRESH_DRAFT`, `PAUSE`, `RESUME`, `BEAM_ANIMATION_DONE`) now resets `lastError` and `lastRejection` to `null` (`choosePattern` becomes an `assign`; add a `clearFeedback` assign to the others) — prompt 50 decides success by `lastError === null` after a send.
+- **Changes:** imports move from `../engine/*` to `@model`; every non-fallback transition taken on an external event (`CHOOSE_PATTERN`, `SELECT_DIE`, `PLACE_DIE`, `CANCEL_SELECTION`, `REFRESH_DRAFT`, `PAUSE`, `RESUME`, `BEAM_ANIMATION_DONE`) now resets `lastError` and `lastRejection` to `null` (`choosePattern` becomes an `assign`; add a `clearFeedback` assign to the others) — prompt 50 decides success by `lastError === null` after a send. Every **fallback** transition that only stores `lastError` (`CHOOSE_PATTERN`, `SELECT_DIE`) must also set `lastRejection: null`: in the reference, an illegal placement followed by a refused selection leaves the old `lastRejection` in place, and the controller would report the wrong rejection.
 - **Unchanged:** event payloads, `skipAnimations` input, `illuminate` animation gate, `setup` boot transitions for pre-advanced games, the `lastError` strings.
 
 ### 2. Implementation Instructions
@@ -34,7 +34,7 @@ export interface GameStatechartContext {
 }
 export type GameStatechartEvent =
   | { readonly type: 'CHOOSE_PATTERN'; readonly id: string }
-  | { readonly type: 'SELECT_DIE'; readonly die: Die }
+  | { readonly type: 'SELECT_DIE'; readonly die: DieData }   // plain data: the old tests and stored runs send it
   | { readonly type: 'PLACE_DIE'; readonly position: Position }
   | { readonly type: 'CANCEL_SELECTION' } | { readonly type: 'REFRESH_DRAFT' }
   | { readonly type: 'BEAM_ANIMATION_DONE' } | { readonly type: 'PAUSE' } | { readonly type: 'RESUME' }

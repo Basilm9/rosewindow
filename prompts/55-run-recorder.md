@@ -41,36 +41,55 @@ export class RunRecorder {
   readonly #storage: Pick<StorageLike, 'getItem' | 'setItem'> & { removeItem(key: string): void } | undefined
   #session: RunSession | null = null
   constructor(storage?: Pick<StorageLike, 'getItem' | 'setItem'> & { removeItem(key: string): void })
-  begin(session: RunSession): void                  // starts recording; persists
+  begin(session: RunSession): void                  // starts recording; does NOT persist (see rules)
   record(action: RecordedAction): boolean           // append + save; false if storage refused (FR-12.6)
   get session(): RunSession | null
   save(): boolean
-  load(): RunSession | null                         // validated or null (NFR-1.6, NFR-2.6)
+  load(): RunSession | null                         // validated AND restorable, else discarded and null (FR-12.4)
   clear(): void                                     // FR-12.5 completed or abandoned
   static validate(value: unknown): RunSession | null
-  static restore(session: RunSession): Game | null  // replay through Game; null on any GameError
+  static restore(run: { readonly seed: number; readonly actions: readonly unknown[] }): Game | null  // replay through Game; null on any GameError
   static isUserAction(value: unknown): value is RecordedAction
 }
 ```
 Rules:
-- `record` is called by the composition root only after `GameController.dispatch(action)` returned `true` (the action took effect), so illegal attempts are never stored. Non-user events (`DIE_PLACED`, `ROUND_COMPLETED`, `BEAM_ANIMATION_DONE`, `PAUSE`, `RESUME`) are ignored by `record` and by `validate`'s replay filter (keep the reference test "ignores animation and internal orchestration events").
-- `useGame`'s `send` changes from "record when `can()`" to "record when `controller.dispatch(event)` returned `true`" (a refused placement is never stored).
+- `begin` only remembers the session; the first successful `record` (or an explicit `save()`, as `App.start` does today) writes it. If `begin` wrote at once, opening a friend's link would overwrite the run in progress before the player did anything, and an untouched page would be "restored" next time instead of offering a new window.
+- `record` writes nothing when `targetRound !== 1` (the dev fast-forward demo is never stored, as today).
+- `load` returns a session only if `validate` accepts it **and** `restore` can replay it; otherwise it calls `clear()` and returns `null`, so the caller starts a new run and the bad record is not appended to (FR-12.4).
+- `record` is wired to `GameController`'s `onAction` option (prompt 50), which fires only for an action that took effect, so illegal attempts are never stored. Non-user events (`DIE_PLACED`, `ROUND_COMPLETED`, `BEAM_ANIMATION_DONE`, `PAUSE`, `RESUME`) are ignored by `record` and by `validate`'s replay filter (keep the reference test "ignores animation and internal orchestration events").
+- `useGame`'s `send` stops recording when `can()` is true; it passes `onAction: (action) => recorder.record(action)` to its `GameController` (a refused placement is never stored).
 - `restore`: `new Game(createGameConfig(session.seed))`; skip non-user events (`isUserAction`); for each remaining action call `choosePattern`, `selectDie`, `placeDie`, `cancelSelection`, `refreshDraft`; then apply the forfeit loop. Catch only `GameError` (return `null`); any other exception propagates.
 - No method throws on storage failure (private browsing, quota): return `false`/`null` (FR-12.6). Document each `@returns` and the one `@throws` (non-`GameError` from `Game`).
-- Strangler shim: `src/hooks/runSession.ts` keeps its four exported functions as one-line delegates (`replaySession(seed, actions)` → `RunRecorder.restore({…})`, throwing the same `GameError` the old path surfaced only if a test requires it) and re-exports `RunSession`. Export the class from `src/progression/index.ts`.
+- Strangler shim: `src/hooks/runSession.ts` keeps its four exported functions as one-line delegates (`replaySession(seed: number, actions: readonly { readonly type: string }[]): Game` → `RunRecorder.restore({ seed, actions })`, throwing `GameError({ kind: 'invalidArgument', detail: 'recorded run cannot be replayed' })` when it is `null`; `loadSession` already refuses such a record, so the app never reaches that) and re-exports `RunSession`. Export the class from `src/progression/index.ts`.
 - Tighten ESLint `jsdoc/require-jsdoc` to include `src/progression/RunRecorder.ts`.
+
+**Class test** `tests/progression/RunRecorder.test.ts` — **criterion: input-domain partitioning** of stored records plus branch coverage of `record`/`load`. Fresh recorder and in-memory storage per test; no control flow inside a test (auto-play in a helper):
+
+| Id | Case | Expected |
+|---|---|---|
+| R1 | NFR-1.7: seed 3 auto-played into round 3 with one recast, every `onAction` recorded, `restore` | `roundScores`, `totalScore`, `window.dice`, `hand`, `draftPool.dice`, `refreshesRemaining`, `placementsRemaining` equal the original |
+| R2 | seed 7 Clerestory, blue 1 at `{row:3,col:3}` | restored run is in round 2 with the same round score |
+| R3 | full golden action list | `totalScore` 156 |
+| R4 | a rule-violating record (a `PLACE_DIE` on an occupied cell) | `restore` `null`; `load` `null` and the key removed |
+| R5 | unknown pattern id | `restore` `null` |
+| R6 | 1001 actions; out-of-range position; unknown die color (`it.each`) | `validate` `null` |
+| R7 | `begin` | storage still empty; after the first `record` it holds one action |
+| R8 | `begin` over a stored run, nothing recorded | the stored run is unchanged |
+| R9 | `targetRound: 5` then `record` | storage empty |
+| R10 | storage that throws on every call | `record` and `save` `false`, `load` `null`, `clear` does not throw |
+| R11 | non-user events in the list (`BEAM_ANIMATION_DONE`, `PAUSE`) | same game as without them |
+| R12 | a `RangeError` thrown by the model during `restore` (`vi.spyOn(Game.prototype, 'choosePattern')`) | propagates (`toThrow(RangeError)`) |
 
 ### 3. Verification Protocol
 ```bash
-pnpm vitest run tests/hooks/runSession.test.ts   # 10/10 unchanged
+pnpm vitest run tests/hooks/runSession.test.ts tests/progression/RunRecorder.test.ts   # 10/10 unchanged + R1–R12
 pnpm typecheck && pnpm lint && pnpm test && pnpm e2e   # e2e incl. phase8/phase9 restore specs
 pnpm vitest run -t "golden"                       # 156
 pnpm check:classes                                # ≥ 34
 grep -n "xstate\|@controller" src/progression/RunRecorder.ts   # 0
 git commit -am "feat(progression): inc 55 RunRecorder" && git tag inc-55-green
 ```
-- [ ] Scratch equivalence: auto-play seed 3 into round 3 using the recast, record every admitted action, `restore` → `roundScores`, `totalScore`, `window.dice`, `hand`, `draftPool.dice`, `refreshesRemaining`, `placementsRemaining` all `toEqual` the original (NFR-1.7)
-- [ ] Seed-7 Clerestory deadlock record restores with the same forfeited round as live play
+- [ ] `tests/progression/RunRecorder.test.ts` R1–R12 pass (R1 is NFR-1.7, R2 the deadlock replay)
 - [ ] Tracking: typecheck 0, lint 0/0, unit 100 %, golden exact, e2e 100 %, classes ≥ 34
 
 ### 4. CRITICAL Checkpoint

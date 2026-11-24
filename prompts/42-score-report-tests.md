@@ -8,7 +8,7 @@
 - **Status:** Standard
 - **Dependencies:** Prompt 41
 - **Reference implementation:** `tests/engine/scoreCalculator.test.ts` (`calculateScore` case: lines 4,5,0,1, beam 100 → total 110 gold) and `tests/engine/game.test.ts` (golden report 10,4,7,9, beam 156 → 186 gold)
-- **Context to attach:** `SRS_rev1.4.txt` §3.8
+- **Context to attach:** the SRS Rev 1.4 (attach the file; it is not in the repo) §3.8
 - **Requirements:** FR-8.2, FR-8.3
 
 ### MANDATORY: Sandwich Requirement

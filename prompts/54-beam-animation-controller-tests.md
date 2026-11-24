@@ -1,6 +1,6 @@
 # Prompt 54: BeamAnimationController Tests
 
-**CRITICAL: Write `tests/controller/BeamAnimationController.test.ts` covering every transition of the beam statechart and every pacing branch of `BeamAnimationController` (normal, reduced motion, pause/resume, replacement, dispose) with a fake scheduler, and port the 4 blocks of `tests/machine/beamMachine.test.ts`. No production change unless a defect is found; golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**
+**CRITICAL: Write `tests/controller/BeamAnimationController.test.ts` covering every transition of the beam statechart and every pacing branch of `BeamAnimationController` (normal, reduced motion, pause/resume, replacement, recovery, dispose) with a fake scheduler, and port the 4 blocks of `tests/machine/beamMachine.test.ts`. No production change unless a defect is found; golden master 5,5,31,16,2,7,53,37 / 156 unchanged.**
 
 ---
 
@@ -13,7 +13,7 @@
 
 ### MANDATORY: Sandwich Requirement
 - **Start:** Fresh `Game`, `FakeScheduler` and recording listener per test; time advances only through `scheduler.tick(ms)`.
-- **End:** all statechart transitions B1–B9 and pacing cases P1–P8 pass; `tests/machine/beamMachine.test.ts` is still green.
+- **End:** all statechart transitions B1–B9 and pacing cases P1–P9 pass; `tests/machine/beamMachine.test.ts` is still green.
 
 ---
 
@@ -35,7 +35,7 @@ Header comment: **test-design criterion: transition coverage** for the beam stat
 
 | Id | Transition / branch | Expected |
 |---|---|---|
-| B1 | traveling →terminated (`pathExhausted`) on EXIT after its single step | status `done`, `index === EXIT.segments.length` |
+| B1 | traveling →terminated (`pathExhausted`) on EXIT after its 4 steps (the reference test's "single-cell path" comment is wrong: (0,0) south crosses 4 cells) | status `done`, `index` 4 |
 | B2 | traveling →refracting (`nextBends`) | BEND: states visited contain `refracting`, `multiplier 2` |
 | B3 | traveling →lockedStraight (`nextLocked`) | LOCK: contains `lockedStraight`, final `lockout 2`, `multiplier 2` |
 | B4 | traveling self (`advanceStraight`) | EXIT before termination: state `traveling`, `index 1` |
@@ -47,11 +47,12 @@ Header comment: **test-design criterion: transition coverage** for the beam stat
 | P1 | `play(BEND)` normal | `onStart` once; 0 steps at t=0; first `onStep` at t=400 |
 | P2 | completion | `onSettled` once when done; `onFinished` at settle + 450 ms, not before (tick 449 → 0 calls) |
 | P3 | step payload | for the R1 strike `multiplier 1`, `bent true`; `run.points` equals path total at settle |
-| P4 | reduced motion | all steps and `onFinished` delivered synchronously inside `play`, 0 pending timers |
+| P4 | reduced motion | all 4 steps of EXIT and `onSettled` inside `play`; `onFinished` 0 times until `tick(0)`, then once; 0 pending timers after |
 | P5 | pause mid-path then tick 5000 | no new steps; resume → next step after 400 ms; total steps equals the uninterrupted run |
 | P6 | second `play` before done | first path's remaining steps never delivered; `onFinished` called once (for the second) |
 | P7 | `dispose()` | 0 pending timers, `isPlaying false`, later `beamTraced` events ignored |
 | P8 | `attach()` then model publishes `beamTraced` (drive a seeded `Game` through two placements) | `onStart` receives that event's path (`toBe`) |
+| P9 | `recover()` on a model whose blocked draft was forfeited before `attach()` (seed 7, Clerestory, blue 1 at `{row:3,col:3}`, then `forfeitRound()`) | `true`, `onStart` path starts at `entrySequence[0]` and its total equals `roundScores[0]`; a second call while playing is `false`; on a game with no scored round `false` |
 
 **Error kinds:** the controller raises none; P7 also asserts `advance()` after `dispose()` returns `null` instead of throwing.
 
@@ -59,7 +60,7 @@ Header comment: **test-design criterion: transition coverage** for the beam stat
 
 ### 3. Verification Protocol
 ```bash
-pnpm vitest run tests/controller/BeamAnimationController.test.ts   # 9 + 2 (B7 extra rows) + 8 + 4 ported = 23 tests, 100 %
+pnpm vitest run tests/controller/BeamAnimationController.test.ts   # 9 + 2 (B7 extra rows) + 9 + 4 ported = 24 tests, 100 %
 pnpm typecheck && pnpm lint && pnpm test && pnpm e2e
 pnpm vitest run -t "golden"                                        # 156
 git commit -am "test(controller): inc 54 BeamAnimationController tests" && git tag inc-54-green
