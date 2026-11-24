@@ -39,8 +39,8 @@ Header comment:
 | 11 | JSON shape | `JSON.stringify(new Die('blue', 5)) === '{"color":"blue","value":5}'` |
 | 12 | JSON round trip | `Die.equals(die, JSON.parse(JSON.stringify(die)))` is `true` |
 | 13 | different value | `Die.equals(new Die('red',3), { color:'red', value:7 })` is `false` |
-| 14 | different color | `new Die('red',3).equals(new Die('blue',3))` is `false` |
-| 15 | instance ≡ static | `new Die('red',3).equals({color:'red',value:3})` is `true` |
+| 14 | different color | `Die.equals(new Die('red',3), new Die('blue',3))` is `false` |
+| 15 | plain data assignable | a plain `{color:'red', value:3}` object type-checks where a `Die` is expected (no instance `equals` exists) and `Die.equals(new Die('red',3), {color:'red',value:3})` is `true` |
 | 16 | `Die.from({color:'green', value:2})` | `instanceof Die`, equals input |
 | 17 | `toString()` | `'red 3'` |
 | 18 | `Die.MIN_VALUE`, `Die.MAX_VALUE` | `1`, `6` |

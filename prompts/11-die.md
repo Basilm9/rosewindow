@@ -44,8 +44,6 @@ export class Die implements DieData {
   constructor(color: DieColor, value: number)   // explicit fields: validate BEFORE assigning
   /** Value equality; accepts plain data restored from a recording. */
   static equals(a: DieData, b: DieData): boolean
-  /** Instance form of `Die.equals`. */
-  equals(other: DieData): boolean
   /** Rehydrates plain data into a validated Die. @throws GameError invalidArgument */
   static from(data: DieData): Die
   /** `"red 3"` — used for ARIA labels; never parsed back. */
@@ -55,7 +53,7 @@ export class Die implements DieData {
 
 **Behaviour rules (from `engine/types.ts`):**
 1. Constructor order: validate, assign, `Object.freeze(this)`. Own enumerable properties are exactly `color` and `value` (so `JSON.stringify(die)` stays `{"color":"red","value":3}` and `toEqual({color, value})` still passes).
-2. `equals` compares `a.color === b.color && a.value === b.value`; no `instanceof` check.
+2. `Die.equals` compares `a.color === b.color && a.value === b.value`; no `instanceof` check. **MANDATORY: no instance `equals` method.** An instance method would make a plain `{color, value}` object no longer assignable to `Die` (TypeScript compares shapes), which breaks `Menus.tsx` and the older tests that pass plain dice. Always compare with the static `Die.equals(a, b)`.
 3. `detail` strings: `` `unknown die color "${color}"` `` and `` `die value ${value} is not an integer 1–6` ``.
 4. `DiceBag` (Prompt 23) loops `Die.MIN_VALUE..Die.MAX_VALUE`; no other model file writes the literal 6 for faces.
 5. TSDoc on the class, both fields, both statics constants, constructor (`@param`, `@throws`) and each method.

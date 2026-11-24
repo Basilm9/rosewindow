@@ -71,7 +71,7 @@ Tests mirror the packages under `tests/`; Playwright specs live in `tests/e2e/` 
 
 ### 6. Dependencies, Prerequisites & Working Agreements
 
-- **Context to load with every prompt:** this file plus the files the prompt lists under "Context to attach" (from `ctxt/`).
+- **Context to load with every prompt:** this file plus the files the prompt lists under "Context to attach" (from `ctxt/`). The SRS is `ctxt/SRS_rev1.4.txt` (plain-text copy of `RoseWindow_SRS_Group18 (Rev 1.4).docx`); any prompt that cites `SRS_rev1.4.txt` means this file.
 - **Process:** one capability per prompt, in README order; after each prompt run `pnpm typecheck && pnpm lint && pnpm test` (and `pnpm e2e` once views are involved), fill the prompt's row in `TRACKING.md`, commit (`feat(model): inc NN …`), and tag `inc-NN-green` when every metric is green. Rollback = `git reset --hard inc-<last green>-green`.
 - **Team process:** the two developers split prompts by package, each works on their own branch, merges back, and reruns the full suite after every merge (regression testing). The git history is part of the deliverable.
 - **Verification is human-owned:** an agent's claim that tests pass is not evidence; the tracking row is filled from the actual command output.
