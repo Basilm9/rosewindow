@@ -3,4 +3,7 @@
  * Imports only `@mvc` and itself — no React, DOM, `window`, `localStorage`, XState (§5).
  * @packageDocumentation
  */
-export {}
+export type { Position } from './Position'
+export type { CellConstraint } from './CellConstraint'
+export { GameError, PlacementError } from './GameError'
+export type { GameViolation, PlacementViolation } from './GameError'

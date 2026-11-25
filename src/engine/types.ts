@@ -6,11 +6,10 @@
  * north edge, column 0 is the west edge.
  */
 
-/** Grid coordinates. Row 0 is the top (north) edge; column 0 is the west edge. */
-export interface Position {
-  readonly row: number
-  readonly col: number
-}
+import type { Position } from '../model/Position'
+
+/** Grid coordinates (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
+export type { Position }
 
 /** The five glass colors. Order is display order for the draft pool. */
 export const DIE_COLORS = ['red', 'yellow', 'blue', 'green', 'purple'] as const

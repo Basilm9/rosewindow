@@ -50,16 +50,6 @@ classDiagram
         +clear() void
     }
 
-    class GameError {
-        +GameViolation violation
-        +GameError(violation)
-    }
-
-    class PlacementError {
-        +PlacementViolation violation
-        +PlacementError(violation)
-    }
-
     class Game {
         +GameConfig config
         +readonly [WindowPattern, WindowPattern] offeredPatterns
@@ -168,6 +158,17 @@ classDiagram
         +accepts(die) boolean
     }
 
+    class GameError {
+        +GameViolation violation
+        +GameError(violation)
+        +describe(violation) string$
+    }
+
+    class PlacementError {
+        +PlacementViolation violation
+        +PlacementError(violation)
+    }
+
     BeamTracer ..> Die : uses
     ColorConstraint ..> Die : uses
     DiceBag --> Die : has
@@ -189,18 +190,12 @@ classDiagram
     Game ..> GameError : uses
     Game ..> PlacementError : uses
     Game ..> SeededRandom : uses
-    GameError --> ColorConstraint : has
-    GameError --> OpenConstraint : has
-    GameError --> ValueConstraint : has
     GameError <|-- PlacementError
     GlassWindow --> ColorConstraint : has
     GlassWindow --> Die : has
     GlassWindow --> OpenConstraint : has
     GlassWindow --> ValueConstraint : has
     OpenConstraint ..> Die : uses
-    PlacementError --> ColorConstraint : has
-    PlacementError --> OpenConstraint : has
-    PlacementError --> ValueConstraint : has
     PlacementValidator ..> ColorConstraint : uses
     PlacementValidator ..> Die : uses
     PlacementValidator ..> OpenConstraint : uses
@@ -233,16 +228,16 @@ Source inventory:
 - [GameConfig](../src/engine/config.ts#L21) — `src/engine/config.ts`
 - [DiceBag](../src/engine/diceBag.ts#L13) — `src/engine/diceBag.ts`
 - [DraftPool](../src/engine/draftPool.ts#L10) — `src/engine/draftPool.ts`
-- [GameError](../src/engine/errors.ts#L45) — `src/engine/errors.ts`
-- [PlacementError](../src/engine/errors.ts#L59) — `src/engine/errors.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
 - [GlassWindow](../src/engine/glassWindow.ts#L16) — `src/engine/glassWindow.ts`
 - [PlacementValidator](../src/engine/placementValidator.ts#L66) — `src/engine/placementValidator.ts`
 - [SeededRandom](../src/engine/rng.ts#L10) — `src/engine/rng.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
-- [Die](../src/engine/types.ts#L58) — `src/engine/types.ts`
-- [OpenConstraint](../src/engine/types.ts#L97) — `src/engine/types.ts`
-- [ColorConstraint](../src/engine/types.ts#L109) — `src/engine/types.ts`
-- [ValueConstraint](../src/engine/types.ts#L123) — `src/engine/types.ts`
+- [Die](../src/engine/types.ts#L57) — `src/engine/types.ts`
+- [OpenConstraint](../src/engine/types.ts#L96) — `src/engine/types.ts`
+- [ColorConstraint](../src/engine/types.ts#L108) — `src/engine/types.ts`
+- [ValueConstraint](../src/engine/types.ts#L122) — `src/engine/types.ts`
+- [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
+- [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
 
 See the [class responsibilities](class-structure.md) for the assignment context.
