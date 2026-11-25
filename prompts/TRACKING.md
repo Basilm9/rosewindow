@@ -21,7 +21,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | Darren / feat/mvc-model | 0 | 0/0 | 100% (441/441) | 156✓ | — | 16 | — | green | inc-15-green |
 | 16 | CellConstraint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (455/455) | 156✓ | — | 16 | — | green | inc-16-green |
 | 17 | WindowPattern | Darren / feat/mvc-model | 0 | 0/0 | 100% (455/455) | 156✓ | — | 17 | — | green | inc-17-green |
-| 18 | WindowPattern Tests | | | | | | | | | | |
+| 18 | WindowPattern Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (479/479) | 156✓ | — | 17 | — | green | inc-18-green |
 | 19 | WindowCell | | | | | | | | | | |
 | 20 | WindowCell Tests | | | | | | | | | | |
 | 21 ⚠ | GlassWindow | | | | | | | | | | |
@@ -102,3 +102,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 15 (CRITICAL): constraint classes moved from engine (count stays 16); real CellConstraint interface with accepts/describe; useGame.ts cast from 05 removed; 3 views (GlassBoard, SetupScreen, GameScreen) switched from kind-narrowing to instanceof (not in prompt; visually checked against mockups 01/02/04); 26 tests added early, prompt 16 extends rather than duplicates.
 - 16: extended prompt-15 file (26 → 40 tests); added full 12-cell acceptance table (incl. BLUE4), substitutability test, values 1–6; replaced 3 partial acceptance tests covered by the table; removed for loop from frozen test (no-control-flow rule).
 - 17: WindowPattern promoted from interface to class (16 → 17); load-time validation throws malformedPattern; constraintAt outOfBounds, byId unknownPattern; offer uses SeededRandom.sample; novice-rose description corrected to "Three demands"; added DEFAULT_GRID_SIZE to GameConfig so fromRows' default isn't a literal 4.
+- 18: 24 tests; all patterns.test.ts cases ported; malformedPattern (one per reason), outOfBounds (−1, 4, 0.5), unknownPattern each check kind; offers pinned for seeds 42 and 3; novice-rose "Three demands" pinned.
