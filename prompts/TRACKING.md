@@ -14,7 +14,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 08 ✓ | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-08-green |
 | 09 ✓ | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-09-green |
 | 10 ✓ | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-10-green |
-| 11 | Die | | | | | | | | | | |
+| 11 ✓ | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
 | 12 | Die Tests | | | | | | | | | | |
 | 13 | Direction | | | | | | | | | | |
 | 14 | Direction Tests | | | | | | | | | | |
@@ -94,4 +94,5 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 07: invalid overrides now throw invalidArgument (six number fields must be positive integers, tiers strictly increasing); view hard-codes the multiplier cap, logged for prompt 58.
 - 08: 21 tests; input-domain partitioning (valid / zero / negative / fractional); all six validated fields plus non-increasing tiers rejected; seed normalization covers NaN, Infinity, negative, fractional and >2^32; ported config.test.ts cases in full.
 - 09: SeededRandom moved from engine; mulberry32 + Fisher–Yates copied unchanged; engine rng.ts/sample.ts now re-export shims; sample() now throws invalidArgument GameError; no Math.random in model/engine. Error-kind assertion deferred to prompt 10.
-- 10: 21 tests (18 cases, it.each on 14–16 and 18, plus error-kind test); precomputed sequence constants match the copied mulberry32; reference rng.test.ts left in place; sample() error kind checked via objectContaining matcher (no try/catch), mutation-checked against 'emptyBag'.
+- 10: 21 tests (18 cases, it.each on 14–16 and 18, plus error-kind test); precomputed sequence constants match the copied mulberry32; reference rng.test.ts left in place; sample() error kind checked via objectContaining matcher (no try/catch), mutation-checked against 'emptyBag.'
+- 11: Die moved from engine/types.ts (now re-exports); frozen value object with only static Die.equals (no instance equals); invalid color/value throw invalidArgument; diceBag face loop left for prompt 23.

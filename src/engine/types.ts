@@ -7,14 +7,15 @@
  */
 
 import type { Position } from '../model/Position'
+import { Die } from '../model/Die'
+import type { DieColor } from '../model/Die'
 
 /** Grid coordinates (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
 export type { Position }
 
-/** The five glass colors. Order is display order for the draft pool. */
-export const DIE_COLORS = ['red', 'yellow', 'blue', 'green', 'purple'] as const
-
-export type DieColor = (typeof DIE_COLORS)[number]
+/** Die, its colors and their order (moved to `src/model/Die.ts`; re-exported here until Prompt 59). */
+export { DIE_COLORS, Die } from '../model/Die'
+export type { DieColor } from '../model/Die'
 
 /**
  * What the beam does when it enters a die of a given color (pitch §5):
@@ -53,22 +54,7 @@ export function counterClockwise(direction: Direction): Direction {
   return DIRECTIONS[(DIRECTIONS.indexOf(direction) + DIRECTIONS.length - 1) % DIRECTIONS.length]!
 }
 
-/** An immutable colored die. Value is the printed face, 1–6. */
-export class Die {
-  constructor(
-    readonly color: DieColor,
-    readonly value: number,
-  ) {
-    Object.freeze(this)
-  }
-
-  /** Value equality also accepts plain color/value data restored from a recording. */
-  static equals(a: Die, b: Die): boolean {
-    return a.color === b.color && a.value === b.value
-  }
-}
-
-/** Structural equality: same color and same value. */
+/** Structural equality: same color and same value (delegates to {@link Die.equals}). */
 export function sameDie(a: Die, b: Die): boolean {
   return Die.equals(a, b)
 }

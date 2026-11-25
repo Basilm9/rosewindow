@@ -112,13 +112,6 @@ classDiagram
         +calculate(input) ScoreReport
     }
 
-    class Die {
-        +DieColor color
-        +number value
-        +Die(color, value)
-        +equals(a, b) boolean$
-    }
-
     class OpenConstraint {
         +'open' kind
         +OpenConstraint()
@@ -137,6 +130,17 @@ classDiagram
         +number value
         +ValueConstraint(value)
         +accepts(die) boolean
+    }
+
+    class Die {
+        +1 MIN_VALUE$
+        +6 MAX_VALUE$
+        +DieColor color
+        +number value
+        +Die(color, value)
+        +equals(a, b) boolean$
+        +from(data) Die$
+        +toString() string
     }
 
     class GameConfig {
@@ -178,6 +182,7 @@ classDiagram
     DiceBag --> Die : has
     DiceBag ..> GameConfig : uses
     DiceBag ..> GameError : uses
+    Die ..> GameError : uses
     DraftPool --> Die : has
     DraftPool ..> GameError : uses
     Game --> BeamTracer : has
@@ -237,10 +242,10 @@ Source inventory:
 - [GlassWindow](../src/engine/glassWindow.ts#L16) — `src/engine/glassWindow.ts`
 - [PlacementValidator](../src/engine/placementValidator.ts#L66) — `src/engine/placementValidator.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
-- [Die](../src/engine/types.ts#L57) — `src/engine/types.ts`
-- [OpenConstraint](../src/engine/types.ts#L96) — `src/engine/types.ts`
-- [ColorConstraint](../src/engine/types.ts#L108) — `src/engine/types.ts`
-- [ValueConstraint](../src/engine/types.ts#L122) — `src/engine/types.ts`
+- [OpenConstraint](../src/engine/types.ts#L82) — `src/engine/types.ts`
+- [ColorConstraint](../src/engine/types.ts#L94) — `src/engine/types.ts`
+- [ValueConstraint](../src/engine/types.ts#L108) — `src/engine/types.ts`
+- [Die](../src/model/Die.ts#L31) — `src/model/Die.ts`
 - [GameConfig](../src/model/GameConfig.ts#L39) — `src/model/GameConfig.ts`
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
 - [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
