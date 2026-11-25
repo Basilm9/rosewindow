@@ -4,10 +4,10 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 
 | # | Prompt | Variant (who / branch) | typecheck errors | lint errors / warnings | unit pass % | golden master | e2e pass % | classes | import violations | zone | commit / tag |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 ✔ | MVC Project Structure | | | | | | | | | | |
-| 02 ✔ | Dependencies and Import-Boundary Rules | | | | | | | | | | |
-| 03 ✔ | MVC Infrastructure | | | | | | | | | | |
-| 04 | MVC Infrastructure Tests | | | | | | | | | | |
+| 01 ✔ | MVC Project Structure | Darren / feat/mvc-foundation | 0 | 0/0 | 98.4%->100% after junction fix | 156 ✓ | — | 15 | — |red -> Green | inc-01-green |
+| 02 ✔ | Dependencies and Import-Boundary Rules | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100 % (270/270) | 156 ✓ | — | 15 | — | green | inc-02-green |
+| 03 ✔ | MVC Infrastructure | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100 % (287/287) | 156 ✓ | smoke 1/1 | 15 | — | green | inc-03-green |
+| 04 ✓ | MVC Infrastructure Tests | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100 % (291/291) | 156 ✓ | — | 15 | — | green | inc-04-green |
 | 05 | GameError and PlacementError | | | | | | | | | | |
 | 06 | GameError and PlacementError Tests | | | | | | | | | | |
 | 07 | GameConfig | | | | | | | | | | |
