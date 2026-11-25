@@ -12,7 +12,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 06 ✓ | GameError and PlacementError Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
 | 07 ✓ | GameConfig | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156✓ | — | 15 | — | green | inc-07-green |
 | 08 ✓ | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-08-green |
-| 09 | SeededRandom | | | | | | | | | | |
+| 09 | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-09-green |
 | 10 | SeededRandom Tests | | | | | | | | | | |
 | 11 | Die | | | | | | | | | | |
 | 12 | Die Tests | | | | | | | | | | |
@@ -93,3 +93,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 06: one message test per error kind (14); no control flow in tests.
 - 07: invalid overrides now throw invalidArgument (six number fields must be positive integers, tiers strictly increasing); view hard-codes the multiplier cap, logged for prompt 58.
 - 08: 21 tests; input-domain partitioning (valid / zero / negative / fractional); all six validated fields plus non-increasing tiers rejected; seed normalization covers NaN, Infinity, negative, fractional and >2^32; ported config.test.ts cases in full.
+- 09: SeededRandom moved from engine; mulberry32 + Fisher–Yates copied unchanged; engine rng.ts/sample.ts now re-export shims; sample() now throws invalidArgument GameError; no Math.random in model/engine. Error-kind assertion deferred to prompt 10.

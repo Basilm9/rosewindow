@@ -106,13 +106,6 @@ classDiagram
         +assertValid(check) void
     }
 
-    class SeededRandom {
-        +number seed
-        -number state
-        +SeededRandom(seed)
-        +next() number
-    }
-
     class ScoreCalculator {
         +TierThresholds tiers
         +ScoreCalculator(tiers?)
@@ -169,6 +162,17 @@ classDiagram
         +PlacementError(violation)
     }
 
+    class SeededRandom {
+        +number seed
+        -number state
+        +SeededRandom(seed)
+        +next() number
+        +shuffled(items) T[]
+        +sample(items, count) T[]
+        +shuffled(items, rng) T[]$
+        +sample(items, count, rng) T[]$
+    }
+
     BeamTracer ..> Die : uses
     ColorConstraint ..> Die : uses
     DiceBag --> Die : has
@@ -203,6 +207,7 @@ classDiagram
     PlacementValidator ..> PlacementError : uses
     PlacementValidator ..> ValueConstraint : uses
     ScoreCalculator ..> Die : uses
+    SeededRandom ..> GameError : uses
     ValueConstraint ..> Die : uses
 ```
 
@@ -231,7 +236,6 @@ Source inventory:
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
 - [GlassWindow](../src/engine/glassWindow.ts#L16) — `src/engine/glassWindow.ts`
 - [PlacementValidator](../src/engine/placementValidator.ts#L66) — `src/engine/placementValidator.ts`
-- [SeededRandom](../src/engine/rng.ts#L10) — `src/engine/rng.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
 - [Die](../src/engine/types.ts#L57) — `src/engine/types.ts`
 - [OpenConstraint](../src/engine/types.ts#L96) — `src/engine/types.ts`
@@ -240,5 +244,6 @@ Source inventory:
 - [GameConfig](../src/model/GameConfig.ts#L39) — `src/model/GameConfig.ts`
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
 - [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
+- [SeededRandom](../src/model/SeededRandom.ts#L29) — `src/model/SeededRandom.ts`
 
 See the [class responsibilities](class-structure.md) for the assignment context.
