@@ -16,7 +16,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 10 ✓ | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-10-green |
 | 11 ✓ | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
 | 12 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green  | inc-12-green |
-| 13 | Direction | | | | | | | | | | |
+| 13 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green  | inc-13-green |
 | 14 | Direction Tests | | | | | | | | | | |
 | 15 ✔ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | | | | | | | | | | |
 | 16 | CellConstraint Tests | | | | | | | | | | |
@@ -97,3 +97,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 10: 21 tests (18 cases, it.each on 14–16 and 18, plus error-kind test); precomputed sequence constants match the copied mulberry32; reference rng.test.ts left in place; sample() error kind checked via objectContaining matcher (no try/catch), mutation-checked against 'emptyBag.'
 - 11: Die moved from engine/types.ts (now re-exports); frozen value object with only static Die.equals (no instance equals); invalid color/value throw invalidArgument; diceBag face loop left for prompt 23.
 - 12: 25 tests; input-domain partitioning (5 colours, valid 1/3/6, invalid 0/7/2.5/NaN, bad colour, Die.from); every rejection checks kind invalidArgument via shared objectContaining matcher; compile-time check that a plain {color, value} satisfies Die; reference classes.test.ts case ported with a directly built die.
+- 13: Direction promoted from string type to class (classes 15 → 16); four frozen instances, private constructor, clockwise/counterClockwise/step/fromName; engine types.ts keeps string Direction as shim (class imported as CompassDirection); colour→turn table untouched, moves in beam prompts.

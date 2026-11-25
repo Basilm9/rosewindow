@@ -4,6 +4,9 @@
  * @packageDocumentation
  */
 export type { Position } from './Position'
+export { ORTHOGONAL_DELTAS, DIAGONAL_DELTAS } from './Position'
+export { Direction, DIRECTION_NAMES } from './Direction'
+export type { DirectionName } from './Direction'
 export type { CellConstraint } from './CellConstraint'
 export { GameError, PlacementError } from './GameError'
 export type { GameViolation, PlacementViolation } from './GameError'
