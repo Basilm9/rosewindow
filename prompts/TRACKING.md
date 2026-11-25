@@ -24,8 +24,8 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 18 | WindowPattern Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (479/479) | 156✓ | — | 17 | — | green | inc-18-green |
 | 19 | WindowCell | Darren / feat/mvc-model | 0 | 0/0 | 100% (479/479) | 156✓ | — | 18 | — | green | inc-19-green |
 | 20 | WindowCell Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (496/496) | 156✓ | — | 18 | — | green | inc-20-green |
-| 21 ⚠ | GlassWindow | | | | | | | | | | |
-| 22 | GlassWindow Tests | | | | | | | | | | |
+| 21 ⚠ | GlassWindow | Darren / feat/mvc-model | 0 | 0/0 | 100% (496/496) | 156✓ | — | 18 | — | green | inc-21-green |
+| 22 | GlassWindow Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (522/522) | 156✓ | — | 18 | — | green | inc-22-green |
 | 23 | DiceBag | | | | | | | | | | |
 | 24 | DiceBag Tests | | | | | | | | | | |
 | 25 | DraftPool | | | | | | | | | | |
@@ -105,3 +105,5 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 18: 24 tests; all patterns.test.ts cases ported; malformedPattern (one per reason), outOfBounds (−1, 4, 0.5), unknownPattern each check kind; offers pinned for seeds 42 and 3; novice-rose "Three demands" pinned.
 - 19: WindowCell promoted from interface to frozen class (17 → 18); satisfiedBy delegates to CellConstraint; withDie throws cellOccupied PlacementError; cleared() returns new empty cell; engine glassWindow.ts re-exports and builds cells via the class; validator not yet routed through satisfiedBy (prompt 27).
 - 20: 17 tests; branch-coverage criterion, 100% statements/branches/functions/lines on WindowCell.ts (coverage-v8); withDie rejection checks kind cellOccupied via matcher; originals unchanged after withDie and after cleared() on an occupied cell; glassWindow.test.ts case ported.
+- 21 (CRITICAL): GlassWindow moved to model as WindowCell[][] grid (count stays 18); DieGrid moved to model, beamTracer imports it from there; isolation protocol run in full: 2×2 step-by-step match vs reference class, glassWindow/beamTracer/objectives alone, game.test 22/22, e2e 23/23; NFR-6.1 confirmed (outOfBounds and cellOccupied leave dice unchanged); board orientation checked by hand against mockup 02.
+- 22: 26 tests; both legacy glassWindow.test.ts cases ported; outOfBounds (4 outside partitions incl. {4,0}) and cellOccupied checked by class, message and kind; NFR-6.1 permanent tests for both rejection kinds (24 cellOccupied, 24b outOfBounds); catchError helper is the only try (file-level, allowed).
