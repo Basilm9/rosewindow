@@ -17,20 +17,20 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 11 ✓ | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
 | 12 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green  | inc-12-green |
 | 13 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green  | inc-13-green |
-| 14 | Direction Tests | | | | | | | | | | |
-| 15 ✔ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | | | | | | | | | | |
+| 14 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (415/415) | 156✓ | — | 16 | — | green  | inc-14-green |
+| 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | | | | | | | | | | |
 | 16 | CellConstraint Tests | | | | | | | | | | |
 | 17 | WindowPattern | | | | | | | | | | |
 | 18 | WindowPattern Tests | | | | | | | | | | |
 | 19 | WindowCell | | | | | | | | | | |
 | 20 | WindowCell Tests | | | | | | | | | | |
-| 21 ✔ | GlassWindow | | | | | | | | | | |
+| 21 ⚠ | GlassWindow | | | | | | | | | | |
 | 22 | GlassWindow Tests | | | | | | | | | | |
 | 23 | DiceBag | | | | | | | | | | |
 | 24 | DiceBag Tests | | | | | | | | | | |
 | 25 | DraftPool | | | | | | | | | | |
 | 26 | DraftPool Tests | | | | | | | | | | |
-| 27 ✔ | PlacementValidator | | | | | | | | | | |
+| 27 ⚠ | PlacementValidator | | | | | | | | | | |
 | 28 | PlacementValidator Tests | | | | | | | | | | |
 | 29 | EntryPoint | | | | | | | | | | |
 | 30 | EntryPoint Tests | | | | | | | | | | |
@@ -38,7 +38,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 32 | BeamSegment Tests | | | | | | | | | | |
 | 33 | BeamPath | | | | | | | | | | |
 | 34 | BeamPath Tests | | | | | | | | | | |
-| 35 ✔ | BeamTracer | | | | | | | | | | |
+| 35 ⚠ | BeamTracer | | | | | | | | | | |
 | 36 | BeamTracer Tests | | | | | | | | | | |
 | 37 | Objective Interface and PublicObjective | | | | | | | | | | |
 | 38 | PublicObjective Tests | | | | | | | | | | |
@@ -46,31 +46,31 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 40 | PrivateObjective and Deal Tests | | | | | | | | | | |
 | 41 | ScoreReport | | | | | | | | | | |
 | 42 | ScoreReport Tests | | | | | | | | | | |
-| 43 ✔ | ScoreCalculator | | | | | | | | | | |
+| 43 ⚠ | ScoreCalculator | | | | | | | | | | |
 | 44 | ScoreCalculator Tests | | | | | | | | | | |
-| 45 ✔ | The Seven Model Event Classes | | | | | | | | | | |
+| 45 ⚠ | The Seven Model Event Classes | | | | | | | | | | |
 | 46 | Model Event Tests | | | | | | | | | | |
-| 47 ✔ | Game (the model facade) | | | | | | | | | | |
-| 48 ✔ | Game Tests, Golden Master and Safety Properties | | | | | | | | | | |
-| 49 ✔ | Game Statechart (XState v5) | | | | | | | | | | |
-| 50 ✔ | GameController | | | | | | | | | | |
+| 47 ⚠ | Game (the model facade) | | | | | | | | | | |
+| 48 ⚠ | Game Tests, Golden Master and Safety Properties | | | | | | | | | | |
+| 49 ⚠ | Game Statechart (XState v5) | | | | | | | | | | |
+| 50 ⚠ | GameController | | | | | | | | | | |
 | 51 | GameController Tests | | | | | | | | | | |
 | 52 | Beam Statechart | | | | | | | | | | |
-| 53 ✔ | BeamAnimationController | | | | | | | | | | |
+| 53 ⚠ | BeamAnimationController | | | | | | | | | | |
 | 54 | BeamAnimationController Tests | | | | | | | | | | |
-| 55 ✔ | RunRecorder | | | | | | | | | | |
+| 55 ⚠ | RunRecorder | | | | | | | | | | |
 | 56 | PlayerProfile | | | | | | | | | | |
 | 57 | ChallengeCodec | | | | | | | | | | |
-| 58 ✔ | View Rewiring (state only through GameController and useModelEvents) | | | | | | | | | | |
+| 58 ⚠ | View Rewiring (state only through GameController and useModelEvents) | | | | | | | | | | |
 | 59 | Utilities and Legacy Removal | | | | | | | | | | |
-| 60 ✔ | Class Diagram Generator with Import-Rule Report | | | | | | | | | | |
+| 60 ⚠ | Class Diagram Generator with Import-Rule Report | | | | | | | | | | |
 | 61 | Statechart Diagram Export | | | | | | | | | | |
-| 62 ✔ | AT-01 Begin a Run at a Chosen Seed (+ shared acceptance harness) | | | | | | | | | | |
+| 62 ⚠ | AT-01 Begin a Run at a Chosen Seed (+ shared acceptance harness) | | | | | | | | | | |
 | 63 | AT-02 Review the Objectives Mid-Run | | | | | | | | | | |
 | 64 | AT-03 Draft, Swap and Return a Die | | | | | | | | | | |
 | 65 | AT-04 One Rejection per Placement Law | | | | | | | | | | |
 | 66 | AT-05 Illuminate the Window | | | | | | | | | | |
-| 67 ✔ | AT-06 Golden Game (Reproducibility) | | | | | | | | | | |
+| 67 ⚠ | AT-06 Golden Game (Reproducibility) | | | | | | | | | | |
 | 68 | AT-07 Deadlocked Round | | | | | | | | | | |
 | 69 | AT-08 Complete a Run and Review the Score | | | | | | | | | | |
 | 70 | AT-09 Recast the Draft | | | | | | | | | | |
@@ -98,3 +98,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 11: Die moved from engine/types.ts (now re-exports); frozen value object with only static Die.equals (no instance equals); invalid color/value throw invalidArgument; diceBag face loop left for prompt 23.
 - 12: 25 tests; input-domain partitioning (5 colours, valid 1/3/6, invalid 0/7/2.5/NaN, bad colour, Die.from); every rejection checks kind invalidArgument via shared objectContaining matcher; compile-time check that a plain {color, value} satisfies Die; reference classes.test.ts case ported with a directly built die.
 - 13: Direction promoted from string type to class (classes 15 → 16); four frozen instances, private constructor, clockwise/counterClockwise/step/fromName; engine types.ts keeps string Direction as shim (class imported as CompassDirection); colour→turn table untouched, moves in beam prompts.
+- 14: 35 tests (22 listed cases + step and fromName tables so every direction appears in every method, + error-kind check, + per-index toBe identity on ALL with length check); reference types.test.ts direction cases ported.
