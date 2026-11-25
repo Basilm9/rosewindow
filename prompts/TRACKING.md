@@ -9,7 +9,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 03 ✔ | MVC Infrastructure | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (287/287) | 156 ✓ | smoke 1/1 | 15 | — | green | inc-03-green |
 | 04 ✓ | MVC Infrastructure Tests | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-04-green |
 | 05 ✓ | GameError and PlacementError | Darren/ feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
-| 06 | GameError and PlacementError Tests | | | | | | | | | | |
+| 06 | GameError and PlacementError Tests | Darren/ feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
 | 07 | GameConfig | | | | | | | | | | |
 | 08 | GameConfig Tests | | | | | | | | | | |
 | 09 | SeededRandom | | | | | | | | | | |
