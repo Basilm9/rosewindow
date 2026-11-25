@@ -17,6 +17,9 @@ export interface TierThresholds {
 /** Multiplier ceiling of the beam law (FR-4.14); shared by configuration and beam playback. */
 export const DEFAULT_MULTIPLIER_CAP = 5
 
+/** Default side length of the square window (a 4×4 grid); shared by configuration and pattern parsing. */
+export const DEFAULT_GRID_SIZE = 4
+
 /** Provisional tier thresholds (frozen); revisit after playtesting. */
 export const PROVISIONAL_TIERS: TierThresholds = Object.freeze({ bronze: 40, silver: 65, gold: 90 })
 
@@ -64,7 +67,7 @@ export class GameConfig {
   constructor(seed: number, overrides: Partial<Omit<GameConfig, 'seed'>> = {}) {
     const settings = {
       rounds: 8,
-      gridSize: 4,
+      gridSize: DEFAULT_GRID_SIZE,
       draftSize: 5,
       placementsPerRound: 2,
       copiesPerDie: 3,

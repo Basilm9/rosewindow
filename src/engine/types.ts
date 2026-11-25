@@ -84,14 +84,8 @@ export function valueConstraint(value: number): CellConstraint {
   return new ValueConstraint(value)
 }
 
-/** A named 4×4 arrangement of printed cell demands; two are offered per run. */
-export interface WindowPattern {
-  readonly id: string
-  readonly name: string
-  readonly description: string
-  /** Row-major 4×4 grid of printed demands. */
-  readonly constraints: readonly (readonly CellConstraint[])[]
-}
+/** Window patterns (moved to `src/model/WindowPattern.ts` as a class; re-exported here until Prompt 59). */
+export type { WindowPattern } from '../model/WindowPattern'
 
 /** Where the beam enters: an edge cell plus the inward direction it travels. */
 export interface EntryPoint {
