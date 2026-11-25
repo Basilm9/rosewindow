@@ -8,10 +8,11 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { CellConstraint } from '../../src/model/CellConstraint'
+import { OpenConstraint } from '../../src/model/CellConstraint'
 import { GameError, PlacementError } from '../../src/model/GameError'
 
-/** Builds a fresh open-constraint fixture (literal until Prompt 15 provides `OpenConstraint`). */
-const openFixture = (): CellConstraint => ({ kind: 'open', accepts: () => true })
+/** Builds a fresh open-constraint fixture. */
+const openFixture = (): CellConstraint => new OpenConstraint()
 
 describe('GameError / PlacementError hierarchy', () => {
   it('PlacementError is a GameError is an Error', () => {

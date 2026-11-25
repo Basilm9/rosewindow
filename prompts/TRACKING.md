@@ -4,21 +4,21 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 
 | # | Prompt | Variant (who / branch) | typecheck errors | lint errors / warnings | unit pass % | golden master | e2e pass % | classes | import violations | zone | commit / tag |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 ✔ | MVC Project Structure | Darren / feat/mvc-foundation | 0 | 0/0 | 98.4%->100% after junction fix | 156 ✓ | — | 15 | — |red -> Green | inc-01-green |
-| 02 ✔ | Dependencies and Import-Boundary Rules | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100% (270/270) | 156 ✓ | — | 15 | — | green | inc-02-green |
-| 03 ✔ | MVC Infrastructure | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (287/287) | 156 ✓ | smoke 1/1 | 15 | — | green | inc-03-green |
-| 04 ✓ | MVC Infrastructure Tests | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-04-green |
-| 05 ✓ | GameError and PlacementError | Darren / feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
-| 06 ✓ | GameError and PlacementError Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
-| 07 ✓ | GameConfig | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156✓ | — | 15 | — | green | inc-07-green |
-| 08 ✓ | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-08-green |
-| 09 ✓ | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-09-green |
-| 10 ✓ | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-10-green |
-| 11 ✓ | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
-| 12 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green  | inc-12-green |
-| 13 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green  | inc-13-green |
-| 14 ✓ | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (415/415) | 156✓ | — | 16 | — | green  | inc-14-green |
-| 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | | | | | | | | | | |
+| 01 ⚠ | MVC Project Structure | Darren / feat/mvc-foundation | 0 | 0/0 | 98.4%->100% after junction fix | 156 ✓ | — | 15 | — |red -> Green | inc-01-green |
+| 02 ⚠ | Dependencies and Import-Boundary Rules | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100% (270/270) | 156 ✓ | — | 15 | — | green | inc-02-green |
+| 03 ⚠ | MVC Infrastructure | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (287/287) | 156 ✓ | smoke 1/1 | 15 | — | green | inc-03-green |
+| 04 | MVC Infrastructure Tests | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-04-green |
+| 05 | GameError and PlacementError | Darren / feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
+| 06 | GameError and PlacementError Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
+| 07 | GameConfig | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156✓ | — | 15 | — | green | inc-07-green |
+| 08 | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-08-green |
+| 09 | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-09-green |
+| 10 | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-10-green |
+| 11 | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
+| 12 | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green  | inc-12-green |
+| 13 | Direction | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green  | inc-13-green |
+| 14 | Direction Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (415/415) | 156✓ | — | 16 | — | green  | inc-14-green |
+| 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | Darren / feat/mvc-model | 0 | 0/0 | 100% (441/441) | 156✓ | — | 16 | — | green  | inc-15-green |
 | 16 | CellConstraint Tests | | | | | | | | | | |
 | 17 | WindowPattern | | | | | | | | | | |
 | 18 | WindowPattern Tests | | | | | | | | | | |

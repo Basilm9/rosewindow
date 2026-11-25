@@ -116,6 +116,7 @@ classDiagram
         +'open' kind
         +OpenConstraint()
         +accepts(die) boolean
+        +describe() string
     }
 
     class ColorConstraint {
@@ -123,6 +124,7 @@ classDiagram
         +DieColor color
         +ColorConstraint(color)
         +accepts(die) boolean
+        +describe() string
     }
 
     class ValueConstraint {
@@ -130,6 +132,7 @@ classDiagram
         +number value
         +ValueConstraint(value)
         +accepts(die) boolean
+        +describe() string
     }
 
     class Die {
@@ -196,7 +199,7 @@ classDiagram
     }
 
     BeamTracer ..> Die : uses
-    ColorConstraint ..> Die : uses
+    ColorConstraint ..> GameError : uses
     DiceBag --> Die : has
     DiceBag ..> GameConfig : uses
     DiceBag ..> GameError : uses
@@ -205,34 +208,25 @@ classDiagram
     DraftPool --> Die : has
     DraftPool ..> GameError : uses
     Game --> BeamTracer : has
-    Game --> ColorConstraint : has
     Game --> DiceBag : has
     Game --> Die : has
     Game --> DraftPool : has
     Game --> GameConfig : has
     Game --> GlassWindow : has
-    Game --> OpenConstraint : has
     Game --> PlacementValidator : has
     Game --> ScoreCalculator : has
-    Game --> ValueConstraint : has
     Game ..> GameError : uses
     Game ..> PlacementError : uses
     Game ..> SeededRandom : uses
     GameConfig ..> GameError : uses
     GameError <|-- PlacementError
-    GlassWindow --> ColorConstraint : has
     GlassWindow --> Die : has
-    GlassWindow --> OpenConstraint : has
-    GlassWindow --> ValueConstraint : has
-    OpenConstraint ..> Die : uses
-    PlacementValidator ..> ColorConstraint : uses
     PlacementValidator ..> Die : uses
-    PlacementValidator ..> OpenConstraint : uses
     PlacementValidator ..> PlacementError : uses
-    PlacementValidator ..> ValueConstraint : uses
     ScoreCalculator ..> Die : uses
     SeededRandom ..> GameError : uses
     ValueConstraint ..> Die : uses
+    ValueConstraint ..> GameError : uses
 ```
 
 How to read it:
@@ -261,9 +255,9 @@ Source inventory:
 - [GlassWindow](../src/engine/glassWindow.ts#L16) — `src/engine/glassWindow.ts`
 - [PlacementValidator](../src/engine/placementValidator.ts#L66) — `src/engine/placementValidator.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
-- [OpenConstraint](../src/engine/types.ts#L70) — `src/engine/types.ts`
-- [ColorConstraint](../src/engine/types.ts#L82) — `src/engine/types.ts`
-- [ValueConstraint](../src/engine/types.ts#L96) — `src/engine/types.ts`
+- [OpenConstraint](../src/model/CellConstraint.ts#L34) — `src/model/CellConstraint.ts`
+- [ColorConstraint](../src/model/CellConstraint.ts#L66) — `src/model/CellConstraint.ts`
+- [ValueConstraint](../src/model/CellConstraint.ts#L111) — `src/model/CellConstraint.ts`
 - [Die](../src/model/Die.ts#L31) — `src/model/Die.ts`
 - [Direction](../src/model/Direction.ts#L18) — `src/model/Direction.ts`
 - [GameConfig](../src/model/GameConfig.ts#L39) — `src/model/GameConfig.ts`

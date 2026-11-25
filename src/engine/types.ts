@@ -11,6 +11,8 @@ import { Die } from '../model/Die'
 import type { DieColor } from '../model/Die'
 import { Direction as CompassDirection } from '../model/Direction'
 import type { DirectionName } from '../model/Direction'
+import { ColorConstraint, OpenConstraint, ValueConstraint } from '../model/CellConstraint'
+import type { CellConstraint } from '../model/CellConstraint'
 
 /** Grid coordinates (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
 export type { Position }
@@ -63,48 +65,9 @@ export function sameDie(a: Die, b: Die): boolean {
 /** Neighbour offsets (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
 export { ORTHOGONAL_DELTAS, DIAGONAL_DELTAS } from '../model/Position'
 
-/** The printed demand on a window cell: a required color, a required value, or nothing. */
-export type CellConstraint = OpenConstraint | ColorConstraint | ValueConstraint
-
-/** A pane without a printed demand; it accepts every die. */
-export class OpenConstraint {
-  readonly kind = 'open'
-
-  constructor() {
-    Object.freeze(this)
-  }
-
-  /** Open panes impose no color or value restriction. */
-  readonly accepts: (die: Die) => boolean = () => true
-}
-
-/** A printed color demand, independent of the die's value. */
-export class ColorConstraint {
-  readonly kind = 'color'
-
-  constructor(readonly color: DieColor) {
-    Object.freeze(this)
-  }
-
-  /** Whether this die matches the pane's printed color. */
-  accepts(die: Die): boolean {
-    return die.color === this.color
-  }
-}
-
-/** A printed value demand, independent of the die's color. */
-export class ValueConstraint {
-  readonly kind = 'value'
-
-  constructor(readonly value: number) {
-    Object.freeze(this)
-  }
-
-  /** Whether this die matches the pane's printed value. */
-  accepts(die: Die): boolean {
-    return die.value === this.value
-  }
-}
+/** Printed cell demands (moved to `src/model/CellConstraint.ts`; re-exported here until Prompt 59). */
+export { OpenConstraint, ColorConstraint, ValueConstraint } from '../model/CellConstraint'
+export type { CellConstraint }
 
 /** Creates an immutable open-pane demand. */
 export function openConstraint(): CellConstraint {

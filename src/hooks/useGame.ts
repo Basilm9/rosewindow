@@ -148,9 +148,7 @@ export function useGame(session?: RunSession): UseGameResult {
         position: machineRejection.position,
         kind: machineRejection.violation.kind,
         ...(machineRejection.violation.kind === 'constraintMismatch'
-          ? // Inc 05 shim: the violation types `expected` as the provisional model interface, but
-            // the engine validator always stores an engine constraint instance. Removed in Prompt 15.
-            { expected: machineRejection.violation.expected as CellConstraint }
+          ? { expected: machineRejection.violation.expected }
           : {}),
         key: flashKey.current,
       })
