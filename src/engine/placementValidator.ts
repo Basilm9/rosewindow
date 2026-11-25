@@ -2,6 +2,7 @@ import { PlacementError } from './errors'
 import type { PlacementViolation } from './errors'
 import { DIAGONAL_DELTAS, ORTHOGONAL_DELTAS, sameDie } from './types'
 import type { CellConstraint, Die, Position } from './types'
+import type { DieGrid } from '../model/GlassWindow'
 
 /**
  * The placement validator (pitch §8.2, §11): a pure function over a hand-built
@@ -17,8 +18,8 @@ import type { CellConstraint, Die, Position } from './types'
  *   6. disconnectedPlacement   (only when the window is not empty)
  */
 
-/** The window contents: row-major grid of zero-or-one dice. */
-export type DieGrid = readonly (readonly (Die | null)[])[]
+/** The window contents (moved to `src/model/GlassWindow.ts` in Prompt 21; re-exported here until Prompt 59). */
+export type { DieGrid } from '../model/GlassWindow'
 
 export interface PlacementCheck {
   /** Current dice on the window. */

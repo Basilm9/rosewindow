@@ -11,6 +11,8 @@ export { OpenConstraint, ColorConstraint, ValueConstraint } from './CellConstrai
 export type { CellConstraint, ConstraintKind } from './CellConstraint'
 export { WindowPattern, ALL_PATTERNS } from './WindowPattern'
 export { WindowCell } from './WindowCell'
+export { GlassWindow } from './GlassWindow'
+export type { DieGrid } from './GlassWindow'
 export { GameError, PlacementError } from './GameError'
 export type { GameViolation, PlacementViolation } from './GameError'
 export { Die, DIE_COLORS } from './Die'

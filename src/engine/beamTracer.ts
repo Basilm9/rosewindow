@@ -1,5 +1,5 @@
 import { DEFAULT_MULTIPLIER_CAP } from './config'
-import type { DieGrid } from './placementValidator'
+import type { DieGrid } from '../model/GlassWindow'
 import { DELTA_BY_DIRECTION, REFRACTION_BY_COLOR, clockwise, counterClockwise } from './types'
 import type { Die, Direction, EntryPoint, Position } from './types'
 

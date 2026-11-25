@@ -86,21 +86,6 @@ classDiagram
         -illuminateAndAdvance() void
     }
 
-    class GlassWindow {
-        -Array~Die | null~[] dice
-        +WindowPattern pattern
-        +number gridSize
-        +readonly Array~readonly CellConstraint[]~ constraints
-        +DieGrid dice
-        +number placedCount
-        -GlassWindow(pattern, gridSize)
-        +fromPattern(pattern) GlassWindow$
-        +dieAt(position) Die | null
-        +cellAt(position) WindowCell
-        +place(die, position) void
-        +remove(position) void
-    }
-
     class PlacementValidator {
         +findViolation(check) PlacementViolation | null
         +assertValid(check) void
@@ -187,6 +172,25 @@ classDiagram
         +PlacementError(violation)
     }
 
+    class GlassWindow {
+        +WindowPattern pattern
+        +number gridSize
+        -WindowCell[][] cells
+        +readonly Array~readonly CellConstraint[]~ constraints
+        +DieGrid dice
+        +number placedCount
+        +boolean isEmpty
+        -GlassWindow(pattern)
+        +fromPattern(pattern) GlassWindow$
+        +isInside(position) boolean
+        +dieAt(position) Die | null
+        +cellAt(position) WindowCell
+        +place(die, position) void
+        +remove(position) void
+        +occupiedPositions() Position[]
+        -assertInside(position) void
+    }
+
     class SeededRandom {
         +number seed
         -number state
@@ -246,9 +250,10 @@ classDiagram
     Game ..> SeededRandom : uses
     GameConfig ..> GameError : uses
     GameError <|-- PlacementError
-    GlassWindow --> Die : has
+    GlassWindow --> WindowCell : has
     GlassWindow --> WindowPattern : has
-    GlassWindow ..> WindowCell : uses
+    GlassWindow ..> Die : uses
+    GlassWindow ..> GameError : uses
     PlacementValidator ..> Die : uses
     PlacementValidator ..> PlacementError : uses
     ScoreCalculator ..> Die : uses
@@ -284,8 +289,7 @@ Source inventory:
 - [DiceBag](../src/engine/diceBag.ts#L13) — `src/engine/diceBag.ts`
 - [DraftPool](../src/engine/draftPool.ts#L10) — `src/engine/draftPool.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
-- [GlassWindow](../src/engine/glassWindow.ts#L14) — `src/engine/glassWindow.ts`
-- [PlacementValidator](../src/engine/placementValidator.ts#L66) — `src/engine/placementValidator.ts`
+- [PlacementValidator](../src/engine/placementValidator.ts#L67) — `src/engine/placementValidator.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
 - [OpenConstraint](../src/model/CellConstraint.ts#L34) — `src/model/CellConstraint.ts`
 - [ColorConstraint](../src/model/CellConstraint.ts#L66) — `src/model/CellConstraint.ts`
@@ -295,6 +299,7 @@ Source inventory:
 - [GameConfig](../src/model/GameConfig.ts#L42) — `src/model/GameConfig.ts`
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
 - [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
+- [GlassWindow](../src/model/GlassWindow.ts#L27) — `src/model/GlassWindow.ts`
 - [SeededRandom](../src/model/SeededRandom.ts#L29) — `src/model/SeededRandom.ts`
 - [WindowCell](../src/model/WindowCell.ts#L13) — `src/model/WindowCell.ts`
 - [WindowPattern](../src/model/WindowPattern.ts#L48) — `src/model/WindowPattern.ts`
