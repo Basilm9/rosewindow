@@ -22,7 +22,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 16 | CellConstraint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (455/455) | 156✓ | — | 16 | — | green | inc-16-green |
 | 17 | WindowPattern | Darren / feat/mvc-model | 0 | 0/0 | 100% (455/455) | 156✓ | — | 17 | — | green | inc-17-green |
 | 18 | WindowPattern Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (479/479) | 156✓ | — | 17 | — | green | inc-18-green |
-| 19 | WindowCell | | | | | | | | | | |
+| 19 | WindowCell | Darren / feat/mvc-model | 0 | 0/0 | 100% (479/479) | 156✓ | — | 18 | — | green | inc-19-green |
 | 20 | WindowCell Tests | | | | | | | | | | |
 | 21 ⚠ | GlassWindow | | | | | | | | | | |
 | 22 | GlassWindow Tests | | | | | | | | | | |
@@ -103,3 +103,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 16: extended prompt-15 file (26 → 40 tests); added full 12-cell acceptance table (incl. BLUE4), substitutability test, values 1–6; replaced 3 partial acceptance tests covered by the table; removed for loop from frozen test (no-control-flow rule).
 - 17: WindowPattern promoted from interface to class (16 → 17); load-time validation throws malformedPattern; constraintAt outOfBounds, byId unknownPattern; offer uses SeededRandom.sample; novice-rose description corrected to "Three demands"; added DEFAULT_GRID_SIZE to GameConfig so fromRows' default isn't a literal 4.
 - 18: 24 tests; all patterns.test.ts cases ported; malformedPattern (one per reason), outOfBounds (−1, 4, 0.5), unknownPattern each check kind; offers pinned for seeds 42 and 3; novice-rose "Three demands" pinned.
+- 19: WindowCell promoted from interface to frozen class (17 → 18); satisfiedBy delegates to CellConstraint; withDie throws cellOccupied PlacementError; cleared() returns new empty cell; engine glassWindow.ts re-exports and builds cells via the class; validator not yet routed through satisfiedBy (prompt 27).

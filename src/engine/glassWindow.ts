@@ -1,11 +1,9 @@
 import type { CellConstraint, Die, WindowPattern } from './types'
 import type { DieGrid } from './placementValidator'
+import { WindowCell } from '../model/WindowCell'
 
-/** One window cell: its printed demand plus zero-or-one placed die (pitch §8.2). */
-export interface WindowCell {
-  readonly constraint: CellConstraint
-  readonly die: Die | null
-}
+/** Window cell (moved to `src/model/WindowCell.ts` as a class; re-exported here until Prompt 59). */
+export { WindowCell } from '../model/WindowCell'
 
 /**
  * The player's window (pitch §8.2 `GlassWindow`): owns the 4x4 grid of cells,
@@ -41,10 +39,7 @@ export class GlassWindow {
   }
 
   cellAt(position: { readonly row: number; readonly col: number }): WindowCell {
-    return {
-      constraint: this.pattern.constraints[position.row]![position.col]!,
-      die: this.dieAt(position),
-    }
+    return new WindowCell(this.pattern.constraints[position.row]![position.col]!, this.dieAt(position))
   }
 
   get placedCount(): number {
