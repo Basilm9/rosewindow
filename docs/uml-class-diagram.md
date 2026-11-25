@@ -19,18 +19,6 @@ classDiagram
         +trace(grid, entry) BeamPath
     }
 
-    class GameConfig {
-        +number seed
-        +number rounds
-        +number gridSize
-        +number draftSize
-        +number placementsPerRound
-        +number copiesPerDie
-        +number multiplierCap
-        +TierThresholds tiers
-        +GameConfig(seed, overrides?)
-    }
-
     class DiceBag {
         -Die[] dice
         +number remainingCount
@@ -158,6 +146,18 @@ classDiagram
         +accepts(die) boolean
     }
 
+    class GameConfig {
+        +number seed
+        +number rounds
+        +number gridSize
+        +number draftSize
+        +number placementsPerRound
+        +number copiesPerDie
+        +number multiplierCap
+        +TierThresholds tiers
+        +GameConfig(seed, overrides?)
+    }
+
     class GameError {
         +GameViolation violation
         +GameError(violation)
@@ -190,6 +190,7 @@ classDiagram
     Game ..> GameError : uses
     Game ..> PlacementError : uses
     Game ..> SeededRandom : uses
+    GameConfig ..> GameError : uses
     GameError <|-- PlacementError
     GlassWindow --> ColorConstraint : has
     GlassWindow --> Die : has
@@ -225,7 +226,6 @@ How to read it:
 Source inventory:
 
 - [BeamTracer](../src/engine/beamTracer.ts#L54) — `src/engine/beamTracer.ts`
-- [GameConfig](../src/engine/config.ts#L21) — `src/engine/config.ts`
 - [DiceBag](../src/engine/diceBag.ts#L13) — `src/engine/diceBag.ts`
 - [DraftPool](../src/engine/draftPool.ts#L10) — `src/engine/draftPool.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
@@ -237,6 +237,7 @@ Source inventory:
 - [OpenConstraint](../src/engine/types.ts#L96) — `src/engine/types.ts`
 - [ColorConstraint](../src/engine/types.ts#L108) — `src/engine/types.ts`
 - [ValueConstraint](../src/engine/types.ts#L122) — `src/engine/types.ts`
+- [GameConfig](../src/model/GameConfig.ts#L39) — `src/model/GameConfig.ts`
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
 - [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
 

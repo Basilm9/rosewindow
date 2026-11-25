@@ -8,9 +8,9 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 02 ✔ | Dependencies and Import-Boundary Rules | Darren / feat/mvc-foundation | 0 | 0 / 0 | 100% (270/270) | 156 ✓ | — | 15 | — | green | inc-02-green |
 | 03 ✔ | MVC Infrastructure | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (287/287) | 156 ✓ | smoke 1/1 | 15 | — | green | inc-03-green |
 | 04 ✓ | MVC Infrastructure Tests | Darren / feat/mvc-foundation | 0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-04-green |
-| 05 ✓ | GameError and PlacementError | Darren/ feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
-| 06 | GameError and PlacementError Tests | Darren/ feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
-| 07 | GameConfig | | | | | | | | | | |
+| 05 ✓ | GameError and PlacementError | Darren / feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
+| 06 ✓ | GameError and PlacementError Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
+| 07 ✓ | GameConfig | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156✓ | — | 15 | — | green | inc-07-green |
 | 08 | GameConfig Tests | | | | | | | | | | |
 | 09 | SeededRandom | | | | | | | | | | |
 | 10 | SeededRandom Tests | | | | | | | | | | |
@@ -82,3 +82,13 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 76 | AT-15 Challenge Another Player | | | | | | | | | | |
 | 77 | AT-16 Play a Round at Phone Width | | | | | | | | | | |
 | 78 | AT-17 Accessibility | | | | | | | | | | |
+
+## Notes
+
+- 01: architecture tests failed on Windows (symlink permission), 98.4 % → 100 % after switching to junctions (separate commit); .gitattributes keeps the generated UML at LF.
+- 02: 13 import-rule tests (10 blocked, 3 allowed); prettier endOfLine auto, prompts/ctxt/docs ignored; no mass reformat.
+- 03: first lint run had 2 missing-doc errors in View.ts, fixed before commit; ModelEvent.source made non-enumerable (declare readonly).
+- 04: mutation check: with the snapshot removed from notifyChanged, M8/M9 fail; 5 duplicate prompt-03 tests removed.
+- 05: 4 new error kinds; exhaustiveness check: removing a case fails tsc; temporary cast in useGame.ts until prompt 15.
+- 06: one message test per error kind (14); no control flow in tests.
+- 07: invalid overrides now throw invalidArgument (six number fields must be positive integers, tiers strictly increasing); view hard-codes the multiplier cap, logged for prompt 58.

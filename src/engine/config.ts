@@ -1,64 +1,11 @@
-import { normalizeSeed } from './rng'
-
 /**
- * Immutable per-run parameters. Beam behavior (colors, lockout V−1, multiplier cap)
- * is rule law except where explicitly tunable here; thresholds are provisional until
- * the post-phase-5 playtest (pitch §15).
+ * Strangler shim (Prompt 07): run parameters now live in `src/model/GameConfig.ts`.
+ * Deleted in Prompt 59.
  */
-export interface TierThresholds {
-  readonly bronze: number
-  readonly silver: number
-  readonly gold: number
-}
-
-/** Multiplier ceiling from pitch §5; shared by configuration and beam playback. */
-export const DEFAULT_MULTIPLIER_CAP = 5
-
-/** Provisional tier thresholds; revisit after the phase-5 playtest. */
-export const PROVISIONAL_TIERS: TierThresholds = Object.freeze({ bronze: 40, silver: 65, gold: 90 })
-
-/** Immutable run parameters, including a canonical seed and a snapshot of tier settings. */
-export class GameConfig {
-  /** Master seed. Every random draw of the run derives from this one number. */
-  readonly seed: number
-  readonly rounds: number
-  readonly gridSize: number
-  readonly draftSize: number
-  readonly placementsPerRound: number
-  /** Copies of each (color, value) pair in the bag: 3 × 5 colors × 6 values = 90 dice. */
-  readonly copiesPerDie: number
-  /** Multiplier ceiling for beam scoring (pitch §5). */
-  readonly multiplierCap: number
-  /** Final-score tiers. TUNABLE — provisional until playtesting. */
-  readonly tiers: TierThresholds
-
-  constructor(seed: number, overrides: Partial<Omit<GameConfig, 'seed'>> = {}) {
-    const settings = {
-      rounds: 8,
-      gridSize: 4,
-      draftSize: 5,
-      placementsPerRound: 2,
-      copiesPerDie: 3,
-      multiplierCap: DEFAULT_MULTIPLIER_CAP,
-      tiers: PROVISIONAL_TIERS,
-      ...overrides,
-    }
-    this.seed = normalizeSeed(seed)
-    this.rounds = settings.rounds
-    this.gridSize = settings.gridSize
-    this.draftSize = settings.draftSize
-    this.placementsPerRound = settings.placementsPerRound
-    this.copiesPerDie = settings.copiesPerDie
-    this.multiplierCap = settings.multiplierCap
-    this.tiers = Object.freeze({ ...settings.tiers })
-    Object.freeze(this)
-  }
-}
-
-/** Creates one run's parameters with a canonical seed shared by links and the RNG. */
-export function createGameConfig(
-  seed: number,
-  overrides: Partial<Omit<GameConfig, 'seed'>> = {},
-): GameConfig {
-  return new GameConfig(seed, overrides)
-}
+export {
+  GameConfig,
+  createGameConfig,
+  PROVISIONAL_TIERS,
+  DEFAULT_MULTIPLIER_CAP,
+} from '../model/GameConfig'
+export type { TierThresholds } from '../model/GameConfig'

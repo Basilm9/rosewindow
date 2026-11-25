@@ -68,6 +68,7 @@ git commit -am "refactor(view): inc 58 views through GameController" && git tag 
 - [ ] Playwright MCP at 360×640 (`?seed=3`): capture each of the 12 screens to `docs/mockup-compare/NN-*.png` and compare with the same-numbered mockup; layout, wording ("Pick a window", "Window #3", "ROUND 1/8", "Pick your glass", "Paused", "Challenge link copied. Send it to a friend.") and controls must match (missing or wrong content, or a broken layout, is a failure); purely cosmetic differences such as exact colours or spacing are noted, not failed, per the mockup policy in prompt 62
 - [ ] Pause menu covers draft and recast; clicking the board while paused places nothing (AT-11)
 - [ ] F-04: `tutorial-replay.spec.ts` passes — the How to play sheet has a `Replay tutorial` button (`tutorial-restart`) that closes the sheet and shows tutorial step `1/6` (`Welcome, glazier`) with the run's round and placed dice unchanged (FR-9.4)
+- [ ] No hard-coded multiplier cap in the views (NFR-4.4): `Math.min(multiplier, 5)` in `src/view/BeamLayer.tsx` and `src/view/ScorePanel.tsx` (heat-palette colour) reads `config.multiplierCap` via the controller instead; `grep -rn "multiplier, 5" src/view` finds nothing
 - [ ] Tracking: typecheck 0, lint 0/0, unit 100 %, golden exact, **E2E ≥ 90 % yellow / 100 % green**, classes ≥ 36
 
 ### 4. CRITICAL Checkpoint
