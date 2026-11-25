@@ -1,10 +1,14 @@
 /**
- * Criterion: input-domain partitioning.
+ * Criterion: input-domain partitioning of (die, demand).
+ * Dice: RED3 (match both), BLUE3 (other color, same value), RED4 (same color,
+ * other value), BLUE4 (neither). Demands: Color(red), Value(3), Open.
+ * Invalid constructor partitions: unknown color; value 0, 7, 2.5.
+ *
+ * Further partitions:
  * kind: open | color | value.
  * ColorConstraint color: each of DIE_COLORS (valid), 'pink' (invalid).
- * ValueConstraint value: 0 (below), 1 (min), 4 (interior), 6 (max), 7 (above), 2.5 (non-integer), NaN.
- * accepts: die matches demand; differs in the demanded attribute; differs only in the other attribute;
- *   plain DieData vs Die instance.
+ * ValueConstraint value: each of 1–6 (valid); 0 (below), 7 (above), 2.5 (non-integer), NaN (invalid).
+ * accepts: plain DieData vs Die instance.
  */
 import { describe, expect, it } from 'vitest'
 import type { CellConstraint } from '../../src/model/CellConstraint'
@@ -44,40 +48,43 @@ describe('own data stays {kind[, color|value]}', () => {
       new ColorConstraint('red'),
       new ValueConstraint(3),
     ]
-    for (const c of all) {
-      expect(Object.isFrozen(c)).toBe(true)
-      expect(Object.hasOwn(c, 'accepts')).toBe(false)
-      expect(Object.hasOwn(c, 'describe')).toBe(false)
-    }
+    expect(all.map((c) => Object.isFrozen(c))).toEqual([true, true, true])
+    expect(all.map((c) => Object.hasOwn(c, 'accepts'))).toEqual([false, false, false])
+    expect(all.map((c) => Object.hasOwn(c, 'describe'))).toEqual([false, false, false])
   })
 })
 
-describe('acceptance rules (FR-4.4, FR-4.5)', () => {
-  const red3 = new Die('red', 3)
-  const blue3 = new Die('blue', 3)
-  const red4 = new Die('red', 4)
+/** Acceptance oracle; columns: RED3, BLUE3, RED4, BLUE4. */
+const TABLE = [
+  ['color red', true, false, true, false],
+  ['value 3', true, true, false, false],
+  ['open', true, true, true, true],
+] as const
 
-  it('open accepts every die', () => {
-    const open: CellConstraint = new OpenConstraint()
-    expect([open.accepts(red3), open.accepts(blue3), open.accepts(red4)]).toEqual([true, true, true])
-  })
+/** Factories so every test builds a fresh demand. */
+const DEMANDS: Record<(typeof TABLE)[number][0], () => CellConstraint> = {
+  'color red': () => new ColorConstraint('red'),
+  'value 3': () => new ValueConstraint(3),
+  open: () => new OpenConstraint(),
+}
 
-  it('a color demand ignores value', () => {
-    const color: CellConstraint = new ColorConstraint('red')
-    expect([color.accepts(red3), color.accepts(blue3), color.accepts(red4)]).toEqual([
-      true,
-      false,
-      true,
-    ])
-  })
+/** Factories so every test builds a fresh die, in TABLE column order. */
+const DICE = [
+  ['RED3', () => new Die('red', 3)],
+  ['BLUE3', () => new Die('blue', 3)],
+  ['RED4', () => new Die('red', 4)],
+  ['BLUE4', () => new Die('blue', 4)],
+] as const
 
-  it('a value demand ignores color', () => {
-    const value: CellConstraint = new ValueConstraint(3)
-    expect([value.accepts(red3), value.accepts(blue3), value.accepts(red4)]).toEqual([
-      true,
-      true,
-      false,
-    ])
+/** The 3×4 table flattened to one row per cell: [demand, die name, expected, die factory]. */
+const CELLS = TABLE.flatMap(([demand, ...row]) =>
+  row.map((expected, col) => [demand, DICE[col]![0], expected, DICE[col]![1]] as const),
+)
+
+describe('acceptance table (FR-4.4, FR-4.5)', () => {
+  it.each(CELLS)('%s accepts %s: %s', (demand, _name, expected, makeDie) => {
+    const constraint: CellConstraint = DEMANDS[demand]()
+    expect(constraint.accepts(makeDie())).toBe(expected)
   })
 
   it('accepts plain DieData as well as Die instances', () => {
@@ -97,13 +104,28 @@ describe('argument validation', () => {
     expect(() => new ColorConstraint('pink' as never)).toThrow(INVALID_ARGUMENT)
   })
 
-  it.each([1, 4, 6])('ValueConstraint accepts the valid value %d', (v) => {
+  it.each([1, 2, 3, 4, 5, 6])('ValueConstraint accepts the valid value %d', (v) => {
     expect(new ValueConstraint(v).value).toBe(v)
   })
 
   it.each([0, 7, 2.5, Number.NaN])('ValueConstraint rejects %d with invalidArgument', (v) => {
     expect(() => new ValueConstraint(v)).toThrow(GameError)
     expect(() => new ValueConstraint(v)).toThrow(INVALID_ARGUMENT)
+  })
+
+  it('the rejection message names the invalid argument', () => {
+    expect(() => new ValueConstraint(7)).toThrow(/invalid argument/)
+  })
+})
+
+describe('substitutability (LSP)', () => {
+  it('every concrete demand is usable through the CellConstraint interface', () => {
+    const demands: CellConstraint[] = [
+      new OpenConstraint(),
+      new ColorConstraint('red'),
+      new ValueConstraint(3),
+    ]
+    expect(demands.map((d) => d.kind)).toEqual(['open', 'color', 'value'])
   })
 })
 

@@ -11,15 +11,15 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 05 | GameError and PlacementError | Darren / feat/mvc-model |  0 | 0/0 | 100% (291/291) | 156 ✓ | — | 15 | — | green | inc-05-green |
 | 06 | GameError and PlacementError Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156 ✓ | — | 15 | — | green | inc-06-green |
 | 07 | GameConfig | Darren / feat/mvc-model | 0 | 0/0 | 100% (313/313) | 156✓ | — | 15 | — | green | inc-07-green |
-| 08 | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-08-green |
-| 09 | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green  | inc-09-green |
-| 10 | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-10-green |
+| 08 | GameConfig Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green | inc-08-green |
+| 09 | SeededRandom | Darren / feat/mvc-model | 0 | 0/0 | 100% (334/334) | 156✓ | — | 15 | — | green | inc-09-green |
+| 10 | SeededRandom Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green | inc-10-green |
 | 11 | Die | Darren / feat/mvc-model | 0 | 0/0 | 100% (355/355) | 156✓ | — | 15 | — | green  | inc-11-green |
-| 12 | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green  | inc-12-green |
-| 13 | Direction | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green  | inc-13-green |
-| 14 | Direction Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (415/415) | 156✓ | — | 16 | — | green  | inc-14-green |
-| 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | Darren / feat/mvc-model | 0 | 0/0 | 100% (441/441) | 156✓ | — | 16 | — | green  | inc-15-green |
-| 16 | CellConstraint Tests | | | | | | | | | | |
+| 12 | Die Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 15 | — | green | inc-12-green |
+| 13 | Direction | Darren / feat/mvc-model | 0 | 0/0 | 100% (380/380) | 156✓ | — | 16 | — | green | inc-13-green |
+| 14 | Direction Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (415/415) | 156✓ | — | 16 | — | green | inc-14-green |
+| 15 ⚠ | CellConstraint, ColorConstraint, ValueConstraint, OpenConstraint | Darren / feat/mvc-model | 0 | 0/0 | 100% (441/441) | 156✓ | — | 16 | — | green | inc-15-green |
+| 16 | CellConstraint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (455/455) | 156✓ | — | 16 | — | green | inc-16-green |
 | 17 | WindowPattern | | | | | | | | | | |
 | 18 | WindowPattern Tests | | | | | | | | | | |
 | 19 | WindowCell | | | | | | | | | | |
@@ -99,3 +99,5 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 12: 25 tests; input-domain partitioning (5 colours, valid 1/3/6, invalid 0/7/2.5/NaN, bad colour, Die.from); every rejection checks kind invalidArgument via shared objectContaining matcher; compile-time check that a plain {color, value} satisfies Die; reference classes.test.ts case ported with a directly built die.
 - 13: Direction promoted from string type to class (classes 15 → 16); four frozen instances, private constructor, clockwise/counterClockwise/step/fromName; engine types.ts keeps string Direction as shim (class imported as CompassDirection); colour→turn table untouched, moves in beam prompts.
 - 14: 35 tests (22 listed cases + step and fromName tables so every direction appears in every method, + error-kind check, + per-index toBe identity on ALL with length check); reference types.test.ts direction cases ported.
+- 15 (CRITICAL): constraint classes moved from engine (count stays 16); real CellConstraint interface with accepts/describe; useGame.ts cast from 05 removed; 3 views (GlassBoard, SetupScreen, GameScreen) switched from kind-narrowing to instanceof (not in prompt; visually checked against mockups 01/02/04); 26 tests added early, prompt 16 extends rather than duplicates.
+- 16: extended prompt-15 file (26 → 40 tests); added full 12-cell acceptance table (incl. BLUE4), substitutability test, values 1–6; replaced 3 partial acceptance tests covered by the table; removed for loop from frozen test (no-control-flow rule).
