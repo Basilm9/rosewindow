@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 /**
  * Fixture tests for the package import boundaries of MVC_RoseWindow.md §5 (prompt 02).
@@ -39,9 +39,19 @@ const cases: ReadonlyArray<[number, string, string, number]> = [
   [13, 'src/controller/X.ts', "import { createActor } from 'xstate'", ALLOWED],
 ]
 
-const eslint = new ESLint({ cwd: root })
+/** Budget for ESLint's cold start (config load, parser and plugin init); paid once, not per case. */
+const WARM_UP_TIMEOUT_MS = 30_000
 
 describe('import-boundary rules (§5)', () => {
+  let eslint: ESLint
+
+  // Construct ESLint and lint one trivial file so the first case does not pay the cold-start cost
+  // under the default per-test timeout.
+  beforeAll(async () => {
+    eslint = new ESLint({ cwd: root })
+    await eslint.lintText('export {}\n', { filePath: `${root}src/model/X.ts` })
+  }, WARM_UP_TIMEOUT_MS)
+
   it.each(cases)(
     'case %i: %s `%s` -> %i boundary error(s)',
     async (_n, filePath, code, expected) => {
