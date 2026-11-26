@@ -19,15 +19,6 @@ classDiagram
         +trace(grid, entry) BeamPath
     }
 
-    class DiceBag {
-        -Die[] dice
-        +number remainingCount
-        +DiceBag(config, rng)
-        +contents() Die[]
-        +draw(n) Die[]
-        +return(dice) void
-    }
-
     class DraftPool {
         -Die[] dice
         +readonly Die[] dice
@@ -118,6 +109,15 @@ classDiagram
         +ValueConstraint(value)
         +accepts(die) boolean
         +describe() string
+    }
+
+    class DiceBag {
+        -Die[] dice
+        +number remainingCount
+        +DiceBag(config, rng)
+        +contents() Die[]
+        +draw(n) Die[]
+        +return(dice) void
     }
 
     class Die {
@@ -232,6 +232,7 @@ classDiagram
     DiceBag --> Die : has
     DiceBag ..> GameConfig : uses
     DiceBag ..> GameError : uses
+    DiceBag ..> SeededRandom : uses
     Die ..> GameError : uses
     Direction ..> GameError : uses
     DraftPool --> Die : has
@@ -286,7 +287,6 @@ How to read it:
 Source inventory:
 
 - [BeamTracer](../src/engine/beamTracer.ts#L54) — `src/engine/beamTracer.ts`
-- [DiceBag](../src/engine/diceBag.ts#L13) — `src/engine/diceBag.ts`
 - [DraftPool](../src/engine/draftPool.ts#L10) — `src/engine/draftPool.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
 - [PlacementValidator](../src/engine/placementValidator.ts#L67) — `src/engine/placementValidator.ts`
@@ -294,6 +294,7 @@ Source inventory:
 - [OpenConstraint](../src/model/CellConstraint.ts#L34) — `src/model/CellConstraint.ts`
 - [ColorConstraint](../src/model/CellConstraint.ts#L66) — `src/model/CellConstraint.ts`
 - [ValueConstraint](../src/model/CellConstraint.ts#L111) — `src/model/CellConstraint.ts`
+- [DiceBag](../src/model/DiceBag.ts#L16) — `src/model/DiceBag.ts`
 - [Die](../src/model/Die.ts#L31) — `src/model/Die.ts`
 - [Direction](../src/model/Direction.ts#L18) — `src/model/Direction.ts`
 - [GameConfig](../src/model/GameConfig.ts#L42) — `src/model/GameConfig.ts`
