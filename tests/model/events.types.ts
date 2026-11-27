@@ -1,10 +1,11 @@
 /**
  * Type-level test (inc-45 temporary check T), checked by `pnpm typecheck` (tsc includes `tests`);
- * not a Vitest file. Each event's `toData()` must be assignable to the legacy engine union, and a
- * misspelled kind must not be.
+ * not a Vitest file. Each event's `toData()` must be assignable to the legacy plain union, and a
+ * misspelled kind must not be. Since inc 47 `src/engine/events.ts` re-exports the class union, so
+ * the legacy plain union is `GameEventData` (structurally the pre-47 engine union).
  */
-import type { GameEvent as LegacyGameEvent } from '../../src/engine/events'
 import type {
+  GameEventData as LegacyGameEvent,
   BeamTracedEvent,
   DiePlacedEvent,
   DraftPoolRefreshedEvent,

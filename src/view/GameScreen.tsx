@@ -273,7 +273,7 @@ export function GameScreen({
             key={banner}
             round={banner}
             rounds={game.config.rounds}
-            direction={game.currentEntry.direction}
+            direction={game.currentEntry.direction.name}
           />
         )}
       </main>

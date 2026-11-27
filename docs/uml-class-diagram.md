@@ -206,6 +206,53 @@ classDiagram
             +DirectionName direction
         }
 
+        class Game {
+            +GameConfig config
+            +readonly [WindowPattern, WindowPattern] offeredPatterns
+            +DealtObjectives objectives
+            +readonly EntryPoint[] entrySequence
+            -GamePhase phase
+            -number round
+            -GlassWindow | null window
+            -DraftPool draftPool
+            -Die | null hand
+            -number placementsThisRound
+            -number refreshesRemaining
+            -number[] roundScores
+            -number totalScore
+            -ScoreReport | null report
+            -DiceBag bag
+            -PlacementValidator validator
+            -BeamTracer beamTracer
+            -ScoreCalculator scoreCalculator
+            +GamePhase phase
+            +number round
+            +GlassWindow | null window
+            +DraftPool draftPool
+            +Die | null hand
+            +number refreshesRemaining
+            +number placementsRemaining
+            +EntryPoint currentEntry
+            +readonly number[] roundScores
+            +number totalScore
+            +ScoreReport | null report
+            +Game(config)
+            +subscribe(fn) Function
+            -requirePhase(phase) void
+            -requirePlay() void
+            +choosePattern(id) void
+            +selectDie(die) void
+            +cancelSelection() void
+            +refreshDraft() void
+            +placeDie(position) void
+            +forfeitRound() void
+            +legalPlacementsFor(die) readonly Position[]
+            +hasLegalMove() boolean
+            -beginRoundDraft() void
+            -endRound() void
+            -illuminateAndAdvance() void
+        }
+
         class GameConfig {
             +number seed
             +number rounds
@@ -332,7 +379,7 @@ classDiagram
         class ScoreInput {
             <<interface>>
             +DieGrid grid
-            +DealtObjectives objectives
+            +object objectives
             +number beamTotal
         }
 
@@ -590,54 +637,6 @@ classDiagram
             +trace(grid, entry) BeamPath
         }
 
-        class Game {
-            +GameConfig config
-            +readonly [WindowPattern, WindowPattern] offeredPatterns
-            +DealtObjectives objectives
-            +readonly EntryPoint[] entrySequence
-            -GamePhase phase
-            -number round
-            -GlassWindow | null window
-            -DraftPool draftPool
-            -Die | null hand
-            -number placementsThisRound
-            -number refreshesRemaining
-            -number[] roundScores
-            -number totalScore
-            -ScoreReport | null report
-            -DiceBag bag
-            -Set~GameListener~ listeners
-            -PlacementValidator validator
-            -BeamTracer beamTracer
-            -ScoreCalculator scoreCalculator
-            +GamePhase phase
-            +number round
-            +GlassWindow | null window
-            +DraftPool draftPool
-            +Die | null hand
-            +number refreshesRemaining
-            +number placementsRemaining
-            +EntryPoint currentEntry
-            +readonly number[] roundScores
-            +number totalScore
-            +ScoreReport | null report
-            +Game(config)
-            +subscribe(listener) Function
-            -emit(event) void
-            -requirePhase(phase) void
-            +choosePattern(id) void
-            +selectDie(die) void
-            +cancelSelection() void
-            +refreshDraft() void
-            +placeDie(position) void
-            +forfeitRound() void
-            +legalPlacementsFor(die) readonly Position[]
-            +hasLegalMove() boolean
-            -beginRoundDraft() void
-            -endRound() void
-            -illuminateAndAdvance() void
-        }
-
         class PrivateObjective_2["PrivateObjective"]
         class PrivateObjective_2 {
             <<interface>>
@@ -765,6 +764,7 @@ classDiagram
     AbstractController ..> AbstractModel : uses
     AbstractModel --> ModelEvent : has
     AbstractModel --> ModelListener : has
+    AbstractModel <|-- Game
     BeamMachineContext --> LegacyBeamPathData : has
     BeamMachineInput --> LegacyBeamPathData : has
     BeamPath --> BeamSegment : has
@@ -843,23 +843,29 @@ classDiagram
     EntryPoint ..> EntryPointData : uses
     EntryPointData --> Position : has
     EntryPoint_2 --> Position : has
-    Game --> BeamTracer_2 : has
-    Game --> CellConstraint : has
+    Game --> BeamTracedEvent : has
+    Game --> BeamTracer : has
     Game --> DealtObjectives : has
     Game --> DiceBag : has
     Game --> Die : has
+    Game --> DiePlacedEvent : has
     Game --> DraftPool : has
-    Game --> EntryPoint_2 : has
+    Game --> DraftPoolRefreshedEvent : has
+    Game --> EntryPoint : has
     Game --> GameConfig : has
+    Game --> GameOverEvent : has
     Game --> GlassWindow : has
-    Game --> LegacyBeamPathData : has
+    Game --> PlacementRejectedEvent : has
     Game --> PlacementValidator : has
-    Game --> Position : has
+    Game --> RoundForfeitedEvent : has
+    Game --> RoundScoredEvent : has
     Game --> ScoreCalculator : has
     Game --> ScoreReport : has
     Game --> WindowPattern : has
+    Game ..> DieData : uses
     Game ..> GameError : uses
     Game ..> PlacementError : uses
+    Game ..> Position : uses
     Game ..> SeededRandom : uses
     GameConfig --> TierThresholds : has
     GameConfig ..> GameError : uses
@@ -966,8 +972,8 @@ classDiagram
     ScoreCalculator ..> ScoreInput : uses
     ScoreCalculator ..> ScoreLine : uses
     ScoreCalculator ..> ScoreReport : uses
-    ScoreInput --> DealtObjectives : has
     ScoreInput --> Die : has
+    ScoreInput --> Objective : has
     ScoreReport --> ScoreLine : has
     SeededRandom ..> GameError : uses
     UseGameResult --> CellConstraint : has
@@ -1085,6 +1091,7 @@ Source inventory:
 - [DraftPool](../src/model/DraftPool.ts#L15) — `src/model/DraftPool.ts`
 - [EntryPoint](../src/model/EntryPoint.ts#L20) — `src/model/EntryPoint.ts`
 - [EntryPointData](../src/model/EntryPoint.ts#L6) — `src/model/EntryPoint.ts`
+- [Game](../src/model/Game.ts#L52) — `src/model/Game.ts`
 - [GameConfig](../src/model/GameConfig.ts#L42) — `src/model/GameConfig.ts`
 - [TierThresholds](../src/model/GameConfig.ts#L8) — `src/model/GameConfig.ts`
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
@@ -1096,8 +1103,8 @@ Source inventory:
 - [Position](../src/model/Position.ts#L2) — `src/model/Position.ts`
 - [PrivateObjective](../src/model/PrivateObjective.ts#L15) — `src/model/PrivateObjective.ts`
 - [PublicObjective](../src/model/PublicObjective.ts#L58) — `src/model/PublicObjective.ts`
-- [ScoreCalculator](../src/model/ScoreCalculator.ts#L28) — `src/model/ScoreCalculator.ts`
-- [ScoreInput](../src/model/ScoreCalculator.ts#L10) — `src/model/ScoreCalculator.ts`
+- [ScoreCalculator](../src/model/ScoreCalculator.ts#L35) — `src/model/ScoreCalculator.ts`
+- [ScoreInput](../src/model/ScoreCalculator.ts#L9) — `src/model/ScoreCalculator.ts`
 - [ScoreLine](../src/model/ScoreReport.ts#L4) — `src/model/ScoreReport.ts`
 - [ScoreReport](../src/model/ScoreReport.ts#L30) — `src/model/ScoreReport.ts`
 - [SeededRandom](../src/model/SeededRandom.ts#L29) — `src/model/SeededRandom.ts`
@@ -1127,7 +1134,6 @@ Source inventory:
 - [StorageLike](../src/progression/profile.ts#L46) — `src/progression/profile.ts`
 - [Candidate](../src/dev/autoPlayer.ts#L13) — `src/dev/autoPlayer.ts`
 - [BeamTracer](../src/engine/beamTracer.ts#L28) — `src/engine/beamTracer.ts`
-- [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
 - [PrivateObjective](../src/engine/objectives.ts#L30) — `src/engine/objectives.ts`
 - [PublicObjective](../src/engine/objectives.ts#L17) — `src/engine/objectives.ts`
 - [LegacyScoreInput](../src/engine/scoreCalculator.ts#L61) — `src/engine/scoreCalculator.ts`

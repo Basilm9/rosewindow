@@ -2,7 +2,6 @@ import { PROVISIONAL_TIERS } from './GameConfig'
 import type { TierThresholds } from './GameConfig'
 import type { DieGrid } from './GlassWindow'
 import type { Objective } from './Objective'
-import type { DealtObjectives } from './objectiveDeal'
 import { ScoreReport } from './ScoreReport'
 import type { ScoreLine, Tier } from './ScoreReport'
 
@@ -10,8 +9,16 @@ import type { ScoreLine, Tier } from './ScoreReport'
 export interface ScoreInput {
   /** The finished window: square die grid, row 0 north, column 0 west; `null` is an empty pane. */
   readonly grid: DieGrid
-  /** The run's dealt objectives: three publics in deal order and the private one. */
-  readonly objectives: DealtObjectives
+  /**
+   * The run's objectives: three publics in deal order and the private one. Typed by the
+   * {@link Objective} interface, so a dealt `DealtObjectives` or any interface-only stub fits.
+   */
+  readonly objectives: {
+    /** The three public objectives, in deal order (score lines follow it). */
+    readonly publics: readonly [Objective, Objective, Objective]
+    /** The private objective, scored last. */
+    readonly privateObjective: Objective
+  }
   /** Sum of all round beam scores (equals the game's running total at game over). */
   readonly beamTotal: number
 }
