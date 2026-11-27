@@ -16,6 +16,13 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 
+/**
+ * Each test spawns the UML generator (TypeScript compiler API) one or more times.
+ * That takes ~1s locally but can exceed Vitest's 5s default on shared CI runners,
+ * so these tests get a longer timeout without raising the global `testTimeout`.
+ */
+const UML_TEST_TIMEOUT_MS = 30_000
+
 function withProject(check: (root: string, generate: () => string) => void) {
   const root = mkdtempSync(join(tmpdir(), 'rosewindow-uml-'))
   const project = fileURLToPath(new URL('../../', import.meta.url))
@@ -113,7 +120,7 @@ it('derives class members and relationships from types, aliases, and executable 
       expect(output).not.toContain(`class ${name}`)
     }
   })
-})
+}, UML_TEST_TIMEOUT_MS)
 
 it('updates additions, deletions, and member changes without rewriting identical output', () => {
   withProject((root, generate) => {
@@ -140,7 +147,7 @@ it('updates additions, deletions, and member changes without rewriting identical
     expect(generate()).toBe(after)
     expect(statSync(output).mtimeMs).toBe(timestamp.getTime())
   })
-})
+}, UML_TEST_TIMEOUT_MS)
 
 it('keeps classes with identical names in different modules separate', () => {
   withProject((root, generate) => {
@@ -159,4 +166,4 @@ it('keeps classes with identical names in different modules separate', () => {
     expect(output).toContain('+boolean first')
     expect(output).toContain('+boolean second')
   })
-})
+}, UML_TEST_TIMEOUT_MS)
