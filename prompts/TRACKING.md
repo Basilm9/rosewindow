@@ -31,7 +31,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 25 | DraftPool | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/543) | 156✓ | — | 18 | — | green | inc-25-green |
 | 26 | DraftPool Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (564/564) | 156✓ | — | 18 | — | green | inc-26-green |
 | 27 ⚠ | PlacementValidator | Darren / feat/mvc-model | 0 | 0/0 | 100% (564/564) | 156✓ | — | 18 | — | green | inc-27-green |
-| 28 | PlacementValidator Tests | | | | | | | | | | |
+| 28 | PlacementValidator Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (670/670) | 156✓ | — | 18 | — | green | inc-28-green |
 | 29 | EntryPoint | | | | | | | | | | |
 | 30 | EntryPoint Tests | | | | | | | | | | |
 | 31 | BeamSegment | | | | | | | | | | |
@@ -112,3 +112,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 25: DraftPool moved from engine (count stays 18); take now throws PlacementError dieNotInPool (was GameError); static + instance contains added; engine Game.legalPlacementsFor switched to DraftPool.contains (not in prompt, low-risk, golden unchanged); placementValidator's own copy left for 27; 4 temporary checks listed for 26.
 - 26: 21 tests; take found/not-found and contains true/false branches; dieNotInPool checked by kind; unchanged state after rejection on both [red3] and [red3, blue5]; review found 3 of prompt 25's 4 temporary checks uncovered → added cases 18–21; agent's first evidence line numbers were off by one (caught on follow-up). Temp-check list now passed from class prompt to test prompt in the template.
 - 27 (CRITICAL): PlacementValidator moved to model (count stays 18); six private law methods run from a readonly list (order checked by hand in source; 4 of 15 pairs tested, rest in 28); out-of-grid now GameError outOfBounds, not PlacementError; dieNotInPool via DraftPool.contains; isolation protocol in full (2×2 per law, 3×3 for first/connectivity, each law test alone, game/machine/golden); purity confirmed incl. deep-frozen inputs; 13 temporary checks listed for 28; visual check of rejection toast vs mockup 04.
+- 28: 106 tests, 100% statement/branch/function/line coverage on PlacementValidator.ts; 11 of 15 precedence pairs tested + 4 impossible pairs explained (line 514); all 13 prompt-27 temporary checks made permanent; unchanged-state and deep-frozen tables cover all six laws + outOfBounds; mutation check (swap two laws, drop same-value adjacency, drop diagonal connectivity, border ring always true) — every mutation caught (1/3/7/10 failures), code restored, empty diff.
