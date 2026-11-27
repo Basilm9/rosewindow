@@ -1,6 +1,6 @@
 import { PROVISIONAL_TIERS } from './config'
-import { DIAGONAL_DELTAS, DIE_COLORS } from './types'
-import type { Die, DieColor, Position } from './types'
+import type { Die, DieColor } from './types'
+import { PublicObjective as ModelPublicObjective } from '../model/PublicObjective'
 import type { TierThresholds } from './config'
 import type { DealtObjectives, PrivateObjective, PublicObjective } from './objectives'
 
@@ -23,65 +23,18 @@ export interface ScoreReport {
 
 type Grid = readonly (readonly (Die | null)[])[]
 
-function dieAt(grid: Grid, row: number, col: number): Die | null {
-  return grid[row]?.[col] ?? null
-}
-
-function lineDice(grid: Grid, axis: 'row' | 'col', index: number): (Die | null)[] {
-  return axis === 'row' ? [...grid[index]!] : grid.map((row) => row[index]!)
-}
-
-/** Counts dice of one color anywhere on the window. */
+/** Counts dice of one color anywhere on the window (delegates to `PublicObjective.colorCount`). */
 export function colorCount(grid: Grid, color: DieColor): number {
-  return grid.flat().filter((d) => d !== null && d.color === color).length
+  return ModelPublicObjective.colorCount(grid, color)
 }
 
 /**
- * Scores one public objective over the window (pitch §11). All four strategy
- * families live here; the strategy variant selects the computation, so adding a
- * new objective is data, not code.
+ * Scores one public objective over the window (pitch §11). Shim (Prompt 37): the four strategy
+ * families now live in `src/model/PublicObjective.ts`; plain legacy objectives are wrapped with
+ * `PublicObjective.from` and scored by the model.
  */
 export function scorePublicObjective(grid: Grid, objective: PublicObjective): number {
-  const s = objective.strategy
-  switch (s.kind) {
-    case 'valueParity': {
-      const want = s.parity === 'odd' ? 1 : 0
-      return grid.flat().filter((d) => d !== null && d.value % 2 === want).length * s.pointsPerDie
-    }
-    case 'lineDiversity': {
-      const size = grid.length
-      let points = 0
-      for (let index = 0; index < size; index++) {
-        const line = lineDice(grid, s.axis, index)
-        if (line.some((d) => d === null)) continue
-        const traits = line.map((d) => (s.trait === 'color' ? d!.color : d!.value))
-        if (new Set(traits).size === line.length) points += s.pointsPerLine
-      }
-      return points
-    }
-    case 'diagonalDiversity': {
-      let points = 0
-      for (let row = 0; row < grid.length; row++) {
-        for (let col = 0; col < grid.length; col++) {
-          const die = dieAt(grid, row, col)
-          if (die === null) continue
-          const position: Position = { row, col }
-          const sameDiagonal = DIAGONAL_DELTAS.some((delta) => {
-            const neighbor = dieAt(grid, position.row + delta.row, position.col + delta.col)
-            return neighbor !== null && neighbor.color === die.color
-          })
-          if (!sameDiagonal) points += s.pointsPerDie
-        }
-      }
-      return points
-    }
-    case 'colorQuorum': {
-      return (
-        DIE_COLORS.filter((color) => colorCount(grid, color) >= s.minPerColor).length *
-        s.pointsPerColor
-      )
-    }
-  }
+  return ModelPublicObjective.from(objective).score(grid)
 }
 
 /** The private color objective: the sum of values of the patron color. */
