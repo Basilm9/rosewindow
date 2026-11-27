@@ -40,14 +40,14 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 34 | BeamPath Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-34-green |
 | 35 ⚠ | BeamTracer | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-35-green |
 | 36 | BeamTracer Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (791/791) | 156✓ | — | 21 | — | green | inc-36-green |
-| 37 | Objective Interface and PublicObjective | | | | | | | | | | |
-| 38 | PublicObjective Tests | | | | | | | | | | |
-| 39 | PrivateObjective | | | | | | | | | | |
-| 40 | PrivateObjective and Deal Tests | | | | | | | | | | |
-| 41 | ScoreReport | | | | | | | | | | |
-| 42 | ScoreReport Tests | | | | | | | | | | |
-| 43 ⚠ | ScoreCalculator | | | | | | | | | | |
-| 44 | ScoreCalculator Tests | | | | | | | | | | |
+| 37 | Objective Interface and PublicObjective | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (791/791) | 156 ✓ | — | 22 | — | green | inc-37-green |
+| 38 | PublicObjective Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 22 | — | green | inc-38-green |
+| 39 | PrivateObjective | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 23 | — | green | inc-39-green |
+| 40 | PrivateObjective and Deal Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 23 | — | green | inc-40-green |
+| 41 | ScoreReport | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 24 | — | green | inc-41-green |
+| 42 | ScoreReport Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-42-green |
+| 43 ⚠ | ScoreCalculator | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-43-green |
+| 44 | ScoreCalculator Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (1011/1011) | 156 ✓ | — | 24 | — | green | inc-44-green |
 | 45 ⚠ | The Seven Model Event Classes | | | | | | | | | | |
 | 46 | Model Event Tests | | | | | | | | | | |
 | 47 ⚠ | Game (the model facade) | | | | | | | | | | |
@@ -121,3 +121,5 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 34: 21 tests; fixtures EMPTY/SINGLE/STRAIGHT/ORBIT (+PAIR), ORBIT matches the reference cycle path cell by cell; all 6 prompt-33 temporary checks covered (L0, B0, F1, K1, D2, I1 split in 3); no error paths; TRACKING untouched by agent.
 - 35 (CRITICAL): BeamTracer moved to model (count stays 21; engine wrapper counted once); loop ported statement by statement; REFRACTION_BY_COLOR moved to model/Refraction.ts (frozen); isolation protocol in full — golden walk 9 segments / 59 / cycle matched row by row (checked by hand), lockout cases, seed 3 = 5,5,31,16,2,7,53,37; purity confirmed; mutation check: bend-before-score caught by 12 tests, but empty-cell lockout, record-on-cycle and no-cap each caught by only 1–2 → strengthened in 36; restore verified by SHA-256 (new file, git diff not usable); prompt's -t "orbit" filter matches no test name.
 - 36: 30 tests (13 reference cases ported); all 5 prompt-35 temporary checks covered; new K4, M4 (sixth bend at default cap), Y3 (3×3 cycle) — expected values hand-derived by agent and checked by hand; mutations rerun: a 18, b 3, c 3, d 6 failing tests (each now ≥ 3); B2 runs 3,200 random traces, all stop — 0 cycles, so the cycle guard is covered by hand-built Y1/Y3.
+- 37–44 re-verified by Darren after merging into main: typecheck 0, import-rule violations 0, lint 0/0, 1020/1020 tests, golden master ✓ (game.test.ts 22/22), 24 classes.
+- 37–44 mutation spot-check by Darren: tier boundary, report total, private colour, Odd Values — all caught (10/14/2/3 failing tests); golden master alone missed tier boundary and Odd Values. Restore verified by SHA-256.

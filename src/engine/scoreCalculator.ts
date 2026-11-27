@@ -1,143 +1,91 @@
-import { PROVISIONAL_TIERS } from './config'
-import { DIAGONAL_DELTAS, DIE_COLORS } from './types'
-import type { Die, DieColor, Position } from './types'
+import type { Die, DieColor } from './types'
+import { PublicObjective as ModelPublicObjective } from '../model/PublicObjective'
+import { PrivateObjective as ModelPrivateObjective } from '../model/PrivateObjective'
 import type { TierThresholds } from './config'
-import type { DealtObjectives, PrivateObjective, PublicObjective } from './objectives'
+import type { PrivateObjective, PublicObjective } from './objectives'
+import type { ScoreReport, Tier } from '../model/ScoreReport'
+import { ScoreCalculator } from '../model/ScoreCalculator'
 
-/** A single itemized line of the final score (pitch §8.2 `ScoreReport`). */
-export interface ScoreLine {
-  readonly objectiveId: string
-  readonly name: string
-  readonly points: number
-}
+/**
+ * Shim (Prompt 41): `ScoreLine`, `Tier` and `ScoreReport` now live in `src/model/ScoreReport.ts`.
+ * `ScoreReport` is re-exported as a type only; reports are built by {@link ScoreCalculator}.
+ */
+export type { ScoreLine, Tier } from '../model/ScoreReport'
+export type { ScoreReport }
 
-export type Tier = 'none' | 'bronze' | 'silver' | 'gold'
-
-export interface ScoreReport {
-  /** Three public lines then the private line, in deal order. */
-  readonly lines: readonly ScoreLine[]
-  readonly beamTotal: number
-  readonly total: number
-  readonly tier: Tier
-}
+/**
+ * Shim (Prompt 43): `ScoreCalculator` and its `ScoreInput` now live in
+ * `src/model/ScoreCalculator.ts`; re-exported here until Prompt 59.
+ */
+export { ScoreCalculator }
+export type { ScoreInput } from '../model/ScoreCalculator'
 
 type Grid = readonly (readonly (Die | null)[])[]
 
-function dieAt(grid: Grid, row: number, col: number): Die | null {
-  return grid[row]?.[col] ?? null
-}
-
-function lineDice(grid: Grid, axis: 'row' | 'col', index: number): (Die | null)[] {
-  return axis === 'row' ? [...grid[index]!] : grid.map((row) => row[index]!)
-}
-
-/** Counts dice of one color anywhere on the window. */
+/** Counts dice of one color anywhere on the window (delegates to `PublicObjective.colorCount`). */
 export function colorCount(grid: Grid, color: DieColor): number {
-  return grid.flat().filter((d) => d !== null && d.color === color).length
+  return ModelPublicObjective.colorCount(grid, color)
 }
 
 /**
- * Scores one public objective over the window (pitch §11). All four strategy
- * families live here; the strategy variant selects the computation, so adding a
- * new objective is data, not code.
+ * Scores one public objective over the window (pitch §11). Shim (Prompt 37): the four strategy
+ * families now live in `src/model/PublicObjective.ts`; plain legacy objectives are wrapped with
+ * `PublicObjective.from` and scored by the model.
  */
 export function scorePublicObjective(grid: Grid, objective: PublicObjective): number {
-  const s = objective.strategy
-  switch (s.kind) {
-    case 'valueParity': {
-      const want = s.parity === 'odd' ? 1 : 0
-      return grid.flat().filter((d) => d !== null && d.value % 2 === want).length * s.pointsPerDie
-    }
-    case 'lineDiversity': {
-      const size = grid.length
-      let points = 0
-      for (let index = 0; index < size; index++) {
-        const line = lineDice(grid, s.axis, index)
-        if (line.some((d) => d === null)) continue
-        const traits = line.map((d) => (s.trait === 'color' ? d!.color : d!.value))
-        if (new Set(traits).size === line.length) points += s.pointsPerLine
-      }
-      return points
-    }
-    case 'diagonalDiversity': {
-      let points = 0
-      for (let row = 0; row < grid.length; row++) {
-        for (let col = 0; col < grid.length; col++) {
-          const die = dieAt(grid, row, col)
-          if (die === null) continue
-          const position: Position = { row, col }
-          const sameDiagonal = DIAGONAL_DELTAS.some((delta) => {
-            const neighbor = dieAt(grid, position.row + delta.row, position.col + delta.col)
-            return neighbor !== null && neighbor.color === die.color
-          })
-          if (!sameDiagonal) points += s.pointsPerDie
-        }
-      }
-      return points
-    }
-    case 'colorQuorum': {
-      return (
-        DIE_COLORS.filter((color) => colorCount(grid, color) >= s.minPerColor).length *
-        s.pointsPerColor
-      )
-    }
-  }
+  return ModelPublicObjective.from(objective).score(grid)
 }
 
-/** The private color objective: the sum of values of the patron color. */
+/**
+ * The private color objective: the sum of values of the patron color. Shim (Prompt 39): the
+ * scoring now lives in `src/model/PrivateObjective.ts`; plain legacy objectives are wrapped with
+ * `PrivateObjective.from` (only `color` is read) and scored by the model.
+ */
 export function scorePrivateObjective(grid: Grid, objective: PrivateObjective): number {
-  return grid
-    .flat()
-    .filter((d) => d !== null && d.color === objective.color)
-    .reduce((sum, d) => sum + d!.value, 0)
+  return ModelPrivateObjective.from(objective).score(grid)
 }
 
-/** Maps a final total onto the bronze/silver/gold tiers (pitch §10). */
+/**
+ * Maps a final total onto the bronze/silver/gold tiers (pitch §10); inclusive lower bounds.
+ * Shim (Prompt 43): delegates to `new ScoreCalculator(tiers).tierFor(total)`.
+ */
 export function tierFor(total: number, tiers: TierThresholds): Tier {
-  if (total >= tiers.gold) return 'gold'
-  if (total >= tiers.silver) return 'silver'
-  if (total >= tiers.bronze) return 'bronze'
-  return 'none'
+  return new ScoreCalculator(tiers).tierFor(total)
 }
 
-/** Inputs for final scoring; tier settings belong to the calculator instance. */
-export interface ScoreInput {
+/**
+ * Legacy plain input of {@link calculateScore}: the objectives may be plain literals with no
+ * `score` method (the old tests build them); model instances are assignable too. Deleted with
+ * the shim in Prompt 59.
+ */
+export interface LegacyScoreInput {
   readonly grid: Grid
-  readonly objectives: DealtObjectives
+  readonly objectives: {
+    readonly publics: readonly [PublicObjective, PublicObjective, PublicObjective]
+    readonly privateObjective: PrivateObjective
+  }
   readonly beamTotal: number
 }
 
-/** Computes itemized reports with a fixed snapshot of the run's tier settings. */
-export class ScoreCalculator {
-  readonly tiers: TierThresholds
-
-  constructor(tiers: TierThresholds = PROVISIONAL_TIERS) {
-    this.tiers = Object.freeze({ ...tiers })
-  }
-
-  /** Pure final scoring over a finished window: objectives + beam totals (pitch §4). */
-  calculate(input: ScoreInput): ScoreReport {
-    const { grid, objectives, beamTotal } = input
-    const lines: ScoreLine[] = objectives.publics.map((o) => ({
-      objectiveId: o.id,
-      name: o.name,
-      points: scorePublicObjective(grid, o),
-    }))
-    const privateLine: ScoreLine = {
-      objectiveId: objectives.privateObjective.id,
-      name: objectives.privateObjective.name,
-      points: scorePrivateObjective(grid, objectives.privateObjective),
-    }
-    lines.push(privateLine)
-    const objectiveTotal = lines.reduce((sum, line) => sum + line.points, 0)
-    const total = beamTotal + objectiveTotal
-    return { lines, beamTotal, total, tier: tierFor(total, this.tiers) }
-  }
-}
-
-/** Function API retaining the original per-call tier settings. */
+/**
+ * Function API retaining the original per-call tier settings. Shim (Prompt 43): wraps the plain
+ * objectives with `PublicObjective.from` / `PrivateObjective.from` (instances pass through as
+ * they are) and scores them with the model's {@link ScoreCalculator}.
+ */
 export function calculateScore(
-  input: ScoreInput & { readonly tiers: TierThresholds },
+  input: LegacyScoreInput & { readonly tiers: TierThresholds },
 ): ScoreReport {
-  return new ScoreCalculator(input.tiers).calculate(input)
+  const [a, b, c] = input.objectives.publics
+  return new ScoreCalculator(input.tiers).calculate({
+    grid: input.grid,
+    objectives: {
+      publics: [
+        ModelPublicObjective.from(a),
+        ModelPublicObjective.from(b),
+        ModelPublicObjective.from(c),
+      ],
+      privateObjective: ModelPrivateObjective.from(input.objectives.privateObjective),
+    },
+    beamTotal: input.beamTotal,
+  })
 }
