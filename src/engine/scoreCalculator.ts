@@ -4,23 +4,15 @@ import { PublicObjective as ModelPublicObjective } from '../model/PublicObjectiv
 import { PrivateObjective as ModelPrivateObjective } from '../model/PrivateObjective'
 import type { TierThresholds } from './config'
 import type { PrivateObjective, PublicObjective } from './objectives'
+import { ScoreReport } from '../model/ScoreReport'
+import type { ScoreLine, Tier } from '../model/ScoreReport'
 
-/** A single itemized line of the final score (pitch §8.2 `ScoreReport`). */
-export interface ScoreLine {
-  readonly objectiveId: string
-  readonly name: string
-  readonly points: number
-}
-
-export type Tier = 'none' | 'bronze' | 'silver' | 'gold'
-
-export interface ScoreReport {
-  /** Three public lines then the private line, in deal order. */
-  readonly lines: readonly ScoreLine[]
-  readonly beamTotal: number
-  readonly total: number
-  readonly tier: Tier
-}
+/**
+ * Shim (Prompt 41): `ScoreLine`, `Tier` and `ScoreReport` now live in `src/model/ScoreReport.ts`.
+ * `ScoreReport` is re-exported as a type only; reports are built by {@link ScoreCalculator}.
+ */
+export type { ScoreLine, Tier } from '../model/ScoreReport'
+export type { ScoreReport }
 
 type Grid = readonly (readonly (Die | null)[])[]
 
@@ -93,7 +85,7 @@ export class ScoreCalculator {
     lines.push(privateLine)
     const objectiveTotal = lines.reduce((sum, line) => sum + line.points, 0)
     const total = beamTotal + objectiveTotal
-    return { lines, beamTotal, total, tier: tierFor(total, this.tiers) }
+    return new ScoreReport(lines, beamTotal, tierFor(total, this.tiers))
   }
 }
 
