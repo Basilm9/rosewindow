@@ -2,7 +2,7 @@ import type { DieGrid } from './GlassWindow'
 
 /**
  * A scoring rule evaluated over the finished window (FR-2.4, FR-2.5). Implemented by
- * `PublicObjective` (one of eight shared rules) and, from Prompt 39, `PrivateObjective`.
+ * `PublicObjective` (one of eight shared rules) and `PrivateObjective` (one patron colour's sum).
  */
 export interface Objective {
   /** Which deal the objective belongs to: one of the three publics or the single private. */

@@ -1,8 +1,9 @@
 import { PROVISIONAL_TIERS } from './config'
 import type { Die, DieColor } from './types'
 import { PublicObjective as ModelPublicObjective } from '../model/PublicObjective'
+import { PrivateObjective as ModelPrivateObjective } from '../model/PrivateObjective'
 import type { TierThresholds } from './config'
-import type { DealtObjectives, PrivateObjective, PublicObjective } from './objectives'
+import type { PrivateObjective, PublicObjective } from './objectives'
 
 /** A single itemized line of the final score (pitch §8.2 `ScoreReport`). */
 export interface ScoreLine {
@@ -37,12 +38,13 @@ export function scorePublicObjective(grid: Grid, objective: PublicObjective): nu
   return ModelPublicObjective.from(objective).score(grid)
 }
 
-/** The private color objective: the sum of values of the patron color. */
+/**
+ * The private color objective: the sum of values of the patron color. Shim (Prompt 39): the
+ * scoring now lives in `src/model/PrivateObjective.ts`; plain legacy objectives are wrapped with
+ * `PrivateObjective.from` (only `color` is read) and scored by the model.
+ */
 export function scorePrivateObjective(grid: Grid, objective: PrivateObjective): number {
-  return grid
-    .flat()
-    .filter((d) => d !== null && d.color === objective.color)
-    .reduce((sum, d) => sum + d!.value, 0)
+  return ModelPrivateObjective.from(objective).score(grid)
 }
 
 /** Maps a final total onto the bronze/silver/gold tiers (pitch §10). */
@@ -56,7 +58,14 @@ export function tierFor(total: number, tiers: TierThresholds): Tier {
 /** Inputs for final scoring; tier settings belong to the calculator instance. */
 export interface ScoreInput {
   readonly grid: Grid
-  readonly objectives: DealtObjectives
+  /**
+   * The dealt objectives in legacy plain shape (the model's `DealtObjectives` is assignable; the
+   * old tests pass literals). Deleted with the shim in Prompt 59.
+   */
+  readonly objectives: {
+    readonly publics: readonly [PublicObjective, PublicObjective, PublicObjective]
+    readonly privateObjective: PrivateObjective
+  }
   readonly beamTotal: number
 }
 
