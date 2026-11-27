@@ -43,7 +43,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 37 | Objective Interface and PublicObjective | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (791/791) | 156 ✓ | — | 22 | — | green | inc-37-green |
 | 38 | PublicObjective Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 22 | — | green | inc-38-green |
 | 39 | PrivateObjective | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 23 | — | green | inc-39-green |
-| 40 | PrivateObjective and Deal Tests | | | | | | | | | | |
+| 40 | PrivateObjective and Deal Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 23 | — | green | inc-40-green |
 | 41 | ScoreReport | | | | | | | | | | |
 | 42 | ScoreReport Tests | | | | | | | | | | |
 | 43 ⚠ | ScoreCalculator | | | | | | | | | | |
