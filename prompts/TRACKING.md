@@ -36,7 +36,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 30 | EntryPoint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 19 | — | green | inc-30-green |
 | 31 | BeamSegment | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 20 | — | green | inc-31-green |
 | 32 | BeamSegment Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (740/740) | 156✓ | — | 20 | — | green | inc-32-green |
-| 33 | BeamPath | | | | | | | | | | |
+| 33 | BeamPath | Darren / feat/mvc-model | 0 | 0/0 | 100% (740/740) | 156✓ | — | 21 | — | green | inc-33-green |
 | 34 | BeamPath Tests | | | | | | | | | | |
 | 35 ⚠ | BeamTracer | | | | | | | | | | |
 | 36 | BeamTracer Tests | | | | | | | | | | |
@@ -117,3 +117,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 30: 45 tests; full 16-entry allFor(4) order pinned as a literal (A8), checked against pre-29 code from git history, not the current shim; lengths 3/4/5; all 7 prompt-29 temporary checks covered; fromData invalidArgument checked by kind + input unchanged. NOTE for 59: A10 imports the engine shim — delete it with the shim.
 - 31: BeamSegment promoted from interface to class (19 → 20); points derived in constructor (die.value × multiplier, 0 for empty pane), never passed in; only own fields position/direction/die/multiplier/points (struck is a getter); legacy engine interface untouched until 58; 5 temporary checks listed for 32.
 - 32: 25 tests; die × multiplier partitioning with precomputed points; reference empty-cell case ported (R1, m=1..5); all 5 prompt-31 temporary checks covered (P7, P8, K3, D2); own-field and toData key lists pinned with Object.keys (toEqual alone ignores undefined keys); no error paths.
+- 33: BeamPath new class (20 → 21); totalScore derived as sum of segment points; segments frozen copy in strike order; own fields segments/totalScore/termination only; bendCount = direction changes between consecutive segments (a bend on the final die is not counted, display-only); agent edited TRACKING.md unasked — reverted, row filled by hand; 6 temporary checks listed for 34.
