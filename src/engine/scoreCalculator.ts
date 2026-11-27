@@ -1,11 +1,10 @@
-import { PROVISIONAL_TIERS } from './config'
 import type { Die, DieColor } from './types'
 import { PublicObjective as ModelPublicObjective } from '../model/PublicObjective'
 import { PrivateObjective as ModelPrivateObjective } from '../model/PrivateObjective'
 import type { TierThresholds } from './config'
 import type { PrivateObjective, PublicObjective } from './objectives'
-import { ScoreReport } from '../model/ScoreReport'
-import type { ScoreLine, Tier } from '../model/ScoreReport'
+import type { ScoreReport, Tier } from '../model/ScoreReport'
+import { ScoreCalculator } from '../model/ScoreCalculator'
 
 /**
  * Shim (Prompt 41): `ScoreLine`, `Tier` and `ScoreReport` now live in `src/model/ScoreReport.ts`.
@@ -13,6 +12,13 @@ import type { ScoreLine, Tier } from '../model/ScoreReport'
  */
 export type { ScoreLine, Tier } from '../model/ScoreReport'
 export type { ScoreReport }
+
+/**
+ * Shim (Prompt 43): `ScoreCalculator` and its `ScoreInput` now live in
+ * `src/model/ScoreCalculator.ts`; re-exported here until Prompt 59.
+ */
+export { ScoreCalculator }
+export type { ScoreInput } from '../model/ScoreCalculator'
 
 type Grid = readonly (readonly (Die | null)[])[]
 
@@ -39,21 +45,21 @@ export function scorePrivateObjective(grid: Grid, objective: PrivateObjective): 
   return ModelPrivateObjective.from(objective).score(grid)
 }
 
-/** Maps a final total onto the bronze/silver/gold tiers (pitch §10). */
+/**
+ * Maps a final total onto the bronze/silver/gold tiers (pitch §10); inclusive lower bounds.
+ * Shim (Prompt 43): delegates to `new ScoreCalculator(tiers).tierFor(total)`.
+ */
 export function tierFor(total: number, tiers: TierThresholds): Tier {
-  if (total >= tiers.gold) return 'gold'
-  if (total >= tiers.silver) return 'silver'
-  if (total >= tiers.bronze) return 'bronze'
-  return 'none'
+  return new ScoreCalculator(tiers).tierFor(total)
 }
 
-/** Inputs for final scoring; tier settings belong to the calculator instance. */
-export interface ScoreInput {
+/**
+ * Legacy plain input of {@link calculateScore}: the objectives may be plain literals with no
+ * `score` method (the old tests build them); model instances are assignable too. Deleted with
+ * the shim in Prompt 59.
+ */
+export interface LegacyScoreInput {
   readonly grid: Grid
-  /**
-   * The dealt objectives in legacy plain shape (the model's `DealtObjectives` is assignable; the
-   * old tests pass literals). Deleted with the shim in Prompt 59.
-   */
   readonly objectives: {
     readonly publics: readonly [PublicObjective, PublicObjective, PublicObjective]
     readonly privateObjective: PrivateObjective
@@ -61,37 +67,25 @@ export interface ScoreInput {
   readonly beamTotal: number
 }
 
-/** Computes itemized reports with a fixed snapshot of the run's tier settings. */
-export class ScoreCalculator {
-  readonly tiers: TierThresholds
-
-  constructor(tiers: TierThresholds = PROVISIONAL_TIERS) {
-    this.tiers = Object.freeze({ ...tiers })
-  }
-
-  /** Pure final scoring over a finished window: objectives + beam totals (pitch §4). */
-  calculate(input: ScoreInput): ScoreReport {
-    const { grid, objectives, beamTotal } = input
-    const lines: ScoreLine[] = objectives.publics.map((o) => ({
-      objectiveId: o.id,
-      name: o.name,
-      points: scorePublicObjective(grid, o),
-    }))
-    const privateLine: ScoreLine = {
-      objectiveId: objectives.privateObjective.id,
-      name: objectives.privateObjective.name,
-      points: scorePrivateObjective(grid, objectives.privateObjective),
-    }
-    lines.push(privateLine)
-    const objectiveTotal = lines.reduce((sum, line) => sum + line.points, 0)
-    const total = beamTotal + objectiveTotal
-    return new ScoreReport(lines, beamTotal, tierFor(total, this.tiers))
-  }
-}
-
-/** Function API retaining the original per-call tier settings. */
+/**
+ * Function API retaining the original per-call tier settings. Shim (Prompt 43): wraps the plain
+ * objectives with `PublicObjective.from` / `PrivateObjective.from` (instances pass through as
+ * they are) and scores them with the model's {@link ScoreCalculator}.
+ */
 export function calculateScore(
-  input: ScoreInput & { readonly tiers: TierThresholds },
+  input: LegacyScoreInput & { readonly tiers: TierThresholds },
 ): ScoreReport {
-  return new ScoreCalculator(input.tiers).calculate(input)
+  const [a, b, c] = input.objectives.publics
+  return new ScoreCalculator(input.tiers).calculate({
+    grid: input.grid,
+    objectives: {
+      publics: [
+        ModelPublicObjective.from(a),
+        ModelPublicObjective.from(b),
+        ModelPublicObjective.from(c),
+      ],
+      privateObjective: ModelPrivateObjective.from(input.objectives.privateObjective),
+    },
+    beamTotal: input.beamTotal,
+  })
 }

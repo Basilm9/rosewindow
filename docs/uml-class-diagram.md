@@ -68,12 +68,6 @@ classDiagram
         -illuminateAndAdvance() void
     }
 
-    class ScoreCalculator {
-        +TierThresholds tiers
-        +ScoreCalculator(tiers?)
-        +calculate(input) ScoreReport
-    }
-
     class BeamPath {
         +readonly BeamSegment[] segments
         +number totalScore
@@ -272,6 +266,13 @@ classDiagram
         +score(grid) number
     }
 
+    class ScoreCalculator {
+        +TierThresholds tiers
+        +ScoreCalculator(tiers?)
+        +calculate(input) ScoreReport
+        +tierFor(total) Tier
+    }
+
     class ScoreReport {
         +readonly ScoreLine[] lines
         +number beamTotal
@@ -369,6 +370,8 @@ classDiagram
     PrivateObjective ..> Die : uses
     PublicObjective ..> Die : uses
     ScoreCalculator ..> Die : uses
+    ScoreCalculator ..> PrivateObjective : uses
+    ScoreCalculator ..> PublicObjective : uses
     ScoreCalculator ..> ScoreReport : uses
     SeededRandom ..> GameError : uses
     ValueConstraint ..> Die : uses
@@ -400,7 +403,6 @@ Source inventory:
 
 - [BeamTracer](../src/engine/beamTracer.ts#L28) — `src/engine/beamTracer.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
-- [ScoreCalculator](../src/engine/scoreCalculator.ts#L65) — `src/engine/scoreCalculator.ts`
 - [BeamPath](../src/model/BeamPath.ts#L33) — `src/model/BeamPath.ts`
 - [BeamSegment](../src/model/BeamSegment.ts#L32) — `src/model/BeamSegment.ts`
 - [BeamTracer](../src/model/BeamTracer.ts#L21) — `src/model/BeamTracer.ts`
@@ -419,6 +421,7 @@ Source inventory:
 - [PlacementValidator](../src/model/PlacementValidator.ts#L48) — `src/model/PlacementValidator.ts`
 - [PrivateObjective](../src/model/PrivateObjective.ts#L15) — `src/model/PrivateObjective.ts`
 - [PublicObjective](../src/model/PublicObjective.ts#L58) — `src/model/PublicObjective.ts`
+- [ScoreCalculator](../src/model/ScoreCalculator.ts#L28) — `src/model/ScoreCalculator.ts`
 - [ScoreReport](../src/model/ScoreReport.ts#L30) — `src/model/ScoreReport.ts`
 - [SeededRandom](../src/model/SeededRandom.ts#L29) — `src/model/SeededRandom.ts`
 - [WindowCell](../src/model/WindowCell.ts#L13) — `src/model/WindowCell.ts`
