@@ -37,6 +37,8 @@ const cases: ReadonlyArray<[number, string, string, number]> = [
   [11, 'src/model/X.ts', "import { AbstractModel } from '@mvc'", ALLOWED],
   [12, 'src/controller/X.ts', "import { Game } from '@model'", ALLOWED],
   [13, 'src/controller/X.ts', "import { createActor } from 'xstate'", ALLOWED],
+  [14, 'src/view/X.tsx', "import { loadProfile } from '@progression/profile'", VIOLATION],
+  [15, 'src/view/X.tsx', "import type { RunSession } from '@progression'", ALLOWED],
 ]
 
 /** Budget for ESLint's cold start (config load, parser and plugin init); paid once, not per case. */

@@ -105,7 +105,7 @@ view ──► controller ──► model ◄── progression
 
 - `src/model/` imports only `src/mvc/` and itself. No React, DOM, `window`, `localStorage`, or XState.
 - `src/controller/` imports `model`, `mvc` and XState. No React components.
-- `src/view/` imports `controller`, `mvc`, and model **types**. It never calls a model mutator.
+- `src/view/` imports `controller`, `mvc`, `util`, model **types** and progression **types** (for example the run-session and reward shapes it receives as props). It never imports a model or progression value and never calls a model mutator.
 - `src/progression/` imports `model`; the model never imports `progression`.
 
 ## 6. Statecharts

@@ -147,7 +147,7 @@ export default tseslint.config(
     },
   },
 
-  // View: controller, mvc, util; model TYPES only. Legacy paths tolerated until prompt 58.
+  // View: controller, mvc, util; model and progression TYPES only. Legacy paths tolerated until prompt 58.
   {
     files: ['src/view/**/*.{ts,tsx}'],
     rules: {
@@ -159,6 +159,12 @@ export default tseslint.config(
               group: ['@model', '@model/*'],
               allowTypeImports: true,
               message: 'Views use model types only (§5).',
+            },
+            // The relative '../progression/*' imports of the old views are closed in prompt 58.
+            {
+              group: ['@progression', '@progression/*'],
+              allowTypeImports: true,
+              message: 'Views use progression types only (§5).',
             },
           ],
         },
