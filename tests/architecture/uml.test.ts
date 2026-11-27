@@ -110,8 +110,8 @@ it('derives class members and relationships from types, aliases, and executable 
     expect(output).toContain('DomainError <|-- PlacementError')
     expect(output).not.toContain('Game ..> Config')
     expect(output).toMatch(/\[Die\]\(\.\.\/src\/die\.ts#L1\)/)
+    expect(output).toMatch(/class AbstractBase \{\s+<<abstract>>/)
     for (const name of [
-      'AbstractBase',
       'AmbientClass',
       'LocalHelper',
       'TestHelper',

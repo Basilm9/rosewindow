@@ -35,16 +35,16 @@ A ..> B : uses                any other reference in A's code or types (existing
 ```
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#FFFFC0','primaryBorderColor':'#A0522D','primaryTextColor':'#000000','lineColor':'#404040','fontFamily':'Arial','fontSize':'12px'}}}%%
 ```
-   plus `classDef abstract font-style:italic` and `classDef interface fill:#FFFFE8` applied with `class X:::abstract`; stereotypes `<<abstract>>` / `<<interface>>` inside the box; packages as `namespace model { … }` (Mermaid renders them as titled frames).
+   plus `classDef abstract fill:#F3E9D8` (Mermaid's class-diagram grammar rejects `font-style`) and `classDef interface fill:#FFFFE8` applied with `class X:::abstract`; stereotypes `<<abstract>>` / `<<interface>>` inside the box; packages as `namespace model { … }` (Mermaid renders them as titled frames).
 4. **Import-rule check** (section 5), for every import/export-from in `src/`: resolve with `ts.resolveModuleName(spec, file, parsed.options, ts.sys)` (honours path aliases), classify source and target package, and test against:
 ```js
 const ALLOWED = {
   mvc: ['mvc'], model: ['model', 'mvc'], controller: ['controller', 'model', 'mvc'],
-  view: ['view', 'controller', 'mvc', 'util', 'model:type'], progression: ['progression', 'model', 'mvc'],
+  view: ['view', 'controller', 'mvc', 'util', 'model:type', 'progression:type'], progression: ['progression', 'model', 'mvc'],
   util: ['util', 'model'] }
 const FORBIDDEN_EXTERNAL = { model: ['react', 'react-dom', 'xstate', '@xstate/react'], controller: ['react', 'react-dom', '@xstate/react'], progression: ['react', 'react-dom', 'xstate'] }
 ```
-   `model:type` = allowed only when the import is `import type` or every specifier is `type`. `src/mvc/react/*` may import `react`. Also flag in `src/model` any identifier reference to `window`, `document`, `localStorage` and the call `Math.random`. Unpackaged files (`App.tsx`, `main.tsx`) are exempt.
+   `model:type` = allowed only when the import is `import type` or every specifier is `type`. `src/mvc/react/*` may import `react`. Also flag in `src/model` any identifier reference to `window`, `document`, `localStorage` and the call `Math.random`. Unpackaged files (`App.tsx`, `main.tsx`) are exempt. **Built early, before the model:** while a legacy folder (`src/engine`, `machine`, `hooks`, `dev`) exists, it is exempt and `view` and `progression` may still import it (and views their old progression values); those imports are printed as `Legacy imports still to remove`, never as violations, and the tolerance ends by itself when prompt 59 deletes the folders. The checks of section 3 that need the rebuilt classes (6 namespaces of packages, ≥ 36 classes, the named edges) are run after prompt 59.
 5. **Output:** append to the markdown a section `## Import-rule violations` listing `- src/model/X.ts:12 model → view (import '../view/Y')`, sorted, or `None.`; print `Import-rule violations: N` to stdout; `process.exitCode = N > 0 ? 1 : 0`. Output stays byte-identical across runs (sort every set before printing).
 6. Update the "How to read it" legend for the new arrow kinds, stereotypes and packages.
 
