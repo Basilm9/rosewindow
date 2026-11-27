@@ -22,20 +22,9 @@ export type { Position }
 export { DIE_COLORS, Die } from '../model/Die'
 export type { DieColor } from '../model/Die'
 
-/**
- * What the beam does when it enters a die of a given color (pitch §5):
- * warm colors turn clockwise, cool colors turn counter-clockwise, purple goes straight.
- */
-export type Refraction = 'clockwise' | 'counterClockwise' | 'straight'
-
-/** The beam law, keyed by color. This is rule data, not tunable config. */
-export const REFRACTION_BY_COLOR: Readonly<Record<DieColor, Refraction>> = {
-  red: 'clockwise',
-  yellow: 'clockwise',
-  blue: 'counterClockwise',
-  green: 'counterClockwise',
-  purple: 'straight',
-}
+/** The beam law by colour (moved to `src/model/Refraction.ts`; re-exported here until Prompt 59). */
+export { REFRACTION_BY_COLOR } from '../model/Refraction'
+export type { Refraction } from '../model/Refraction'
 
 /** Compass names, clockwise from north (moved to `src/model/Direction.ts`; re-exported until Prompt 59). */
 export { DIRECTION_NAMES as DIRECTIONS } from '../model/Direction'

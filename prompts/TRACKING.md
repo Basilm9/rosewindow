@@ -38,7 +38,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 32 | BeamSegment Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (740/740) | 156✓ | — | 20 | — | green | inc-32-green |
 | 33 | BeamPath | Darren / feat/mvc-model | 0 | 0/0 | 100% (740/740) | 156✓ | — | 21 | — | green | inc-33-green |
 | 34 | BeamPath Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-34-green |
-| 35 ⚠ | BeamTracer | | | | | | | | | | |
+| 35 ⚠ | BeamTracer | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-35-green |
 | 36 | BeamTracer Tests | | | | | | | | | | |
 | 37 | Objective Interface and PublicObjective | | | | | | | | | | |
 | 38 | PublicObjective Tests | | | | | | | | | | |
@@ -119,3 +119,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 32: 25 tests; die × multiplier partitioning with precomputed points; reference empty-cell case ported (R1, m=1..5); all 5 prompt-31 temporary checks covered (P7, P8, K3, D2); own-field and toData key lists pinned with Object.keys (toEqual alone ignores undefined keys); no error paths.
 - 33: BeamPath new class (20 → 21); totalScore derived as sum of segment points; segments frozen copy in strike order; own fields segments/totalScore/termination only; bendCount = direction changes between consecutive segments (a bend on the final die is not counted, display-only); agent edited TRACKING.md unasked — reverted, row filled by hand; 6 temporary checks listed for 34.
 - 34: 21 tests; fixtures EMPTY/SINGLE/STRAIGHT/ORBIT (+PAIR), ORBIT matches the reference cycle path cell by cell; all 6 prompt-33 temporary checks covered (L0, B0, F1, K1, D2, I1 split in 3); no error paths; TRACKING untouched by agent.
+- 35 (CRITICAL): BeamTracer moved to model (count stays 21; engine wrapper counted once); loop ported statement by statement; REFRACTION_BY_COLOR moved to model/Refraction.ts (frozen); isolation protocol in full — golden walk 9 segments / 59 / cycle matched row by row (checked by hand), lockout cases, seed 3 = 5,5,31,16,2,7,53,37; purity confirmed; mutation check: bend-before-score caught by 12 tests, but empty-cell lockout, record-on-cycle and no-cap each caught by only 1–2 → strengthened in 36; restore verified by SHA-256 (new file, git diff not usable); prompt's -t "orbit" filter matches no test name.
