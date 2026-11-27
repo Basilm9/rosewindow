@@ -41,7 +41,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 35 ⚠ | BeamTracer | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-35-green |
 | 36 | BeamTracer Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (791/791) | 156✓ | — | 21 | — | green | inc-36-green |
 | 37 | Objective Interface and PublicObjective | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (791/791) | 156 ✓ | — | 22 | — | green | inc-37-green |
-| 38 | PublicObjective Tests | | | | | | | | | | |
+| 38 | PublicObjective Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 22 | — | green | inc-38-green |
 | 39 | PrivateObjective | | | | | | | | | | |
 | 40 | PrivateObjective and Deal Tests | | | | | | | | | | |
 | 41 | ScoreReport | | | | | | | | | | |
