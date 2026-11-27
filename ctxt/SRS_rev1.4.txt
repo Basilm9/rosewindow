@@ -1,0 +1,1081 @@
+Rose Window
+
+Software Requirements Specification
+
+CS 4398 — Software Engineering Capstone
+
+Group 18 — Round Rock Section (CRN 17403)
+
+Texas State University
+
+Darren Bowers
+
+Basil Mohad
+
+Revision 1.4
+
+November 19, 2026
+
+1. Table of Contents
+
+Primary responsibility for each section is annotated in the right-hand column, as required by the assignment.
+
+  -----------------------------------------------------------------------------
+  §      Section                                       Primary responsibility
+  ------ --------------------------------------------- ------------------------
+  1      Table of Contents                             D. Bowers
+
+  2      Introduction                                  D. Bowers
+
+  2.1    Purpose of the SRS                            D. Bowers
+
+  2.2    Problem statement                             D. Bowers
+
+  2.3    Definitions and acronyms                      D. Bowers
+
+  2.4    Document conventions                          D. Bowers
+
+  3      Statement of functional requirements          D. Bowers
+
+  3.1    Task: begin a new commission                  B. Mohad
+
+  3.2    Task: review the objectives                   B. Mohad
+
+  3.3    Task: draft a die                             D. Bowers
+
+  3.4    Task: place a die in the window               B. Mohad
+
+  3.5    Task: illuminate the window                   B. Mohad
+
+  3.6    Task: resolve a deadlocked round              D. Bowers
+
+  3.7    Task: monitor progress                        D. Bowers
+
+  3.8    Task: complete the run and review the score   B. Mohad
+
+  3.9    Task: learn the game                          B. Mohad
+
+  3.10   Task: control audio                           D. Bowers
+
+  3.11   Task: recast the draft                        D. Bowers
+
+  3.12   Task: interrupt and resume a run              D. Bowers
+
+  3.13   Task: accumulate a playing record             D. Bowers
+
+  3.14   Task: personalize the window                  D. Bowers
+
+  3.15   Task: play the daily challenge                D. Bowers
+
+  3.16   Task: challenge another player                D. Bowers
+
+  3.17   Task: suspend a run                           D. Bowers
+
+  4      Non-functional requirements                   D. Bowers
+
+  4.1    Reliability                                   D. Bowers
+
+  4.2    Robustness                                    D. Bowers
+
+  4.3    Performance                                   D. Bowers
+
+  4.4    Maintainability                               D. Bowers
+
+  4.5    Usability                                     D. Bowers
+
+  4.6    Safety                                        D. Bowers
+
+  5      Design and implementation constraints         D. Bowers
+
+  5.1    Standards compliance                          D. Bowers
+
+  5.2    Development constraints                       D. Bowers
+
+  6      References and sources of information         D. Bowers
+
+  —      Index                                         D. Bowers
+
+  A      Appendix A: Screenshot capture checklist      D. Bowers
+
+  B      Appendix B: Revision history                  D. Bowers
+
+  C      Appendix C: Acceptance tests                  D. Bowers
+  -----------------------------------------------------------------------------
+
+2. Introduction
+
+2.1 Purpose of the SRS
+
+This document specifies the requirements for Rose Window, a single-player stained-glass puzzle game that runs in a web browser. It states what the system does, not how it is built, and it is written so that every requirement can be demonstrated to have been met.
+
+The intended readers are the course instructor, acting as the customer; the members of Group 18, acting as the development organization; and any engineer who later maintains the system. It serves as the contract between those parties concerning the product’s behavior and its required quality attributes.
+
+Revision 1.1 extends the specification to cover the progression, persistence, and challenge capabilities added since revision 1.0, and corrects a statement in §5.2 that the product had outgrown. Where a capability is deliberately excluded it is recorded as such in §5.2 rather than omitted silently, so that the boundary of the contract is unambiguous. Revision 1.2 adds the requirements of the mobile overhaul and rewords FR-1.5 and FR-12.2 to match the build. Revision 1.3 adds the safety properties of §4.6, a reliability measure (NFR-1.8), and time limits on the restore delay and the response to a tap (NFR-3.6, NFR-3.7). Revision 1.4 labels the scenario that opens each task in §3 and adds the acceptance tests of Appendix C.
+
+2.2 Problem statement
+
+Tile-laying and dice-drafting puzzle games ask a player to satisfy several competing constraints at once. Their appeal comes from the tension between a placement that is legal, a placement that scores well now, and a placement that preserves options later. That tension is difficult to deliver in software because the rules must be enforced exactly, the reason for a rejected move must be communicated immediately, and the consequences of a move must be visible before it is committed.
+
+Existing implementations of this genre typically enforce rules correctly but explain them poorly. A player who attempts an illegal move is told only that it is illegal. The player must then reconstruct the rule from memory, which converts a puzzle about planning into a puzzle about recalling the rulebook.
+
+Rose Window addresses this by making rule feedback immediate, specific, and located at the point of the attempted action. Every rejected placement identifies which law was broken and, where applicable, which existing dice caused the conflict. A legality preview shows the outcome of a placement before it is committed.
+
+The game adds a scoring mechanism of its own. After each round a beam of light enters the window at an announced edge and refracts through the placed glass according to the color of each die it strikes. The path the beam takes is a consequence of placements made several rounds earlier, so the player must reason about a spatial mechanism that unfolds over time rather than optimizing each round in isolation.
+
+A single run is short. To give a reason to return, the system keeps a record of play across runs, sets a shared daily puzzle, and lets a player hand a specific puzzle to someone else. These are secondary to the puzzle itself, and the requirements in §3.13 through §3.16 are written so that none of them can affect how a run is scored.
+
+The system must therefore satisfy four demands: enforce a non-trivial rule set exactly; explain each enforcement decision well enough that a player learns the rules by playing; make a run reproducible, so that a given starting condition always produces the same game and any defect can be reproduced on demand; and keep a record of play that never becomes a way to influence a score.
+
+2.3 Definitions and acronyms
+
+  ------------------ ------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Achievement        A one-time award granted the first time a stated condition is met across any run.
+
+  Adjacency law      The rule forbidding a die from being placed orthogonally next to a die of the same color or the same value.
+
+  Beam               The ray of light that enters the window at the end of a round and refracts through the placed dice, awarding points.
+
+  Challenge          A specific puzzle, or more specifically a seed and a window pattern, handed from one player to another, together with a score to beat.
+
+  Commission         One complete run of the game: eight rounds played on a single chosen window pattern.
+
+  Connectivity law   The rule requiring every die after the first to touch an already-placed die, orthogonally or diagonally.
+
+  Daily challenge    The puzzle set for a given calendar day, identical for every player on that day.
+
+  Draft pool         The set of dice made visible for selection at the start of a round.
+
+  Entry point        An edge cell together with the inward direction the beam travels when it enters there.
+
+  Level              A band of accumulated experience, displayed as a whole number.
+
+  Lockout            The interval, measured in cells, during which the beam cannot bend again after a refraction.
+
+  Multiplier         The factor applied to the value of each die the beam strikes; it rises with each refraction, to a ceiling.
+
+  Objective          A scoring card evaluated against the finished window. Public objectives are visible from the start; the private objective rewards a single assigned color.
+
+  Palette            A selectable color scheme for the interface. Palettes affect appearance only.
+
+  Printed demand     A constraint printed on a window cell requiring a specific color, a specific value, or nothing.
+
+  Profile            The record of a player’s accumulated play is held on their own device.
+
+  Quest              A daily goal with a stated target and reward.
+
+  Recast             The once-per-run replacement of the unplaced dice of the current draft.
+
+  Refraction         The change of direction the beam undergoes when it strikes a die, determined by that die’s color.
+
+  Run                Synonym for commission.
+
+  Seed               The single number from which every random element of a run is derived.
+
+  Shards             The unit in which rewards are granted and cosmetic unlocks are priced.
+
+  Streak             The number of consecutive days on which a daily reward has been claimed.
+
+  Tier               The band (bronze, silver, or gold) awarded to a final score.
+
+  Window             The four-by-four grid of cells the player fills with dice.
+
+  Window pattern     A named arrangement of printed demands across the sixteen cells of a window.
+
+  ARIA               Accessible Rich Internet Applications, a W3C specification for exposing user-interface semantics to assistive technology.
+
+  CI                 Continuous integration: the automated verification runs on every change.
+
+  GUI                Graphical user interface.
+
+  SRS                Software Requirements Specification: this document.
+
+  UTC                Coordinated Universal Time, used so that a daily challenge is the same worldwide.
+  ------------------ ------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2.4 Document conventions
+
+Functional requirements are numbered FR-n.m and grouped in §3 by the user task they serve. Non-functional requirements are numbered NFR-n.m and grouped in §4 by quality attribute. Numbers are stable: a requirement that is withdrawn in a later revision retains its identifier, marked as withdrawn, rather than being reused. For the same reason the tasks added in revision 1.1 appear at §3.11 and after, rather than being inserted where they would sit in play order.
+
+The word "shall" denotes a binding requirement. "Should" denotes a preference that is not binding. No requirement in this document uses "may" to state system behavior; permissive statements appear only in prose.
+
+A requirement marked Deferred states a capability the product is contracted to provide and whose rules are implemented and tested, but which the interface does not yet expose. Such requirements are identified in the verification column and are not claimed to be met.
+
+Every requirement carries a verification method stating how it will be demonstrated to have been met. Four methods are used: Test, meaning an automated test asserts the behavior; Demonstration, meaning the behavior is exhibited on a running system during acceptance; Inspection, meaning the property is confirmed by examining the product or its documentation; and Analysis, meaning the property follows from an argument over the design. A requirement that could not be assigned one was rewritten until it could.
+
+3. Statement of Functional Requirements
+
+This section states what the system does, organized by the tasks a player can accomplish. Each task opens with its scenario, a short description of the player’s goal and the interaction with the system that achieves it, followed by the requirements that serve it. Screenshots of the relevant interface accompany the tasks whose requirements concern what the player sees.
+
+3.1 Task: begin a new commission
+
+Scenario. The player opens the game and is offered a choice of window to fill. Choosing one begins a run of eight rounds. The choice is consequential: patterns differ in how many printed demands they carry, and therefore in how constrained the run will be.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                                                                                                      Verification method
+  -------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------------------------------------------------
+  FR-1.1   The system shall offer the player exactly two distinct window patterns at the start of a run.                                                                                                                    Test — the pattern offer returns two distinct patterns; Demonstration on launch.
+
+  FR-1.2   The system shall display, for each offered pattern, its name, its description, and the printed demand of every one of its sixteen cells.                                                                         Demonstration against the pattern definitions; Inspection of Figure S-1.
+
+  FR-1.3   The system shall begin a run of eight rounds on the chosen pattern when the player commits to a choice.                                                                                                          Test — end-to-end play reaches round 8; Demonstration.
+
+  FR-1.4   The system shall derive every random element of a run from a single numeric seed, such that two runs begun with the same seed are identical in every respect.                                                    Test — golden-master run at a fixed seed reproduces a frozen score sequence.
+
+  FR-1.5   The system shall accept a seed supplied in the game’s link (the ?seed= parameter) and shall display the seed in effect throughout the run.                                                                       Demonstration — open a link carrying a stated seed; confirm the seed is shown.
+
+  FR-1.6   The system shall reduce any supplied seed to a canonical whole number in a fixed range and shall substitute a stable default for a value outside it, so that no supplied seed can prevent a run from starting.   Test — seed normalization cases including non-numeric and out-of-range input.
+
+  FR-1.7   The system shall offer, at the end of a run, the option to begin a new run at a different seed.                                                                                                                  Demonstration — complete a run and restart; confirm a different game.
+
+  FR-1.8   The system shall open directly into play, with no landing page: into the run a link names, else the run in progress, else a new window’s pattern choice.                                                         Test — the end-to-end test that opens the application lands in play.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-1. Setup screen: the two offered window patterns with their printed demands.
+
+3.2 Task: review the objectives
+
+Scenario. Before and during play the player needs to know how the finished window will be scored, because objectives reward arrangements that must be planned from the first placement.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                                                                  Verification method
+  -------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------------------------------------------------------------
+  FR-2.1   The system shall assign three distinct public objectives to each run, drawn from a defined set of eight.                                                                     Test — dealt objectives are three and distinct; Inspection of the objective set.
+
+  FR-2.2   The system shall assign one private objective to each run, drawn from a defined set of five, one for each glass color.                                                       Test; Inspection.
+
+  FR-2.3   The system shall make the name and the scoring rule of every assigned objective available to the player at any point during the run, without ending or disturbing the run.   Demonstration; Inspection of Figure S-2.
+
+  FR-2.4   The system shall score each public objective exactly as its displayed scoring rule states.                                                                                   Test — one case per objective family over hand-built windows.
+
+  FR-2.5   The system shall score the private objective as the sum of the values of the placed dice of its assigned color.                                                              Test.
+
+  FR-2.6   The system shall display, for each assigned objective during play, the points it would award if the run ended at that moment.                                                Demonstration — place a die that completes an objective and observe the figure change; Test.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-2. Goal sheet: the three public objectives and the private objective for the current run, with the points each would award now.
+
+3.3 Task: draft a die
+
+Scenario. Each round the player is shown a pool of dice and takes one into hand before placing it. A die taken but not yet placed can be exchanged or returned, so that a player who discovers no legal placement for the die in hand is not trapped by the selection.
+
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                              Verification method
+  -------- ---------------------------------------------------------------------------------------------------------------------------------------- ------------------------------------------------------------
+  FR-3.1   The system shall present five dice for selection at the start of each round.                                                             Demonstration; Test.
+
+  FR-3.2   The system shall move a die selected by the player out of the pool and into the player’s hand.                                           Test; Demonstration.
+
+  FR-3.3   The system shall hold at most one die in hand. Selecting a second die shall return the held die to the pool before taking the new one.   Test — select, re-select, confirm pool size is unchanged.
+
+  FR-3.4   The system shall reject an attempt to select a die that is not present in the pool and shall leave the game state unchanged.             Test — rejection raises the defined not-in-pool condition.
+
+  FR-3.5   The system shall return every unselected die to the bag at the end of a round.                                                           Test — bag contents are conserved across a full run.
+
+  FR-3.6   The system shall allow the player to return a held die to the pool without placing it and shall not consume a placement in doing so.     Test; Demonstration.
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.4 Task: place a die in the window
+
+Scenario. Placement is the central action of the game. Three laws govern it; the printed demand of the target cell, the adjacency law, and the connectivity law, and placement must satisfy all of them. Because the laws interact, a player learns them only if each rejection says specifically which one was broken.
+
+The requirements below state each law separately, so that each can be demonstrated separately during acceptance.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                     Verification method
+  --------- --------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------------------------------------------------
+  FR-4.1    The system shall place the held die into the targeted cell when the placement satisfies every placement law and shall consume the die from the player’s hand.   Test; Demonstration.
+
+  FR-4.2    The system shall reject a placement targeting a cell that already holds a die.                                                                                  Test — one case per rejection reason.
+
+  FR-4.3    The system shall reject the placement of a die that is not among those made visible for the round.                                                              Test.
+
+  FR-4.4    The system shall reject a placement into a cell whose printed demand names a color, when the die is not of that color.                                          Test.
+
+  FR-4.5    The system shall reject a placement into a cell whose printed demand names a value, when the die is not of that value.                                          Test.
+
+  FR-4.6    The system shall reject a placement when any orthogonally adjacent cell holds a die of the same color or the same value as the die being placed.                Test — cases for color conflict, value conflict, and multiple conflicts.
+
+  FR-4.7    The system shall require the first die of a run to be placed on the outer ring of the window.                                                                   Test.
+
+  FR-4.8    The system shall require every die after the first to touch at least one already-placed die, orthogonally or diagonally.                                        Test.
+
+  FR-4.9    The system shall evaluate the placement laws in a fixed, documented order and shall report the first violation found.                                           Test — the order is asserted by cases constructed to violate two laws at once.
+
+  FR-4.10   The system shall, on rejecting a placement, retain the die in the player’s hand and leave the window unchanged.                                                 Test; Demonstration.
+
+  FR-4.11   The system shall identify to the player the specific law that caused a rejection.                                                                               Demonstration — attempt one placement per rejection reason and read the message.
+
+  FR-4.12   The system shall identify to the player the placed dice responsible for a rejection caused by the adjacency law.                                                Demonstration; Inspection of Figure S-4.
+
+  FR-4.13   The system shall indicate, before a placement is committed, whether the held die may legally occupy the cell under the pointer.                                 Demonstration; Inspection of Figure S-3.
+
+  FR-4.14   The system shall admit exactly two placements per round, after which the round proceeds to illumination.                                                        Test — a full run places sixteen dice over eight rounds.
+
+  FR-4.15   The system shall report, on request, every cell at which a given die could legally be placed.                                                                   Test — the reported cells match an exhaustive check of the window.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-3. Legality preview: the held die hovering over a legal cell (left) and over an illegal one (right).
+
+[]
+
+Figure S-4. Rejection feedback: the reason stated, with the offending neighbors outlined on the board.
+
+3.5 Task: illuminate the window
+
+Scenario. At the end of each round a beam enters the window at an edge announced in advance and travels through it, bending as it strikes colored glass and awarding points for each die it passes through. The entry point is announced before the round is played so that the player can place with the coming beam in mind.
+
+The beam is the part of the system with the most intricate behavior, and the requirements below fix it precisely, including the two cases where the rule as originally stated was ambiguous.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                                                            Verification method
+  --------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------------------------------
+  FR-5.1    The system shall announce the entry point of the coming beam before the round is played, stating the cell and the direction of travel.                                                                                 Demonstration; Inspection of Figure S-5.
+
+  FR-5.2    The system shall admit the beam at the announced cell, travelling in the announced direction.                                                                                                                          Test.
+
+  FR-5.3    The system shall award, for each cell the beam enters, the value of the die in that cell multiplied by the multiplier then in effect. A cell holding no die shall award nothing.                                       Test — cell-by-cell assertions over hand-built windows.
+
+  FR-5.4    The system shall turn the beam ninety degrees clockwise when it strikes a red or yellow die, ninety degrees counterclockwise when it strikes a blue or green die and shall not turn it when it strikes a purple die.   Test — one case per color.
+
+  FR-5.5    The system shall award the points for a die before applying that die’s own refraction, so that a die which bends the beam is scored at the multiplier in effect before the bend.                                       Test — a case constructed to distinguish the two orderings.
+
+  FR-5.6    The system shall increase the multiplier by one each time the beam is turned to a ceiling of five.                                                                                                                     Test — a path with more than four bends confirms the ceiling.
+
+  FR-5.7    The system shall prevent the beam from turning again for a number of cells equal to one less than the value of the die that caused the previous turn. Dice within that interval shall still be scored.                 Test — cases at value 1, at value 6, and in between.
+
+  FR-5.8    The system shall terminate the beam when it would leave the window.                                                                                                                                                    Test.
+
+  FR-5.9    The system shall terminate the beam when it would enter a cell in a direction in which it has already entered that cell during the same traversal and shall not score that repeated entry.                             Test — a window constructed to produce a closed loop.
+
+  FR-5.10   The system shall display the beam travelling through the window, in the order the cells are struck.                                                                                                                    Demonstration; Inspection of Figure S-6.
+
+  FR-5.11   The system shall add the points awarded by each round’s beam to a running total for the run.                                                                                                                           Test — the per-round sequence sums to the reported beam total.
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-5. Entry announcement: the indicated edge cell and direction before the round is played.
+
+[]
+
+Figure S-6. Beam traversal mid-animation, showing the path taken and points awarded.
+
+3.6 Task: resolve a deadlocked round
+
+Scenario. The placement laws can produce a position in which no die available to the player has any legal cell. Without explicit handling the run would stall. The system detects this and resolves it in the player’s favor: the round is forfeited, but the window is still illuminated and still scores.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                                                                        Verification method
+  -------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -----------------------------------------------------------------------------------
+  FR-6.1   The system shall determine, before requiring a placement, whether any die available to the player has at least one legal placement. A die held in hand shall count as available.   Test — hand-built deadlocked windows, including one where only the held die fits.
+
+  FR-6.2   The system shall forfeit a round in which no available die has a legal placement, returning the unplaced dice to the bag.                                                          Test.
+
+  FR-6.3   The system shall refuse to forfeit a round in which a legal placement remains available.                                                                                           Test — forfeiting a solvable position raises the defined condition.
+
+  FR-6.4   The system shall illuminate and score a forfeited round exactly as it would a played round.                                                                                        Test — a forfeited round contributes a beam score.
+
+  FR-6.5   The system shall inform the player that a round was forfeited and why.                                                                                                             Demonstration.
+
+  FR-6.6   The system shall complete all eight rounds of a run regardless of how many rounds are forfeited.                                                                                   Test — every seed in a sampled range completes.
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.7 Task: monitor progress
+
+Scenario. During a run the player needs to know the state of the commission: which window is being filled, how much has been scored, and where the next beam will enter.
+
+  -----------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                Verification method
+  -------- ------------------------------------------------------------------------------------------ -------------------------
+  FR-7.1   The system shall display the name of the window pattern in play and the seed of the run.   Demonstration.
+
+  FR-7.2   The system shall display the running beam total for the run.                               Demonstration; Test.
+
+  FR-7.3   The system shall display the score awarded by each completed round.                        Demonstration.
+
+  FR-7.4   The system shall display the current round number and the number of rounds in the run.     Demonstration.
+
+  FR-7.5   The system shall display the number of placements remaining in the current round.          Demonstration; Test.
+  -----------------------------------------------------------------------------------------------------------------------------
+
+3.8 Task: complete the run and review the score
+
+Scenario. After the eighth round the window is finished and scored. The final score must be itemized: a player who cannot see which objective earned which points cannot learn to play better.
+
+  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                                            Verification method
+  -------- ------------------------------------------------------------------------------------------------------------------------------------------------------ -----------------------------------------------------------------
+  FR-8.1   The system shall compute a final score when the eighth round is complete.                                                                              Test; Demonstration.
+
+  FR-8.2   The system shall report the final score itemized, with one line for each assigned objective, the beam total as a separate line, and the grand total.   Demonstration; Inspection of Figure S-7.
+
+  FR-8.3   The system shall compute the grand total as the sum of the beam total and the points awarded by all four objectives.                                   Test — the reported total equals the sum of the reported lines.
+
+  FR-8.4   The system shall award a tier to the final score against published thresholds, or no tier where the score falls below the lowest threshold.            Test — one case per tier boundary.
+
+  FR-8.5   The system shall display the finished window alongside the score report.                                                                               Demonstration.
+  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-7. Final score report: itemized objective lines, beam total, grand total, and tier.
+
+3.9 Task: learn the game
+
+Scenario. The rules are not self-evident, particularly the beam. A first-time player must be able to complete a round without consulting anything outside the system.
+
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID       Requirement                                                                                                                                                          Verification method
+  -------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------- -----------------------------------------------------
+  FR-9.1   The system shall present a guided introduction to a player who has not previously played, covering drafting, placement, the beam, the lockout, and the objectives.   Demonstration in a browser with no stored history.
+
+  FR-9.2   The system shall advance the introduction in response to the player performing the action being described, rather than requiring separate acknowledgement.           Demonstration.
+
+  FR-9.3   The system shall allow the introduction to be dismissed and shall not present it again once dismissed.                                                               Demonstration across two visits.
+
+  FR-9.4   The system shall allow the player to request the introduction again at any time.                                                                                     Demonstration.
+
+  FR-9.5   The system shall suppress the introduction during runs begun at an explicitly supplied seed, so that reproducible runs are unaffected by it.                         Test — seeded end-to-end runs show no introduction.
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+Figure S-8. Guided introduction: a step of the first-run tutorial over the board.
+
+3.10 Task: control audio
+
+Scenario. The system produces short sounds on key actions. Some players will not want them, and the preference must survive the session.
+
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                       Verification method
+  --------- ----------------------------------------------------------------------------------------------------------------- ----------------------------------------------------
+  FR-10.1   The system shall produce a distinct sound on selecting a die, on placing a die, and on the beam striking a die.   Demonstration.
+
+  FR-10.2   The system shall provide a control that silences and restores all sound.                                          Demonstration.
+
+  FR-10.3   The system shall retain the player’s audio preference across visits.                                              Demonstration across two visits.
+
+  FR-10.4   The system shall not produce sound before the player has interacted with the page.                                Demonstration — load the page and confirm silence.
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.11 Task: recast the draft
+
+Scenario. A draft can be unappealing without being deadlocked: every die is legal somewhere, but nowhere useful. The recast gives the player one escape per run. It is deliberately scarce, and it is drawn from the same seeded bag, so that spending it cannot manufacture a better run than the seed allows.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                 Verification method
+  --------- ----------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------
+  FR-11.1   The system shall make exactly one recast available in each run.                                                                                             Test; Demonstration.
+
+  FR-11.2   The system shall, on a recast, return every unplaced die of the current draft, including any die held in hand, to the bag, and draw replacements from it.   Test — bag contents are conserved across a recast.
+
+  FR-11.3   The system shall draw exactly as many replacement dice as were returned, so that a recast in a partly played round does not restore dice already spent.     Test — recast after one placement yields the reduced pool size.
+
+  FR-11.4   The system shall draw replacements in the run’s established seeded order, so that a recast leaves the run reproducible.                                     Test — two runs at one seed performing the same recast are identical.
+
+  FR-11.5   The system shall not grant an additional placement, round, or point because of a recast.                                                                    Test — round and placement counters are unchanged by a recast.
+
+  FR-11.6   The system shall reject a second recast within a run.                                                                                                       Test — the defined recast-spent condition is raised.
+
+  FR-11.7   The system shall reject a recast requested outside the drafting and placing phases of a round.                                                              Test.
+
+  FR-11.8   The system shall display whether a recast remains available.                                                                                                Demonstration; Inspection of Figure S-5, in which the recast control carries its remaining count.
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.12 Task: interrupt and resume a run
+
+Scenario. A run takes long enough that a player will sometimes close the page mid-window. The system restores an interrupted run on the player’s next visit. It does so by replaying the actions the player took rather than by restoring a saved board, so that stored data can never put the game into a state the rules would not permit.
+
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                                       Verification method
+  --------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -----------------------------------------------------------------------------------------------------------
+  FR-12.1   The system shall record the player’s actions as a run proceeds.                                                                                                                                   Test; Inspection of the stored record.
+
+  FR-12.2   The system shall restore an interrupted run automatically, without asking, when the player returns.                                                                                               Demonstration — begin a run, close the page, and reopens it.
+
+  FR-12.3   The system shall reconstruct a restored run by replaying the recorded actions through the same rules that governed them, and shall not restore a stored board, score, or bag contents directly.   Test — a restored run reproduces the interrupted run exactly; Inspection.
+
+  FR-12.4   The system shall reject a stored record that is malformed, out of range, or records an action the rules do not admit, and shall begin a new run instead.                                          Test — one case per rejection condition, including an oversized action list and an out-of-range position.
+
+  FR-12.5   The system shall discard the stored record when a run is completed or abandoned.                                                                                                                  Test; Demonstration.
+
+  FR-12.6   The system shall remain fully playable when storage is unavailable or refused, offering no restoration rather than failing.                                                                       Demonstration in a browser with storage disabled.
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.13 Task: accumulate a playing record
+
+Scenario. A single run is short, and a player who finishes one has no way of knowing whether it was a good result. The profile answers that: it records what has been played, marks best, and grants experience and shards. It is held entirely on the player’s own device.
+
+The requirements below are written so that nothing in the profile can affect the scoring of a run. Progression rewards appearance only, as §3.14 states.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID         Requirement                                                                                                                                                                         Verification method
+  ---------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------
+  FR-13.1    The system shall record each completed run once, retaining its seed, window pattern, mode, final score, beam total, and completion time.                                            Test — recording the same run twice leaves the profile unchanged.
+
+  FR-13.2    The system shall maintain the player’s best final score, best beam total, and total number of completed runs, and shall tell the player when a run sets a new best.                 Test; Demonstration; Inspection of Figure S-7.
+
+  FR-13.3    The system shall award experience for completed runs, shall derive a displayed level from the accumulated total in fixed bands, and shall display progress toward the next level.   Test — level boundaries; Inspection of Figure S-7.
+
+  FR-13.4    The system shall award shards for completed runs, for achievements, and for daily rewards, and shall retain the player’s balance.                                                   Test.
+
+  FR-13.5    The system shall grant each of its four achievements at most once, the first time its stated condition is met, together with the shards that achievement carries.                   Test — one case per achievement, plus a re-grant case.
+
+  FR-13.6    The system shall name each achievement to the player at the moment it is earned.                                                                                                    Demonstration; Inspection of Figure S-7.
+
+  FR-13.7    The system shall present the player’s full achievement list, showing each achievement’s title, the condition that earns it, and whether it has been earned.                         Deferred — the achievement set and its conditions are verified by Test; no interface presents the list.
+
+  FR-13.8    The system shall display the player’s shard balance.                                                                                                                                Deferred — balance maintenance verified by Test; no interface displays it.
+
+  FR-13.9    The system shall present the player’s history of completed runs.                                                                                                                    Deferred — history retention verified by Test; no interface presents it.
+
+  FR-13.10   The system shall retain the profile across visits and shall confine it to the player’s own device.                                                                                  Demonstration across two visits; Inspection — no network request carries profile data.
+
+  FR-13.11   No element of the profile shall affect the dice drawn, the rules applied, or the score awarded in any run.                                                                          Analysis — the rules take no profile input; Test — runs at a fixed seed score identically from different profiles.
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.14 Task: personalize the window
+
+Scenario. Shards buy appearance and nothing else. A palette changes the colors of the interface; it does not change the glass colors the rules operate on, and it cannot change a score.
+
+The palettes, their costs, their unlock conditions, and the rules governing purchase and selection are implemented and tested. No interface currently offers them to the player, so every requirement in this task is marked Deferred and none is claimed as met.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                        Verification method
+  --------- -------------------------------------------------------------------------------------------------------------------------------------------------- ------------------------------------------------------------------------------------------
+  FR-14.1   The system shall offer three palettes, of which one shall always be available without cost.                                                        Deferred — the palette set is verified by Inspection and Test; no interface offers them.
+
+  FR-14.2   The system shall unlock a palette when the player meets its stated progression requirement, or when the player spends its stated cost in shards.   Deferred — both unlock routes verified by Test.
+
+  FR-14.3   The system shall reject a purchase the player’s shard balance cannot cover and shall leave the balance unchanged.                                  Deferred — verified by Test.
+
+  FR-14.4   The system shall display each palette’s name, description, unlock requirement, and cost.                                                           Deferred — no interface displays them.
+
+  FR-14.5   The system shall apply the selected palette and retain the selection across visits.                                                                Deferred — selection and retention verified by Test.
+
+  FR-14.6   A palette shall alter appearance only and shall not alter the color or value of any die, any rule, or any score.                                   Analysis — the rules take no palette input; Test.
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.15 Task: play the daily challenge
+
+Scenario. The daily challenge gives every player the same puzzle on the same day, which makes a score worth comparing. It is derived from the calendar date by a fixed rule, so no coordination between players or devices is needed.
+
+The daily puzzle itself is reachable and playable. The goals, rewards, and streaks that accompany it are implemented and tested but not yet surfaced and are marked Deferred below.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID         Requirement                                                                                                                                                  Verification method
+  ---------- ------------------------------------------------------------------------------------------------------------------------------------------------------------ ------------------------------------------------------------------------------------------------
+  FR-15.1    The system shall present one daily challenge per Coordinated Universal Time calendar day, identical for every player on that day.                            Test — the challenge for a fixed date is constant; Analysis.
+
+  FR-15.2    The system shall derive the daily challenge’s seed and window pattern from the calendar date alone, by a fixed and repeatable rule.                          Test — the derivation for a set of fixed dates matches frozen expected values.
+
+  FR-15.3    The system shall use Coordinated Universal Time to determine the current day, so that the challenge does not differ by the player’s location.                Test; Inspection.
+
+  FR-15.4    The system shall allow the player to begin the current daily challenge from the pause menu and from the end of a completed run.                              Demonstration; Inspection of Figure S-7, in which the control appears.
+
+  FR-15.5    The system shall record a completed daily run in the player’s profile under its own mode, distinguishable from an ordinary run.                              Test.
+
+  FR-15.6    The system shall set three daily goals, each with a stated target and a stated shard reward and shall display them with the player’s progress toward each.   Deferred — goals, targets, rewards, and progress verified by Test; no interface displays them.
+
+  FR-15.7    The system shall count progress toward the daily goals from every completed run of the day, in any mode.                                                     Deferred — verified by Test.
+
+  FR-15.8    The system shall grant the daily reward at most once per calendar day.                                                                                       Deferred — verified by Test; no interface offers the claim.
+
+  FR-15.9    The system shall display the number of consecutive days on which the daily reward has been claimed.                                                          Deferred — streak computation verified by Test; no interface displays it.
+
+  FR-15.10   No reward shall require an unbroken streak, so that a missed day forfeits only that day’s reward.                                                            Test; Analysis.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.16 Task: challenge another player
+
+Scenario. A player who has found an interesting puzzle can hand the exact same puzzle to someone else, together with a score to beat. The exchange is a code the player copies; there is no account and no server, and the requirements say so plainly rather than implying a guarantee the system does not make.
+
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                                         Verification method
+  --------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ------------------------------------------------------------------
+  FR-16.1   The system shall produce, from a completed or chosen run, a portable code identifying the seed, the window pattern, and a target score.                                                             Test; Demonstration.
+
+  FR-16.2   The system shall produce a shareable link carrying that code and no other information from the player’s session.                                                                                    Test — the generated link carries the challenge parameter alone.
+
+  FR-16.3   The system shall accept a challenge supplied either as a code or as a link and shall begin the identified puzzle.                                                                                   Test; Demonstration.
+
+  FR-16.4   The system shall reject a code that is malformed, altered in transcription, or of an unsupported version, and shall say so rather than starting an unrelated run.                                   Test — one case per rejection condition.
+
+  FR-16.5   The system shall reject a code naming a window pattern that its seed does not offer.                                                                                                                Test.
+
+  FR-16.6   The system shall treat a challenge code’s check value as a means of detecting transcription error only. The system shall not represent a code as authenticated, nor a reported score as verified.   Inspection of the product and of this specification; Analysis.
+
+  FR-16.7   The system shall share a challenge through the device’s share sheet where one is available, and shall otherwise copy the challenge link to the clipboard.                                           Demonstration on a phone and on a desktop browser.
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3.17 Task: suspend a run
+
+Scenario. A player interrupted mid-round needs to stop the clock without losing the position.
+
+  ----------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                    Verification method
+  --------- ---------------------------------------------------------------------------------------------- -------------------------
+  FR-17.1   The system shall allow a run in progress to be suspended and resumed from the same position.   Demonstration.
+
+  FR-17.2   The system shall accept no drafting, placement, or recast action while a run is suspended.     Demonstration; Test.
+  ----------------------------------------------------------------------------------------------------------------------------------
+
+4. Non-functional Requirements
+
+The qualities below are stated as separately verifiable requirements. Where a quality is commonly stated as an unmeasurable adjective, it has been replaced by a property that can be demonstrated.
+
+4.1 Reliability
+
+Reliability here means that the system produces the same result from the same starting condition, and that its rule evaluation is correct on every path, not merely on the paths a tester happened to try.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                                       Verification method
+  --------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+  NFR-1.1   The system shall produce an identical run (identical patterns, objectives, dice, entry points, and scores) for any two runs begun with the same seed.                                             Test — a frozen golden-master run is compared against the stored expected result on every change.
+
+  NFR-1.2   The system shall consume randomness only from a single seeded source, so that no run depends on ambient state.                                                                                    Inspection — the source is the only randomness in the product; Analysis.
+
+  NFR-1.3   The system shall reject malformed window pattern data at load time rather than during play.                                                                                                       Test — malformed definitions raise an error on parse.
+
+  NFR-1.4   The beam traversal shall terminate for every window state and every entry point.                                                                                                                  Analysis — each cell may be entered at most once per direction, bounding the traversal at four times the cell count; Test.
+
+  NFR-1.5   The complete automated test suite shall pass before any change is accepted into the main line.                                                                                                    Inspection of the continuous integration configuration and its history.
+
+  NFR-1.6   The system shall validate stored profile and run data before using it and shall fall back to a clean profile or a new run rather than failing when the data cannot be read or does not conform.   Test — corrupt, truncated, and out-of-range stored data cases.
+
+  NFR-1.7   A restored run shall reproduce the interrupted run exactly, in board state, score, and remaining resources.                                                                                       Test — an interrupted and restored run is compared against the uninterrupted equivalent.
+
+  NFR-1.8   Across 1,000 automated runs on seeds 1 to 1,000, the system shall complete every run with zero failures: no crash, no stalled run, and no score mismatch on replay.                               Test — the automated player plays and replays seeds 1 to 1,000. Zero failures bound the failure rate below 0.3 % a run at 95 % confidence (rule of three).
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4.2 Robustness
+
+Robustness means that no action available to the player, legal or otherwise, and no data the system reads back from storage, can leave it in an inconsistent state.
+
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                 Verification method
+  --------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- --------------------------------------------------------------------
+  NFR-2.1   No rejected player action shall alter the contents of the window, the draft pool, the bag, or the score.                                                                    Test — state is compared before and after each rejection case.
+
+  NFR-2.2   Every rejection shall carry a machine-readable reason distinguishing it from every other rejection.                                                                         Test — one case per reason; Inspection.
+
+  NFR-2.3   The system shall reject an action requested in a phase that does not permit it, without altering state.                                                                     Test — illegal actions are attempted in each phase.
+
+  NFR-2.4   The system shall treat a request to place outside the bounds of the window as a defect in the caller and shall fail loudly rather than silently ignoring it.                Test.
+
+  NFR-2.5   The system shall complete a run from every seed in a sampled range without stalling.                                                                                        Test — an automated player completes runs across a range of seeds.
+
+  NFR-2.6   The system shall treat all stored and externally supplied data (restored runs, profiles, and challenge codes) as untrusted and shall admit none of it without validation.   Test — hand-crafted invalid inputs for each; Inspection.
+
+  NFR-2.7   The system shall bound the size of any stored record it will accept, so that an oversized record is rejected rather than processed.                                         Test — an over-length action list is refused.
+
+  NFR-2.8   No stored score, board, or balance shall be accepted as authoritative where it can instead be recomputed from validated inputs.                                             Inspection; Analysis.
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4.3 Performance
+
+The system is turn-based and has no continuous simulation, so its performance requirements concern responsiveness to player input and the cost of the two non-trivial computations, the beam traversal and the replay of a restored run.
+
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                 Verification method
+  --------- --------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  NFR-3.1   The system shall complete a beam traversal in no more than four visits per cell of the window.                              Analysis — bounded by the cell-and-direction visit rule; Test.
+
+  NFR-3.2   The system shall present the legality of a candidate placement within one display frame of the pointer entering the cell.   Demonstration; Analysis — the evaluation is a bounded pure computation over sixteen cells.
+
+  NFR-3.3   The system shall become playable within three seconds of a first request over a broadband connection.                       Demonstration — measured load of the built product.
+
+  NFR-3.4   The system shall not run a continuous animation loop while awaiting player input.                                           Inspection; Demonstration — processor use at idle.
+
+  NFR-3.5   The system shall require no network access to play, to record progress, or to restore a run.                                Demonstration — play, complete, and restore a run with the network disabled.
+
+  NFR-3.6   The system shall restore an interrupted run and be ready for input within 1 second of the page loading.                     Demonstration — timed from page load to the first accepted input, with a run interrupted in its last round; Analysis — replay is bounded by the number of actions a run admits. The limit is Nielsen’s 1-second limit for keeping the user’s flow of thought.
+
+  NFR-3.7   The system shall show a visible response to any tap within 100 milliseconds.                                                Demonstration — the time from a tap to the next painted frame, measured in the browser’s performance profiler on a phone. 100 ms is the limit within which a response feels instant (Nielsen; Google’s RAIL model).
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4.4 Maintainability
+
+The system is a course project that will be handed on. Its maintainability requirements are about keeping the rules separable from the presentation and from progression, so that any one can be changed without the others.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                                                                                                                                              Verification method
+  --------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ -------------------------------------------------------------------------------
+  NFR-4.1   All game rules shall reside in a part of the system that has no dependency on the user interface and shall be exercisable with no interface present.                                                                     Test — the rule tests import no interface code; Inspection.
+
+  NFR-4.2   No game rule shall be evaluated in the presentation layer.                                                                                                                                                               Inspection of the presentation sources.
+
+  NFR-4.3   Every publicly exported rule declaration shall carry documentation stating its purpose, its parameters, and the conditions under which it fails.                                                                         Inspection of the generated documentation for omissions.
+
+  NFR-4.4   Tunable quantities (the number of rounds, the pool size, the multiplier ceiling, the tier thresholds, reward amounts, and unlock costs) shall be defined in one place each and shall not appear as literals elsewhere.   Inspection.
+
+  NFR-4.5   Every change shall pass type checking, linting, unit tests, end-to-end tests, and a production build before acceptance.                                                                                                  Inspection of the continuous integration configuration.
+
+  NFR-4.6   Any resolution of an ambiguity in the rules shall be documented at the point in the product where it is implemented.                                                                                                     Inspection — the two beam ambiguities of FR-5.5 and FR-5.9 are so documented.
+
+  NFR-4.7   Progression, persistence, and challenge exchange shall be separable from the rules, such that removing them would leave a complete and playable game.                                                                    Analysis — the rules take no input from them; Inspection.
+
+  NFR-4.8   The stored profile and the challenge code shall each carry a version, so that a change of format can be detected rather than misread.                                                                                    Inspection; Test — an unsupported version is refused.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4.5 Usability
+
+The usability requirements follow from the problem statement: the system must teach its rules through the act of enforcing them.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID         Requirement                                                                                                                                                                                                             Verification method
+  ---------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------------------------------------------------------------------------------------------------
+  NFR-5.1    The system shall present the reason for a rejected placement without interrupting play and without requiring the player to dismiss anything.                                                                            Demonstration — no modal dialog appears on rejection.
+
+  NFR-5.2    The system shall present rejection feedback at the location of the attempted action.                                                                                                                                    Demonstration.
+
+  NFR-5.3    Every interactive element shall carry a name that describes its effect, available to assistive technology.                                                                                                              Inspection of the accessibility tree; Demonstration with a screen reader.
+
+  NFR-5.4    The window shall be exposed to assistive technology as a grid, with each cell reporting its position and its contents.                                                                                                  Inspection of the accessibility tree.
+
+  NFR-5.5    The value of a die shall be legible without reference to its color, so that the system remains playable by a player who cannot distinguish the glass colors.                                                            Inspection — values are rendered as numerals; Demonstration under a color-blindness simulation.
+
+  NFR-5.6    The system shall suppress all non-essential motion when the viewing environment requests reduced motion.                                                                                                                Demonstration with the preference set.
+
+  NFR-5.7    The system shall remain playable at viewport widths from 360 pixels to 1920 pixels without horizontal scrolling.                                                                                                        Demonstration at both bounds.
+
+  NFR-5.8    A player who has not played before shall be able to complete a round without consulting material outside the system.                                                                                                    Demonstration — an observed first-time player completes a round.
+
+  NFR-5.9    The system shall remain fully playable for a player who never opens the profile, the daily challenge, or a shared challenge.                                                                                            Demonstration — a complete run without visiting any of them.
+
+  NFR-5.10   On a touch screen, every game action (selecting, returning and placing a die, recasting, opening the goals, pausing, muting) shall be possible with single taps, with no hover, drag, long press or keyboard needed.    Demonstration at 360 pixels wide with touch input.
+
+  NFR-5.11   At a viewport 360 pixels wide, every control, die and window cell shall be at least 24 by 24 CSS pixels (WCAG 2.2, level AA, success criterion 2.5.8).                                                                  Inspection at 360 pixels wide.
+
+  NFR-5.12   At every viewport from 360 by 640 to 1920 by 1080 pixels, the window, the draft, the score, the round, the placements remaining and the controls shall all be in view at once, with no scrolling in either direction.   Demonstration at both bounds.
+
+  NFR-5.13   Where the device supports vibration, the system shall give a short haptic pulse when a die is picked up, placed or rejected and when the beam strikes, and none while sound is muted.                                   Inspection of the sound and haptics module; Demonstration on a phone.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4.6 Safety
+
+Safety properties state what must never happen. Each holds in every state a run can reach, so it is checked after every step of the automated runs of NFR-1.8 as well as by the single cases cited. Several restate a functional requirement as an invariant over a whole run.
+
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ID        Requirement                                                                                            Verification method
+  --------- ------------------------------------------------------------------------------------------------------ ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  NFR-6.1   A rejected placement shall never change the window.                                                    Test — the window is compared before and after every rejected placement, in each rejection case and on every step of the automated runs. Restates NFR-2.1 for the window.
+
+  NFR-6.2   The beam shall always stop: every traversal ends by leaving the window or at the cycle guard.          Analysis — the loop proof of the beam traversal, with its termination argument; Test. See FR-5.8, FR-5.9, NFR-1.4.
+
+  NFR-6.3   The running beam total shall always equal the sum of the points awarded by the rounds played so far.   Test — checked after every round of the automated runs. See FR-5.11.
+
+  NFR-6.4   A recast shall never grant an extra placement, round, or point.                                        Test — placement, round and score counters compared before and after every recast. See FR-11.5.
+
+  NFR-6.5   No game action (drafting, placing, or recasting) shall take effect while a run is paused.              Test — each action attempted while paused leaves the run unchanged. See FR-17.2.
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+5. Design and Implementation Constraints
+
+5.1 Standards compliance
+
+The following standards bind the product or this document.
+
+-   IEEE Std 830-1998, Recommended Practice for Software Requirements Specifications, governs the form and content of this document.
+
+-   ECMAScript 2022 is the language level targeted by the product. The product is written in a statically typed superset and shall type-check with no errors under its strictest setting.
+
+-   The W3C Accessible Rich Internet Applications specification governs how the window, the draft pool, and the controls are exposed to assistive technology, as required by NFR-5.3 and NFR-5.4.
+
+-   The CSS reduced-motion media feature governs the suppression of animation required by NFR-5.6.
+
+-   Coordinated Universal Time, as defined by ISO 8601 calendar dates, governs the determination of the current day required by FR-15.3.
+
+-   The product shall run in current versions of browsers implementing the above; no support is required for browsers that do not.
+
+5.2 Development constraints
+
+The following constraints are imposed by the course, by the deployment target, or by decisions already taken and recorded here so that they bind subsequent work.
+
+-   The product shall run entirely in the browser. It shall have no server component and no account system, and shall require no network access once loaded, as required by NFR-3.5.
+
+-   The product shall be deployable as static files, with no runtime infrastructure.
+
+-   The product shall hold all player data on the player’s own device: the run in progress, recorded as the player’s actions and replayed on restoration; and the player profile, comprising experience, shards, bests, run history, achievements, palette selection, and daily progress. No player data shall be transmitted from the device.
+
+-   Because there is no server, a score reported through a shared challenge is self-reported. The product shall not represent such a score as verified and shall not present a challenge code’s check value as authentication, as required by FR-16.6.
+
+-   The product shall not employ a game engine or a continuous rendering surface. Its discrete, turn-based nature makes these unnecessary, and avoiding them keeps the interface inspectable by automated tooling, which NFR-4.5 depends on.
+
+-   Development is AI-assisted, as required by the course. Conventions that agents must follow are recorded in the repository and are treated as part of the build infrastructure rather than as documentation.
+
+-   No change shall reach the main line without passing the automated verification described in NFR-4.5.
+
+-   The tier thresholds of FR-8.4, and the reward and unlock amounts of §3.13 through §3.15, are provisional. They are tunable quantities under NFR-4.4 and are expected to change following playtesting; changes to them are not changes to this specification.
+
+-   Multiplayer in any synchronous form, leaderboards, and any ranking that would require an authoritative score are outside the scope of this specification.
+
+6. References and Sources of Information
+
+Standards and method references
+
+-   IEEE Std 830-1998, IEEE Recommended Practice for Software Requirements Specifications. Institute of Electrical and Electronics Engineers, 1998. Course copy: https://userweb.cs.txstate.edu/~rp31/logForms/IEEE-Std-830-1998.pdf
+
+-   Wiegers, Karl S. "Writing Quality Requirements." Process Impact. http://www.processimpact.com/articles/qualreqs.pdf
+
+-   Humphrey, Watts S. Introduction to the Team Software Process. Addison-Wesley, 2000, p. 113.
+
+-   Humphrey, Watts S. "The Personal Software Process: Overview, Practice and Results." Software Engineering Institute.
+
+-   W3C. Accessible Rich Internet Applications (WAI-ARIA). https://www.w3.org/TR/wai-aria/
+
+-   Nielsen, Jakob. Usability Engineering. Academic Press, 1993: the response-time limits of 0.1, 1 and 10 seconds. Summary: https://www.nngroup.com/articles/response-times-3-important-limits/
+
+-   Google. “Measure performance with the RAIL model.” web.dev. https://web.dev/articles/rail
+
+-   Hanley, James A., and Abby Lippman-Hand. “If Nothing Goes Wrong, Is Everything All Right? Interpreting Zero Numerators.” JAMA 249, no. 13 (1983): 1743–1745. The rule of three used in NFR-1.8.
+
+Project sources
+
+-   Rose Window source repository, Group 18. The requirements in §3 and §4 were derived from the implementation on the main line as of 24 September 2026.
+
+-   Rose Window design pitch, rose-window-pitch.md, the source document from which the rules of the game derive.
+
+-   Rose Window build plans and stack selection record, docs/build-plan.md in the repository.
+
+-   Rose Window agent conventions, AGENTS.md in the repository, which records the architectural constraints referenced in §4.4.
+
+-   Rose Window automated test suite, which constitutes the verification evidence cited throughout §3 and §4.
+
+Course materials
+
+-   CS 4398 course notes on object-oriented process, the Model-View-Controller architectural style, and unit testing.
+
+-   Example Software Requirements Specifications provided with the course, including the Brewhouse fermentation system specification, CS 4398 Group 3.
+
+-   Sample SRS contents, CS 4398. https://userweb.cs.txstate.edu/~rp31/Sample_SRS_ContentsSum09.html
+
+Index
+
+References are to section numbers; the requirement that principally states the entry is given in parentheses where one exists.
+
+  -------------------------------- ------------------------------------------------
+  Acceptance tests                 Appendix C (AT-01 to AT-17)
+
+  Accessibility                    4.5, 5.1
+
+  Achievements                     2.3, 3.13 (FR-13.5, FR-13.6)
+
+  Adjacency law                    2.3, 3.4 (FR-4.6)
+
+  Audio                            3.10
+
+  Beam                             2.2, 2.3, 3.5
+
+  Beam, termination of             3.5 (FR-5.8, FR-5.9), 4.1 (NFR-1.4)
+
+  Challenge codes                  2.3, 3.16
+
+  Challenge codes, validation of   3.16 (FR-16.4, FR-16.5), 4.2 (NFR-2.6)
+
+  Colors, glass                    2.3, 3.5 (FR-5.4)
+
+  Commission                       2.3, 3.1
+
+  Connectivity law                 2.3, 3.4 (FR-4.8)
+
+  Constraints, development         5.2
+
+  Constraints, printed             2.3, 3.4 (FR-4.4, FR-4.5)
+
+  Daily challenge                  2.3, 3.15
+
+  Deadlock                         3.6
+
+  Determinism                      3.1 (FR-1.4), 4.1 (NFR-1.1)
+
+  Draft pool                       2.3, 3.3
+
+  Entry point                      2.3, 3.5 (FR-5.1)
+
+  Experience and levels            2.3, 3.13 (FR-13.3)
+
+  Forfeit                          3.6
+
+  Hand                             3.3
+
+  Haptics                          4.5 (NFR-5.13)
+
+  IEEE 830-1998                    2.1, 5.1, 6
+
+  Illumination                     3.5
+
+  Lockout                          2.3, 3.5 (FR-5.7)
+
+  Maintainability                  4.4
+
+  Mobile play                      4.5 (NFR-5.7, NFR-5.10 to NFR-5.12)
+
+  Motion, reduced                  4.5 (NFR-5.6), 5.1
+
+  Multiplier                       2.3, 3.5 (FR-5.6)
+
+  Objectives, private              2.3, 3.2 (FR-2.2, FR-2.5)
+
+  Objectives, public               2.3, 3.2 (FR-2.1, FR-2.4)
+
+  Palettes                         2.3, 3.14
+
+  Pause                            3.17
+
+  Performance                      4.3
+
+  Persistence, player profile      3.13 (FR-13.8), 5.2
+
+  Persistence, run in progress     3.12, 4.1 (NFR-1.7), 5.2
+
+  Placement                        3.4
+
+  Profile                          2.3, 3.13
+
+  Quests, daily                    2.3, 3.15 (FR-15.4, FR-15.5)
+
+  Recast                           2.3, 3.11
+
+  Refraction                       2.3, 3.5 (FR-5.4)
+
+  Rejection feedback               3.4 (FR-4.11, FR-4.12), 4.5 (NFR-5.1, NFR-5.2)
+
+  Reliability                      4.1
+
+  Reliability, measure of          4.1 (NFR-1.8)
+
+  Response time                    4.3 (NFR-3.2, NFR-3.6, NFR-3.7)
+
+  Robustness                       4.2
+
+  Rounds                           3.1 (FR-1.3), 3.7
+
+  Safety properties                4.6 (NFR-6.1 to NFR-6.5)
+
+  Score report                     3.8
+
+  Seed                             2.3, 3.1 (FR-1.4, FR-1.5, FR-1.6)
+
+  Self-reported scores             3.16 (FR-16.6), 5.2
+
+  Shards                           2.3, 3.13 (FR-13.4), 3.14
+
+  Sharing a challenge              3.16 (FR-16.7)
+
+  Standards compliance             5.1
+
+  Start-up                         3.1 (FR-1.8)
+
+  Streak                           2.3, 3.15 (FR-15.7, FR-15.8)
+
+  Tier                             2.3, 3.8 (FR-8.4)
+
+  Touch input                      4.5 (NFR-5.10, NFR-5.11)
+
+  Tutorial                         3.9
+
+  Untrusted data                   4.2 (NFR-2.6, NFR-2.7, NFR-2.8)
+
+  Usability                        4.5
+
+  UTC                              2.3, 3.15 (FR-15.3), 5.1
+
+  Verification methods             2.4
+
+  Window                           2.3, 3.1
+
+  Window pattern                   2.3, 3.1 (FR-1.1, FR-1.2)
+  -------------------------------- ------------------------------------------------
+
+Appendix A: Screenshot Capture Checklist
+
+All figures referenced in §3 have been captured and appear there. Runs begun at a stated seed reproduce exactly, so any capture can be repeated if a later change alters the interface. No figure accompanies the requirements marked Deferred in §3.13 through §3.15, because the interfaces they describe do not yet exist.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------
+  Figure   Status     Subject                              How to reach this state
+  -------- ---------- ------------------------------------ ---------------------------------------------------------------------------------------------
+  S-1      Captured   Pattern choice                       Start the application at a stated seed. Capture the setup screen before choosing.
+
+  S-2      Captured   Objectives                           Choose a pattern, then open the goal sheet.
+
+  S-3      Captured   Legality preview                     Take a die into hand, then hover a legal cell and an illegal one.
+
+  S-4      Captured   Rejection feedback                   Place a die, then attempt to place a second of the same color orthogonally beside it.
+
+  S-5      Captured   Entry announcement                   Capture the play area before placing, showing the announced entry cell and direction.
+
+  S-6      Captured   Beam traversal                       Complete a round with several dice placed. Capture mid-traversal.
+
+  S-7      Captured   Final score report and progression   Play a run to the end of round eight. Also evidences FR-13.2, FR-13.3, FR-13.6 and FR-15.4.
+
+  S-8      Captured   Guided introduction                  Open the application with no stored history, or request the introduction.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Captures should show the whole application window rather than a cropped region, so that the state of the run is legible in context.
+
+Appendix B: Revision History
+
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Revision   Date          Author                Changes
+  ---------- ------------- --------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1.0        22 Sep 2026   D. Bowers             Initial specification. Ten user tasks, five quality attributes, constraints, references, index.
+
+  1.1        24 Sep 2026   D. Bowers             Figures S-1 to S-8 placed (B. Mohad). Added §3.11 recast, §3.12 interrupt and resume, §3.13 playing record, §3.14 palettes, §3.15 daily challenge, §3.16 player challenges, §3.17 suspend. Added FR-1.6, FR-2.6, FR-3.6, FR-4.15, FR-6.3, FR-7.5; renumbered FR-1.6 to FR-1.7. Revised FR-2.3 for on-demand objective display. Added NFR-1.6, NFR-1.7, NFR-2.6 to NFR-2.8, NFR-3.6, NFR-4.7, NFR-4.8, NFR-5.9. Corrected §5.2, which had stated that no player data is stored; the product persists a run in progress and a player profile locally. Introduced the Deferred marking (§2.4) and applied it to the requirements of §3.13, §3.14 and §3.15 whose rules are implemented and tested but which no interface yet exposes.
+
+  1.2        18 Nov 2026   B. Mohad              Mobile overhaul requirements added: FR-1.8, FR-16.7, NFR-5.10 to NFR-5.13. FR-1.5 (seed from the game’s link) and FR-12.2 (automatic restore) reworded to match the build. Multiplayer remains out of scope (5.2).
+
+  1.3        19 Nov 2026   D. Bowers, B. Mohad   Added §4.6 Safety, NFR-6.1 to NFR-6.5 (D. Bowers). Added NFR-1.8, a reliability measure over 1,000 seeded runs, and NFR-3.7, a visible response to a tap within 100 ms. NFR-3.6 given a measurable limit of 1 second. Added the sources for these limits to §6.
+
+  1.4        19 Nov 2026   D. Bowers             Labeled the scenario that opens each task in §3. Added Appendix C, the acceptance tests AT-01 to AT-17 with the requirements each demonstrates; index and table of contents updated.
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Appendix C: Acceptance Tests
+
+The acceptance tests below are run against the final build, each from a fixed seed so that it can be repeated. Each demonstrates the requirements listed beside it. The full steps, expected results, results and screenshots are recorded in the acceptance test plan submitted with the project.
+
+Every task of §3 is covered except §3.14, whose requirements are all deferred. NFR-1.8 (reliability over 1,000 runs), NFR-3.7 (response to a tap) and NFR-6.2 (the beam always stops) are verified by automated tests and analysis rather than by an acceptance test.
+
+  -----------------------------------------------------------------------------------------------------------------------------------------------------
+  ID      Test                                    Requirements demonstrated                                      Run by
+  ------- --------------------------------------- -------------------------------------------------------------- --------------------------------------
+  AT-01   Begin a run at a chosen seed            FR-1.1 to 1.3, 1.5; FR-5.1; FR-7.1, 7.4, 7.5                   Manual; Playwright
+
+  AT-02   Review the objectives mid-run           FR-2.1 to 2.3, 2.6                                             Manual; Playwright
+
+  AT-03   Draft, swap and return a die            FR-3.1 to 3.3, 3.6                                             Manual; Playwright
+
+  AT-04   One rejection per placement law         FR-4.1, 4.2, 4.4 to 4.8, 4.10 to 4.13; NFR-5.1, 5.2; NFR-6.1   Manual; Playwright
+
+  AT-05   Illuminate the window                   FR-5.1, 5.2, 5.10, 5.11; FR-7.2, 7.3; NFR-6.3                  Manual; Playwright
+
+  AT-06   Golden game (reproducibility)           FR-1.4, 4.14, 5.11, 8.1; NFR-1.1                               Automated player
+
+  AT-07   Deadlocked round (seed 7, Clerestory)   FR-6.1, 6.2, 6.4 to 6.6                                        Manual; Playwright
+
+  AT-08   Complete a run and review the score     FR-1.7; FR-8.1 to 8.5; FR-13.1 to 13.3, 13.6                   Manual; Playwright
+
+  AT-09   Recast the draft                        FR-11.1, 11.3, 11.5, 11.6, 11.8; NFR-6.4                       Manual; Playwright
+
+  AT-10   Interrupt and restore                   FR-12.2, 12.3, 12.5; NFR-1.7, NFR-3.6                          Manual; Playwright
+
+  AT-11   Suspend a run                           FR-17.1, 17.2; NFR-6.5                                         Manual; Playwright
+
+  AT-12   First-time tutorial                     FR-9.1 to 9.5; NFR-5.8                                         Manual; Playwright
+
+  AT-13   Audio control                           FR-10.1 to 10.4                                                Manual (sound must be heard)
+
+  AT-14   Daily challenge                         FR-15.1 to 15.5                                                Manual; Playwright
+
+  AT-15   Challenge another player                FR-16.1 to 16.5, 16.7; FR-13.10, 13.11                         Manual; Playwright
+
+  AT-16   Play a round at phone width             NFR-5.7, NFR-5.10 to 5.13                                      Manual; Playwright
+
+  AT-17   Accessibility                           NFR-5.3 to 5.6                                                 Manual (browser accessibility tools)
+  -----------------------------------------------------------------------------------------------------------------------------------------------------

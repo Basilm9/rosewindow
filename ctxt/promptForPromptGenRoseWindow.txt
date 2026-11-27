@@ -1,0 +1,33 @@
+### CRITICAL REQUIREMENTS ###
+You are an expert TypeScript programmer
+
+CRITICAL: Create detailed Module of Thought prompts in "prompts" dir for a Claude Code or opencode agent to build the Rose Window game in TypeScript according to the Model View Controller architectural style, with a React GUI and an XState v5 statechart for phase control, as described in the attached files RoseWindowReqPrompt.txt, Module of Thought_instr.md, MVC_RoseWindow.md, MVC_JohnHunt.md, GUI_mockupsRoseWindow.md, and the screenshots in the mockups/ folder
+CRITICAL: The existing code in src/ and tests/ is the reference implementation. Each prompt must name the existing module whose logic and tests it reuses (see MVC_RoseWindow.md section 4) and must keep the golden master passing: seed 3, pattern novice-rose, max-flex auto-player, round scores 5,5,31,16,2,7,53,37, beam total 156
+CRITICAL: Create a master context prompt (Prompt 0) following the template in Module of Thought_instr.md
+CRITICAL: Create a prompt to create the MVC project structure: src/mvc, src/model, src/view, src/controller, src/progression, src/util, and the matching tests/ folders
+CRITICAL: Create a prompt to create proper dependencies of the project with pnpm, Vite, TypeScript strict, React, XState v5, Vitest, Playwright, ESLint and Prettier, and the import rules between packages from MVC_RoseWindow.md section 5
+CRITICAL: Create a prompt for the MVC infrastructure: ModelListener, ModelEvent, AbstractModel, AbstractController, View, and the useModelEvents hook
+CRITICAL: Create a separate prompt for each class in MVC_RoseWindow.md section 4; small related types (the three constraint classes, the seven event classes, the two error classes) may share one prompt
+CRITICAL: Create a separate prompt for each statechart and for rewiring the views to receive state only through GameController and useModelEvents
+CRITICAL: The screenshots in mockups/ are the authoritative GUI mockups (see the table in GUI_mockupsRoseWindow.md). Every prompt that creates or changes a view must name the screenshot(s) of the screens it affects, attach them, and require that the screen keep the same layout, wording and visual style; where an ASCII sketch and its screenshot disagree, the screenshot wins
+CRITICAL: Create prompts for unit tests of the Model and Controller classes, one prompt per test class
+CRITICAL: Create a prompt for a class diagram generator: a deterministic script (not the LLM drawing the diagram) that parses src/ with the TypeScript compiler API and writes a UML class diagram showing packages, classes, interfaces, attributes, operations, generalization, realization, association and dependency, styled like a Visual Paradigm UML class diagram; it must also report any import that breaks the rules in MVC_RoseWindow.md section 5
+CRITICAL: Create a prompt to export both statecharts as diagrams
+CRITICAL: Create a prompt for each acceptance test AT-01 to AT-17 in Appendix C of the SRS (RoseWindow_SRS_Group18 Rev 1.4) and the acceptance test plan (acceptance_tests.md), run with Playwright, saving a screenshot of every window and pop-up along the way and comparing each screen with its screenshot in mockups/
+CRITICAL: Mark 20-40% of the prompts as CRITICAL checkpoints with risk, failure indicators, isolation testing and rollback, and include a tracking matrix with green, yellow and red thresholds for: pnpm typecheck errors, pnpm lint errors, unit test pass rate, golden master total, e2e pass rate, and class count
+CRITICAL: Create a README.md in the prompts dir listing every prompt in execution order with its purpose, like the account manager example
+
+
+### In each prompt use: ###
+
+Sandwich Method: Critical requirements placed at beginning and end of each prompt
+
+Attention Anchoring: Explicit "MANDATORY" and "CRITICAL" directives throughout
+
+Visual Emphasis: Strategic use of bold text, code blocks, and structured formatting
+
+Clear Delimiters: Distinct sections with ### headers and code block separators
+
+Selective Context: Focused information relevant to each specific component
+
+Each prompt must maintain the essential context window optimization principles while ensuring all critical implementation details receive proper emphasis through strategic positioning and visual formatting techniques.

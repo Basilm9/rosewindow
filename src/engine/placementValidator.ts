@@ -62,56 +62,68 @@ export function isInsideGrid(position: Position, size: number): boolean {
   )
 }
 
-/** Returns the first rule violation for this placement, or null if it is legal. */
+/** Checks the placement laws in fixed order without mutating its inputs. */
+export class PlacementValidator {
+  /** Returns the first violation; structural laws precede printed demands and adjacency. */
+  findViolation(check: PlacementCheck): PlacementViolation | null {
+    const { grid, constraints, pool, die, target } = check
+    const size = grid.length
+
+    if (!isInsideGrid(target, size)) {
+      throw new Error(`target ${JSON.stringify(target)} is outside the grid`)
+    }
+
+    if (dieAt(grid, target.row, target.col) !== null) {
+      return { kind: 'cellOccupied' }
+    }
+
+    if (!pool.some((candidate) => sameDie(candidate, die))) {
+      return { kind: 'dieNotInPool' }
+    }
+
+    const demand: CellConstraint | undefined = constraints[target.row]?.[target.col]
+    if (demand !== undefined && !demand.accepts(die)) {
+      return { kind: 'constraintMismatch', expected: demand }
+    }
+
+    const offendingNeighbors = ORTHOGONAL_DELTAS.flatMap((delta) => {
+      const neighbor = dieAt(grid, target.row + delta.row, target.col + delta.col)
+      return neighbor !== null && (neighbor.color === die.color || neighbor.value === die.value)
+        ? [{ row: target.row + delta.row, col: target.col + delta.col }]
+        : []
+    })
+    if (offendingNeighbors.length > 0) {
+      return { kind: 'adjacencyViolation', offendingNeighbors }
+    }
+
+    const placed = countPlaced(grid)
+    if (placed === 0) {
+      if (!isOnBorderRing(target, size)) return { kind: 'illegalFirstPlacement' }
+    } else {
+      const touches = [...ORTHOGONAL_DELTAS, ...DIAGONAL_DELTAS].some(
+        (delta) => dieAt(grid, target.row + delta.row, target.col + delta.col) !== null,
+      )
+      if (!touches) return { kind: 'disconnectedPlacement' }
+    }
+
+    return null
+  }
+
+  /** Throws the placement-family exception while preserving its structured reason. */
+  assertValid(check: PlacementCheck): void {
+    const violation = this.findViolation(check)
+    if (violation !== null) throw new PlacementError(violation)
+  }
+}
+
+const validator = new PlacementValidator()
+
+/** Function API for the same first-violation check used by Game. */
 export function findPlacementViolation(check: PlacementCheck): PlacementViolation | null {
-  const { grid, constraints, pool, die, target } = check
-  const size = grid.length
-
-  if (!isInsideGrid(target, size)) {
-    throw new Error(`target ${JSON.stringify(target)} is outside the grid`)
-  }
-
-  if (dieAt(grid, target.row, target.col) !== null) {
-    return { kind: 'cellOccupied' }
-  }
-
-  if (!pool.some((candidate) => sameDie(candidate, die))) {
-    return { kind: 'dieNotInPool' }
-  }
-
-  const demand: CellConstraint | undefined = constraints[target.row]?.[target.col]
-  if (demand?.kind === 'color' && demand.color !== die.color) {
-    return { kind: 'constraintMismatch', expected: demand }
-  }
-  if (demand?.kind === 'value' && demand.value !== die.value) {
-    return { kind: 'constraintMismatch', expected: demand }
-  }
-
-  const offendingNeighbors = ORTHOGONAL_DELTAS.flatMap((delta) => {
-    const neighbor = dieAt(grid, target.row + delta.row, target.col + delta.col)
-    return neighbor !== null && (neighbor.color === die.color || neighbor.value === die.value)
-      ? [{ row: target.row + delta.row, col: target.col + delta.col }]
-      : []
-  })
-  if (offendingNeighbors.length > 0) {
-    return { kind: 'adjacencyViolation', offendingNeighbors }
-  }
-
-  const placed = countPlaced(grid)
-  if (placed === 0) {
-    if (!isOnBorderRing(target, size)) return { kind: 'illegalFirstPlacement' }
-  } else {
-    const touches = [...ORTHOGONAL_DELTAS, ...DIAGONAL_DELTAS].some(
-      (delta) => dieAt(grid, target.row + delta.row, target.col + delta.col) !== null,
-    )
-    if (!touches) return { kind: 'disconnectedPlacement' }
-  }
-
-  return null
+  return validator.findViolation(check)
 }
 
 /** Validates a placement or throws `PlacementError` with the structured violation. */
 export function assertPlacementValid(check: PlacementCheck): void {
-  const violation = findPlacementViolation(check)
-  if (violation !== null) throw new PlacementError(violation)
+  validator.assertValid(check)
 }

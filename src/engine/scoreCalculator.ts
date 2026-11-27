@@ -1,3 +1,4 @@
+import { PROVISIONAL_TIERS } from './config'
 import { DIAGONAL_DELTAS, DIE_COLORS } from './types'
 import type { Die, DieColor, Position } from './types'
 import type { TierThresholds } from './config'
@@ -45,10 +46,7 @@ export function scorePublicObjective(grid: Grid, objective: PublicObjective): nu
   switch (s.kind) {
     case 'valueParity': {
       const want = s.parity === 'odd' ? 1 : 0
-      return grid
-        .flat()
-        .filter((d) => d !== null && d.value % 2 === want)
-        .length * s.pointsPerDie
+      return grid.flat().filter((d) => d !== null && d.value % 2 === want).length * s.pointsPerDie
     }
     case 'lineDiversity': {
       const size = grid.length
@@ -78,7 +76,10 @@ export function scorePublicObjective(grid: Grid, objective: PublicObjective): nu
       return points
     }
     case 'colorQuorum': {
-      return DIE_COLORS.filter((color) => colorCount(grid, color) >= s.minPerColor).length * s.pointsPerColor
+      return (
+        DIE_COLORS.filter((color) => colorCount(grid, color) >= s.minPerColor).length *
+        s.pointsPerColor
+      )
     }
   }
 }
@@ -99,26 +100,44 @@ export function tierFor(total: number, tiers: TierThresholds): Tier {
   return 'none'
 }
 
-/** Pure final scoring over a finished window: objectives + beam totals (pitch §4). */
-export function calculateScore(input: {
-  grid: Grid
-  objectives: DealtObjectives
-  beamTotal: number
-  tiers: TierThresholds
-}): ScoreReport {
-  const { grid, objectives, beamTotal, tiers } = input
-  const lines: ScoreLine[] = objectives.publics.map((o) => ({
-    objectiveId: o.id,
-    name: o.name,
-    points: scorePublicObjective(grid, o),
-  }))
-  const privateLine: ScoreLine = {
-    objectiveId: objectives.privateObjective.id,
-    name: objectives.privateObjective.name,
-    points: scorePrivateObjective(grid, objectives.privateObjective),
+/** Inputs for final scoring; tier settings belong to the calculator instance. */
+export interface ScoreInput {
+  readonly grid: Grid
+  readonly objectives: DealtObjectives
+  readonly beamTotal: number
+}
+
+/** Computes itemized reports with a fixed snapshot of the run's tier settings. */
+export class ScoreCalculator {
+  readonly tiers: TierThresholds
+
+  constructor(tiers: TierThresholds = PROVISIONAL_TIERS) {
+    this.tiers = Object.freeze({ ...tiers })
   }
-  lines.push(privateLine)
-  const objectiveTotal = lines.reduce((sum, line) => sum + line.points, 0)
-  const total = beamTotal + objectiveTotal
-  return { lines, beamTotal, total, tier: tierFor(total, tiers) }
+
+  /** Pure final scoring over a finished window: objectives + beam totals (pitch §4). */
+  calculate(input: ScoreInput): ScoreReport {
+    const { grid, objectives, beamTotal } = input
+    const lines: ScoreLine[] = objectives.publics.map((o) => ({
+      objectiveId: o.id,
+      name: o.name,
+      points: scorePublicObjective(grid, o),
+    }))
+    const privateLine: ScoreLine = {
+      objectiveId: objectives.privateObjective.id,
+      name: objectives.privateObjective.name,
+      points: scorePrivateObjective(grid, objectives.privateObjective),
+    }
+    lines.push(privateLine)
+    const objectiveTotal = lines.reduce((sum, line) => sum + line.points, 0)
+    const total = beamTotal + objectiveTotal
+    return { lines, beamTotal, total, tier: tierFor(total, this.tiers) }
+  }
+}
+
+/** Function API retaining the original per-call tier settings. */
+export function calculateScore(
+  input: ScoreInput & { readonly tiers: TierThresholds },
+): ScoreReport {
+  return new ScoreCalculator(input.tiers).calculate(input)
 }

@@ -8,15 +8,17 @@ Vite + React 19 + TypeScript (strict) + Tailwind CSS v4 + XState v5. Vitest for 
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `pnpm typecheck` | `tsc --noEmit` — run after every change |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Vitest, single run |
-| `pnpm dev` | Vite dev server on `localhost:5173` |
-| `pnpm e2e` | Playwright e2e (starts dev server itself) |
-| `pnpm build` | typecheck + production build |
-| `pnpm format` | Prettier write |
+| Command              | Purpose                                                                     |
+| -------------------- | --------------------------------------------------------------------------- |
+| `pnpm typecheck`     | TypeScript check + regenerate UML — run after every change                  |
+| `pnpm lint`          | ESLint                                                                      |
+| `pnpm check:classes` | Verify the assignment's 15-class minimum; list classes and source locations |
+| `pnpm uml`           | Regenerate `docs/uml-class-diagram.md` from production TypeScript           |
+| `pnpm test`          | Class-count check + Vitest, single run                                      |
+| `pnpm dev`           | Vite dev server on `localhost:5173`                                         |
+| `pnpm e2e`           | Playwright e2e (starts dev server itself)                                   |
+| `pnpm build`         | typecheck + regenerate UML + production build                               |
+| `pnpm format`        | Prettier write                                                              |
 
 **Definition of done for any change:** `pnpm typecheck && pnpm lint && pnpm test` green; UI changes additionally verified visually (see Verification protocol).
 
@@ -27,7 +29,8 @@ Vite + React 19 + TypeScript (strict) + Tailwind CSS v4 + XState v5. Vitest for 
 - `src/view/` is dumb: it renders state and maps events to CSS/SVG animations. **No game rule is ever evaluated in the view.**
 - All randomness goes through the injected seeded RNG (`src/engine/rng.ts`). Never call `Math.random()`.
 - Beam behavior constants (turn colors, lockout formula `V-1`, multiplier cap 5) live in a single `GameConfig`-style constants module — tunable data, not scattered literals.
-- Budget discipline: the engine stays ~15 modules. Do not add a module without a matching deletion or a stated reason.
+- Assignment requirement: maintain at least **15 distinct concrete production classes**. Interfaces, type aliases, React function components, and test helpers do not count. `pnpm check:classes` enforces this through the TypeScript compiler API; see `docs/class-structure.md` for the inventory.
+- Budget discipline: the engine stays ~15 modules. This is a file budget, separate from the class minimum. Do not add a module without a matching deletion or a stated reason.
 - Every exported engine declaration carries TSDoc (course documentation milestone); ambiguity resolutions (e.g., multiplier timing, cycle-guard semantics) are documented at the function that implements them.
 
 ## Verification protocol (UI changes)
@@ -41,6 +44,7 @@ This project uses **Playwright MCP** (configured in `.mcp.json`). For any visual
 5. Fix and repeat until correct. A UI change is not "done" until a screenshot has been reviewed.
 
 Markup rules that make this possible:
+
 - ARIA-first: board is `role="grid"`, cells are `role="gridcell"` with `aria-label="row R, column C, <die description>"`, draft dice are labeled buttons.
 - `data-testid` on every interactive element (`cell-r{r}c{c}`, `draft-die-{i}`, `beam-layer`).
 

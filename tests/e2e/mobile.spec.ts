@@ -50,6 +50,8 @@ test('the pause menu explains the rules and resumes play', async ({ page }) => {
   await page.getByTestId('pattern-lancet').click()
   await page.getByTestId('game-menu').click()
   await expect(page.getByTestId('pause-menu')).toBeVisible()
+  // FR-7.1: the pattern in play is named during the run, beside the seed (fault F-01).
+  await expect(page.getByTestId('pause-menu')).toContainText('Free play · Lancet · window #3')
   await page.getByTestId('tutorial-replay').click()
   await expect(page.getByTestId('rules-sheet')).toContainText('Bend the light')
   await page.getByTestId('close-dialog').click()
