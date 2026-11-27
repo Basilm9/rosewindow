@@ -35,7 +35,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 29 | EntryPoint | Darren / feat/mvc-model | 0 | 0/0 | 100% (670/670) | 156✓ | — | 19 | — | green | inc-29-green |
 | 30 | EntryPoint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 19 | — | green | inc-30-green |
 | 31 | BeamSegment | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 20 | — | green | inc-31-green |
-| 32 | BeamSegment Tests | | | | | | | | | | |
+| 32 | BeamSegment Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (740/740) | 156✓ | — | 20 | — | green | inc-32-green |
 | 33 | BeamPath | | | | | | | | | | |
 | 34 | BeamPath Tests | | | | | | | | | | |
 | 35 ⚠ | BeamTracer | | | | | | | | | | |
@@ -116,3 +116,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 29: EntryPoint promoted from interface to class (18 → 19); allFor keeps reference order (row-major, S/W/N/E per cell) — old allEntryPoints output saved before the change and matched byte for byte for sizes 3/4/5; wrong reference comment ("20", "N/E/S/W") corrected; EntryPointData interface added; no call sites changed; 7 temporary checks listed for 30.
 - 30: 45 tests; full 16-entry allFor(4) order pinned as a literal (A8), checked against pre-29 code from git history, not the current shim; lengths 3/4/5; all 7 prompt-29 temporary checks covered; fromData invalidArgument checked by kind + input unchanged. NOTE for 59: A10 imports the engine shim — delete it with the shim.
 - 31: BeamSegment promoted from interface to class (19 → 20); points derived in constructor (die.value × multiplier, 0 for empty pane), never passed in; only own fields position/direction/die/multiplier/points (struck is a getter); legacy engine interface untouched until 58; 5 temporary checks listed for 32.
+- 32: 25 tests; die × multiplier partitioning with precomputed points; reference empty-cell case ported (R1, m=1..5); all 5 prompt-31 temporary checks covered (P7, P8, K3, D2); own-field and toData key lists pinned with Object.keys (toEqual alone ignores undefined keys); no error paths.
