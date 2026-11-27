@@ -1,13 +1,14 @@
 import type { Game } from '../engine/game'
 import type { CellConstraint } from '../engine/types'
+import { ColorConstraint, ValueConstraint } from '../engine/types'
 import { sfx } from '../dev/sfx'
 import { Icon } from './Icon'
 
 function MiniCell({ constraint }: { constraint: CellConstraint }) {
-  if (constraint.kind === 'color') {
+  if (constraint instanceof ColorConstraint) {
     return <span className={`mini-cell glass-${constraint.color}`} title={`needs ${constraint.color}`} />
   }
-  if (constraint.kind === 'value') {
+  if (constraint instanceof ValueConstraint) {
     return (
       <span className="mini-cell mini-cell--value" title={`needs a ${constraint.value}`}>
         {constraint.value}

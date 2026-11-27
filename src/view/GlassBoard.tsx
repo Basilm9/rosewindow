@@ -3,6 +3,7 @@ import type { CSSProperties, KeyboardEvent } from 'react'
 import type { Game } from '../engine/game'
 import type { PlacementViolation } from '../engine/errors'
 import type { CellConstraint, Die, Direction, Position } from '../engine/types'
+import { ColorConstraint, ValueConstraint } from '../engine/types'
 import { DieFace } from './Die'
 import { BeamLayer } from './BeamLayer'
 import type { BeamPath, BeamSegment } from '../engine/beamTracer'
@@ -22,8 +23,8 @@ function cellKeyOf(position: Position): string {
 
 
 function describeConstraint(constraint: CellConstraint): string {
-  if (constraint.kind === 'color') return `requires ${constraint.color} glass`
-  if (constraint.kind === 'value') return `requires value ${constraint.value}`
+  if (constraint instanceof ColorConstraint) return `requires ${constraint.color} glass`
+  if (constraint instanceof ValueConstraint) return `requires value ${constraint.value}`
   return 'any color or value'
 }
 
@@ -39,16 +40,16 @@ function ConstraintMark({
     <span
       title={describeConstraint(constraint)}
       aria-hidden
-      className={`glass-constraint ${occupied ? 'glass-constraint--occupied' : ''} ${constraint.kind === 'color' ? `glass-${constraint.color}` : 'glass-constraint--value'}`}
+      className={`glass-constraint ${occupied ? 'glass-constraint--occupied' : ''} ${constraint instanceof ColorConstraint ? `glass-${constraint.color}` : 'glass-constraint--value'}`}
     >
-      {constraint.kind === 'color' ? (
+      {constraint instanceof ColorConstraint ? (
         <>
           <span className="glass-constraint__gem" />
           <span className="glass-constraint__label">{constraint.color}</span>
         </>
-      ) : (
+      ) : constraint instanceof ValueConstraint ? (
         constraint.value
-      )}
+      ) : null}
     </span>
   )
 }

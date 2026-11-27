@@ -4,6 +4,7 @@ import type { RunSession } from '../hooks/runSession'
 import { useTutorial } from '../hooks/useTutorial'
 import type { Game } from '../engine/game'
 import type { CellConstraint } from '../engine/types'
+import { ColorConstraint, ValueConstraint } from '../engine/types'
 import type { recordRun } from '../progression/profile'
 import { sfx } from '../dev/sfx'
 import { GlassBoard } from './GlassBoard'
@@ -33,10 +34,10 @@ const FRIENDLY_ERRORS: Record<string, string> = {
  */
 function rejectionMessage(rejection: { kind: string; expected?: CellConstraint }): string {
   const demand = rejection.expected
-  if (rejection.kind === 'constraintMismatch' && demand?.kind === 'color') {
+  if (rejection.kind === 'constraintMismatch' && demand instanceof ColorConstraint) {
     return `Wrong color. This pane only takes ${demand.color} glass.`
   }
-  if (rejection.kind === 'constraintMismatch' && demand?.kind === 'value') {
+  if (rejection.kind === 'constraintMismatch' && demand instanceof ValueConstraint) {
     return `Wrong number. This pane only takes a ${demand.value}.`
   }
   return FRIENDLY_ERRORS[rejection.kind] ?? 'That pane won’t take this die. Try a glowing one.'
