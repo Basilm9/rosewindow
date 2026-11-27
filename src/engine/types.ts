@@ -13,6 +13,7 @@ import { Direction as CompassDirection } from '../model/Direction'
 import type { DirectionName } from '../model/Direction'
 import { ColorConstraint, OpenConstraint, ValueConstraint } from '../model/CellConstraint'
 import type { CellConstraint } from '../model/CellConstraint'
+import { EntryPoint as ModelEntryPoint } from '../model/EntryPoint'
 
 /** Grid coordinates (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
 export type { Position }
@@ -87,28 +88,21 @@ export function valueConstraint(value: number): CellConstraint {
 /** Window patterns (moved to `src/model/WindowPattern.ts` as a class; re-exported here until Prompt 59). */
 export type { WindowPattern } from '../model/WindowPattern'
 
-/** Where the beam enters: an edge cell plus the inward direction it travels. */
+/**
+ * Legacy plain entry shape: an edge cell plus the inward direction name. The class now lives in
+ * `src/model/EntryPoint.ts`; this interface stays until Prompt 59 for the engine/beam shims.
+ */
 export interface EntryPoint {
   readonly position: Position
   readonly direction: Direction
 }
 
 /**
- * Enumerates every legal entry point for an n×n grid: every edge cell with each
- * inward direction it admits. Corner cells admit two. For a 4×4 grid this is 20.
- * Deterministic order: cells scanned row-major, inward directions in N/E/S/W order.
+ * Every legal entry point for an n×n grid, as plain data (delegates to
+ * {@link ModelEntryPoint.allFor}). Corners admit two; a 4×4 grid yields 16. Order: cells
+ * row-major, inward directions S/W/N/E within each cell — the `Game` RNG samples this list,
+ * so the order must never change.
  */
 export function allEntryPoints(gridSize: number): EntryPoint[] {
-  const points: EntryPoint[] = []
-  const last = gridSize - 1
-  for (let row = 0; row < gridSize; row++) {
-    for (let col = 0; col < gridSize; col++) {
-      const position: Position = { row, col }
-      if (row === 0) points.push({ position, direction: 'south' })
-      if (col === last) points.push({ position, direction: 'west' })
-      if (row === last) points.push({ position, direction: 'north' })
-      if (col === 0) points.push({ position, direction: 'east' })
-    }
-  }
-  return points
+  return ModelEntryPoint.allFor(gridSize).map((entry) => entry.toData())
 }
