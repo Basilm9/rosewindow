@@ -10,6 +10,20 @@ import type { CellConstraint } from '../../../src/engine/types'
 export { bestPair, fastForward }
 export type { Candidate, CellConstraint, Game }
 
+/** A printed demand as plain data, whichever shape `CellConstraint` has on this branch. */
+export type Demand =
+  | { readonly kind: 'color'; readonly color: string }
+  | { readonly kind: 'value'; readonly value: number }
+  | { readonly kind: 'open' }
+
+/** Reads a constraint as plain data (prompt 15 turns `CellConstraint` into an interface). */
+export function demandOf(constraint: CellConstraint): Demand {
+  const data = constraint as unknown as Record<string, unknown>
+  if (constraint.kind === 'color') return { kind: 'color', color: String(data.color) }
+  if (constraint.kind === 'value') return { kind: 'value', value: Number(data.value) }
+  return { kind: 'open' }
+}
+
 /** A node-side copy of the run the page plays: same seed, same pattern, round 1. */
 export function replicaFor(seed: number, patternId: string): Game {
   const game = fastForward(seed, 1)

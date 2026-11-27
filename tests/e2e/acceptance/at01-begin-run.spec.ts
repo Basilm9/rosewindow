@@ -1,16 +1,18 @@
 import { expect, test } from '@playwright/test'
 import { ShotLog, freshPage, logFailure, logResult, settledBoard } from './harness'
-import { announcedEntry, replicaFor } from './model'
+import { announcedEntry, demandOf, replicaFor } from './model'
 import type { CellConstraint } from './model'
 
 /** The title of a small pane on a pattern card. */
-function cardTitle(constraint: CellConstraint): string {
+function cardTitle(cell: CellConstraint): string {
+  const constraint = demandOf(cell)
   if (constraint.kind === 'color') return `needs ${constraint.color}`
   return constraint.kind === 'value' ? `needs a ${constraint.value}` : 'anything goes'
 }
 
 /** The title of a pane on the board. */
-function paneTitle(constraint: CellConstraint): string {
+function paneTitle(cell: CellConstraint): string {
+  const constraint = demandOf(cell)
   if (constraint.kind === 'color') return `requires ${constraint.color} glass`
   return constraint.kind === 'value' ? `requires value ${constraint.value}` : 'any color or value'
 }
