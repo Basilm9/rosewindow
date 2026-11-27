@@ -40,14 +40,14 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 34 | BeamPath Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-34-green |
 | 35 ⚠ | BeamTracer | Darren / feat/mvc-model | 0 | 0/0 | 100% (761/761) | 156✓ | — | 21 | — | green | inc-35-green |
 | 36 | BeamTracer Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (791/791) | 156✓ | — | 21 | — | green | inc-36-green |
-| 37 | Objective Interface and PublicObjective | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (791/791) | 156 ✓ | — | 22 | — | green | inc-37-green |
-| 38 | PublicObjective Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 22 | — | green | inc-38-green |
-| 39 | PrivateObjective | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 23 | — | green | inc-39-green |
-| 40 | PrivateObjective and Deal Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 23 | — | green | inc-40-green |
-| 41 | ScoreReport | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 24 | — | green | inc-41-green |
-| 42 | ScoreReport Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-42-green |
-| 43 ⚠ | ScoreCalculator | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-43-green |
-| 44 | ScoreCalculator Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (1011/1011) | 156 ✓ | — | 24 | — | green | inc-44-green |
+| 37 | Objective Interface and PublicObjective | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (791/791) | 156 ✓ | — | 22 | — | green | inc-37-green |
+| 38 | PublicObjective Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 22 | — | green | inc-38-green |
+| 39 | PrivateObjective | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (854/854) | 156 ✓ | — | 23 | — | green | inc-39-green |
+| 40 | PrivateObjective and Deal Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 23 | — | green | inc-40-green |
+| 41 | ScoreReport | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 24 | — | green | inc-41-green |
+| 42 | ScoreReport Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-42-green |
+| 43 ⚠ | ScoreCalculator | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-43-green |
+| 44 | ScoreCalculator Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (1011/1011) | 156 ✓ | — | 24 | — | green | inc-44-green |
 | 45 ⚠ | The Seven Model Event Classes | | | | | | | | | | |
 | 46 | Model Event Tests | | | | | | | | | | |
 | 47 ⚠ | Game (the model facade) | | | | | | | | | | |
