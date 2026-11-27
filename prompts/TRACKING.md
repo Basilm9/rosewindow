@@ -29,7 +29,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 23 | DiceBag | Darren / feat/mvc-model | 0 | 0/0 | 100% (522/522) | 156✓ | — | 18 | — | green | inc-23-green |
 | 24 | DiceBag Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/543) | 156✓ | — | 18 | — | green | inc-24-green |
 | 25 | DraftPool | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/543) | 156✓ | — | 18 | — | green | inc-25-green |
-| 26 | DraftPool Tests | | | | | | | | | | |
+| 26 | DraftPool Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (564/564) | 156✓ | — | 18 | — | green | inc-26-green |
 | 27 ⚠ | PlacementValidator | | | | | | | | | | |
 | 28 | PlacementValidator Tests | | | | | | | | | | |
 | 29 | EntryPoint | | | | | | | | | | |
@@ -110,3 +110,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 23: DiceBag moved from engine (count stays 18); faces from Die.MIN_VALUE..MAX_VALUE; one shuffle via SeededRandom.shuffled; seed 3/42 first-five draws match reference; new: draw(n) rejects negative/non-integer n with invalidArgument before the emptyBag check (bag unchanged on rejection); permanent tests in 24.
 - 24: 21 tests; draw(n) input × bag-state criterion; legacy diceBag.test.ts and classes.test.ts bag cases ported; emptyBag and invalidArgument checked by kind via matchers (added after review); bag unchanged after both rejections (cases 18, 21). Test rules added to 00-master-context.md after this review.
 - 25: DraftPool moved from engine (count stays 18); take now throws PlacementError dieNotInPool (was GameError); static + instance contains added; engine Game.legalPlacementsFor switched to DraftPool.contains (not in prompt, low-risk, golden unchanged); placementValidator's own copy left for 27; 4 temporary checks listed for 26.
+- 26: 21 tests; take found/not-found and contains true/false branches; dieNotInPool checked by kind; unchanged state after rejection on both [red3] and [red3, blue5]; review found 3 of prompt 25's 4 temporary checks uncovered → added cases 18–21; agent's first evidence line numbers were off by one (caught on follow-up). Temp-check list now passed from class prompt to test prompt in the template.
