@@ -1,22 +1,23 @@
 /**
- * The only place the acceptance tests touch game code, so that moving it (prompts 47 and
- * 59: `src/model`, `src/util/autoPlayer`) is an edit to these imports and nothing else.
+ * The only place the acceptance tests touch game code, so that moving it (prompt 59:
+ * `src/util/autoPlayer`) is an edit to these imports and nothing else. Since prompt 47 `Game`
+ * and `CellConstraint` come from `src/model`.
  */
 import { bestPair, fastForward } from '../../../src/dev/autoPlayer'
 import type { Candidate } from '../../../src/dev/autoPlayer'
-import type { Game } from '../../../src/engine/game'
-import type { CellConstraint } from '../../../src/engine/types'
+import type { Game } from '../../../src/model/Game'
+import type { CellConstraint } from '../../../src/model/CellConstraint'
 
 export { bestPair, fastForward }
 export type { Candidate, CellConstraint, Game }
 
-/** A printed demand as plain data, whichever shape `CellConstraint` has on this branch. */
+/** A printed demand as plain data. */
 export type Demand =
   | { readonly kind: 'color'; readonly color: string }
   | { readonly kind: 'value'; readonly value: number }
   | { readonly kind: 'open' }
 
-/** Reads a constraint as plain data (prompt 15 turns `CellConstraint` into an interface). */
+/** Reads a constraint as plain data (`CellConstraint` is an interface since prompt 15). */
 export function demandOf(constraint: CellConstraint): Demand {
   const data = constraint as unknown as Record<string, unknown>
   if (constraint.kind === 'color') return { kind: 'color', color: String(data.color) }
@@ -31,10 +32,8 @@ export function replicaFor(seed: number, patternId: string): Game {
   return game
 }
 
-/** The announced beam entry. Reads a direction as today's string or as prompt 13's `Direction`. */
+/** The announced beam entry, with the `Direction` read as its compass name. */
 export function announcedEntry(game: Game): { row: number; col: number; direction: string } {
   const { position, direction } = game.currentEntry
-  const name: unknown =
-    typeof direction === 'string' ? direction : (direction as { readonly name: string }).name
-  return { row: position.row, col: position.col, direction: String(name) }
+  return { row: position.row, col: position.col, direction: direction.name }
 }

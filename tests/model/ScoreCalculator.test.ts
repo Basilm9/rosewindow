@@ -194,14 +194,12 @@ const STUB = (): Objective => ({
 
 /**
  * P1: the C1 objectives with the stub in the first public slot. `ScoreInput.objectives` is typed
- * with the concrete `PublicObjective` class, so the interface-only stub needs a cast to sit in
- * the tuple; at run time the calculator only calls `score`, `id` and `name`.
+ * by the `Objective` interface (inc 47), so the interface-only stub fits without a cast.
  */
-const stubFirstObjectives = (): DealtObjectives =>
-  ({
-    publics: [STUB(), ROW_COLOR(), QUORUM()],
-    privateObjective: new PrivateObjective('red'),
-  }) as unknown as DealtObjectives
+const stubFirstObjectives = (): ScoreInput['objectives'] => ({
+  publics: [STUB(), ROW_COLOR(), QUORUM()],
+  privateObjective: new PrivateObjective('red'),
+})
 
 describe('ScoreCalculator — tierFor (FR-8.4, input-domain partitioning)', () => {
   it.each([

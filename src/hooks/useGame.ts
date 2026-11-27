@@ -133,7 +133,7 @@ export function useGame(session?: RunSession): UseGameResult {
     if (!entry) return
     beamKey.current += 1
     setBeam({
-      path: traceBeam(game.window.dice, entry, game.config.multiplierCap),
+      path: traceBeam(game.window.dice, entry.toData(), game.config.multiplierCap),
       key: beamKey.current,
     })
   }, [animating, beam, game])
@@ -175,7 +175,7 @@ export function useGame(session?: RunSession): UseGameResult {
           break
         case 'beamTraced':
           beamKey.current += 1
-          setBeam({ path: event.path, key: beamKey.current })
+          setBeam({ path: event.path.toData(), key: beamKey.current })
           setBeamRun({ points: 0, multiplier: 1, strikes: 0 })
           break
         case 'roundForfeited':

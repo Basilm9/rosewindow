@@ -219,7 +219,7 @@ export function GlassBoard({
   const [activeCell, setActiveCell] = useState<Position>({ row: 0, col: 0 })
   const window = game.window
   if (window === null) return null
-  const entry = (animating ? beam?.path.segments[0] : undefined) ?? game.currentEntry
+  const entry = (animating ? beam?.path.segments[0] : undefined) ?? game.currentEntry.toData()
   const hand = game.hand
   const hoveredPreview =
     hovered !== null && hand !== null ? (legalPreview.get(cellKeyOf(hovered)) ?? null) : null
