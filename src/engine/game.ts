@@ -10,7 +10,7 @@ import { SeededRandom } from './rng'
 import { offerPatterns } from './patterns'
 import { sample } from './sample'
 import { BeamTracer } from './beamTracer'
-import { allEntryPoints, sameDie } from './types'
+import { allEntryPoints } from './types'
 import { dealObjectives } from './objectives'
 import type { DealtObjectives } from './objectives'
 import { ScoreCalculator } from './scoreCalculator'
@@ -250,7 +250,7 @@ export class Game {
     const window = this.#window
     if (window === null || (this.#phase !== 'draft' && this.#phase !== 'place')) return []
     const available = [...this.#draftPool.dice, ...(this.#hand === null ? [] : [this.#hand])]
-    if (!available.some((candidate) => sameDie(candidate, die))) return []
+    if (!DraftPool.contains(available, die)) return []
     const positions: Position[] = []
     const grid = window.dice
     for (let row = 0; row < window.gridSize; row++) {

@@ -27,8 +27,8 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 21 ⚠ | GlassWindow | Darren / feat/mvc-model | 0 | 0/0 | 100% (496/496) | 156✓ | — | 18 | — | green | inc-21-green |
 | 22 | GlassWindow Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (522/522) | 156✓ | — | 18 | — | green | inc-22-green |
 | 23 | DiceBag | Darren / feat/mvc-model | 0 | 0/0 | 100% (522/522) | 156✓ | — | 18 | — | green | inc-23-green |
-| 24 | DiceBag Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/5432) | 156✓ | — | 18 | — | green | inc-24-green |
-| 25 | DraftPool | | | | | | | | | | |
+| 24 | DiceBag Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/543) | 156✓ | — | 18 | — | green | inc-24-green |
+| 25 | DraftPool | Darren / feat/mvc-model | 0 | 0/0 | 100% (543/543) | 156✓ | — | 18 | — | green | inc-25-green |
 | 26 | DraftPool Tests | | | | | | | | | | |
 | 27 ⚠ | PlacementValidator | | | | | | | | | | |
 | 28 | PlacementValidator Tests | | | | | | | | | | |
@@ -109,3 +109,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 22: 26 tests; both legacy glassWindow.test.ts cases ported; outOfBounds (4 outside partitions incl. {4,0}) and cellOccupied checked by class, message and kind; NFR-6.1 permanent tests for both rejection kinds (24 cellOccupied, 24b outOfBounds); catchError helper is the only try (file-level, allowed).
 - 23: DiceBag moved from engine (count stays 18); faces from Die.MIN_VALUE..MAX_VALUE; one shuffle via SeededRandom.shuffled; seed 3/42 first-five draws match reference; new: draw(n) rejects negative/non-integer n with invalidArgument before the emptyBag check (bag unchanged on rejection); permanent tests in 24.
 - 24: 21 tests; draw(n) input × bag-state criterion; legacy diceBag.test.ts and classes.test.ts bag cases ported; emptyBag and invalidArgument checked by kind via matchers (added after review); bag unchanged after both rejections (cases 18, 21). Test rules added to 00-master-context.md after this review.
+- 25: DraftPool moved from engine (count stays 18); take now throws PlacementError dieNotInPool (was GameError); static + instance contains added; engine Game.legalPlacementsFor switched to DraftPool.contains (not in prompt, low-risk, golden unchanged); placementValidator's own copy left for 27; 4 temporary checks listed for 26.
