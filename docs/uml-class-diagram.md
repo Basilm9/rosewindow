@@ -67,11 +67,6 @@ classDiagram
         -illuminateAndAdvance() void
     }
 
-    class PlacementValidator {
-        +findViolation(check) PlacementViolation | null
-        +assertValid(check) void
-    }
-
     class ScoreCalculator {
         +TierThresholds tiers
         +ScoreCalculator(tiers?)
@@ -193,6 +188,22 @@ classDiagram
         -assertInside(position) void
     }
 
+    class PlacementValidator {
+        -readonly PlacementLaw[] laws
+        +findViolation(check) PlacementViolation | null
+        +assertValid(check) void
+        +isInsideGrid(position, size) boolean$
+        +isOnBorderRing(position, size) boolean$
+        +countPlaced(grid) number$
+        -dieAt(grid, row, col) DieData | null$
+        -cellOccupied(c) PlacementViolation | null
+        -dieNotInPool(c) PlacementViolation | null
+        -constraintMismatch(c) PlacementViolation | null
+        -adjacency(c) PlacementViolation | null
+        -illegalFirstPlacement(c) PlacementViolation | null
+        -disconnected(c) PlacementViolation | null
+    }
+
     class SeededRandom {
         +number seed
         -number state
@@ -257,7 +268,9 @@ classDiagram
     GlassWindow --> WindowPattern : has
     GlassWindow ..> Die : uses
     GlassWindow ..> GameError : uses
-    PlacementValidator ..> Die : uses
+    PlacementValidator --> Die : has
+    PlacementValidator ..> DraftPool : uses
+    PlacementValidator ..> GameError : uses
     PlacementValidator ..> PlacementError : uses
     ScoreCalculator ..> Die : uses
     SeededRandom ..> GameError : uses
@@ -290,7 +303,6 @@ Source inventory:
 
 - [BeamTracer](../src/engine/beamTracer.ts#L54) — `src/engine/beamTracer.ts`
 - [Game](../src/engine/game.ts#L33) — `src/engine/game.ts`
-- [PlacementValidator](../src/engine/placementValidator.ts#L67) — `src/engine/placementValidator.ts`
 - [ScoreCalculator](../src/engine/scoreCalculator.ts#L111) — `src/engine/scoreCalculator.ts`
 - [OpenConstraint](../src/model/CellConstraint.ts#L34) — `src/model/CellConstraint.ts`
 - [ColorConstraint](../src/model/CellConstraint.ts#L66) — `src/model/CellConstraint.ts`
@@ -303,6 +315,7 @@ Source inventory:
 - [GameError](../src/model/GameError.ts#L85) — `src/model/GameError.ts`
 - [PlacementError](../src/model/GameError.ts#L148) — `src/model/GameError.ts`
 - [GlassWindow](../src/model/GlassWindow.ts#L27) — `src/model/GlassWindow.ts`
+- [PlacementValidator](../src/model/PlacementValidator.ts#L48) — `src/model/PlacementValidator.ts`
 - [SeededRandom](../src/model/SeededRandom.ts#L29) — `src/model/SeededRandom.ts`
 - [WindowCell](../src/model/WindowCell.ts#L13) — `src/model/WindowCell.ts`
 - [WindowPattern](../src/model/WindowPattern.ts#L48) — `src/model/WindowPattern.ts`
