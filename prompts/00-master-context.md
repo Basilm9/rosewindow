@@ -75,6 +75,11 @@ Tests mirror the packages under `tests/`; Playwright specs live in `tests/e2e/` 
 - **Process:** one capability per prompt, in README order; after each prompt run `pnpm typecheck && pnpm lint && pnpm test` (and `pnpm e2e` once views are involved), fill the prompt's row in `TRACKING.md`, commit (`feat(model): inc NN …`), and tag `inc-NN-green` when every metric is green. Rollback = `git reset --hard inc-<last green>-green`.
 - **Team process:** the two developers split prompts by package, each works on their own branch, merges back, and reruns the full suite after every merge (regression testing). The git history is part of the deliverable.
 - **Verification is human-owned:** an agent's claim that tests pass is not evidence; the tracking row is filled from the actual command output.
+- **Test rules (every test prompt):**
+  - Every rejection test asserts the error's violation kind with an `expect.objectContaining({ violation: expect.objectContaining({ kind: '…' }) })` matcher, not only the error class or message.
+  - Every rejection has a test that the object's state is unchanged afterwards.
+  - Temporary checks are fine, but list each in the report; the next test prompt must cover each one permanently and name the test that does.
+  - The report includes a **"Review evidence"** section quoting the exact `expect` lines (with line numbers) that assert each error kind and each unchanged-state check.
 
 ---
 

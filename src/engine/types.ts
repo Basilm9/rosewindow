@@ -6,132 +6,58 @@
  * north edge, column 0 is the west edge.
  */
 
-/** Grid coordinates. Row 0 is the top (north) edge; column 0 is the west edge. */
-export interface Position {
-  readonly row: number
-  readonly col: number
-}
+import type { Position } from '../model/Position'
+import { Die } from '../model/Die'
+import type { DieColor } from '../model/Die'
+import { Direction as CompassDirection } from '../model/Direction'
+import type { DirectionName } from '../model/Direction'
+import { ColorConstraint, OpenConstraint, ValueConstraint } from '../model/CellConstraint'
+import type { CellConstraint } from '../model/CellConstraint'
+import { EntryPoint as ModelEntryPoint } from '../model/EntryPoint'
 
-/** The five glass colors. Order is display order for the draft pool. */
-export const DIE_COLORS = ['red', 'yellow', 'blue', 'green', 'purple'] as const
+/** Grid coordinates (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
+export type { Position }
 
-export type DieColor = (typeof DIE_COLORS)[number]
+/** Die, its colors and their order (moved to `src/model/Die.ts`; re-exported here until Prompt 59). */
+export { DIE_COLORS, Die } from '../model/Die'
+export type { DieColor } from '../model/Die'
 
-/**
- * What the beam does when it enters a die of a given color (pitch §5):
- * warm colors turn clockwise, cool colors turn counter-clockwise, purple goes straight.
- */
-export type Refraction = 'clockwise' | 'counterClockwise' | 'straight'
+/** The beam law by colour (moved to `src/model/Refraction.ts`; re-exported here until Prompt 59). */
+export { REFRACTION_BY_COLOR } from '../model/Refraction'
+export type { Refraction } from '../model/Refraction'
 
-/** The beam law, keyed by color. This is rule data, not tunable config. */
-export const REFRACTION_BY_COLOR: Readonly<Record<DieColor, Refraction>> = {
-  red: 'clockwise',
-  yellow: 'clockwise',
-  blue: 'counterClockwise',
-  green: 'counterClockwise',
-  purple: 'straight',
-}
+/** Compass names, clockwise from north (moved to `src/model/Direction.ts`; re-exported until Prompt 59). */
+export { DIRECTION_NAMES as DIRECTIONS } from '../model/Direction'
 
-export const DIRECTIONS = ['north', 'east', 'south', 'west'] as const
+/** Legacy string form of a direction; the beam/engine code uses it until Prompt 35. */
+export type Direction = DirectionName
 
-export type Direction = (typeof DIRECTIONS)[number]
+/** Unit step for each direction, built from {@link CompassDirection.ALL}: north decreases row, east increases column. */
+export const DELTA_BY_DIRECTION: Readonly<Record<Direction, Position>> = Object.fromEntries(
+  CompassDirection.ALL.map((d) => [d.name, d.delta]),
+) as Record<Direction, Position>
 
-/** Unit step for each direction: north decreases row, east increases column. */
-export const DELTA_BY_DIRECTION: Readonly<Record<Direction, Position>> = {
-  north: { row: -1, col: 0 },
-  east: { row: 0, col: 1 },
-  south: { row: 1, col: 0 },
-  west: { row: 0, col: -1 },
-}
-
-/** 90° clockwise rotation: north → east → south → west → north. */
+/** 90° clockwise rotation: north → east → south → west → north (delegates to {@link CompassDirection.clockwise}). */
 export function clockwise(direction: Direction): Direction {
-  return DIRECTIONS[(DIRECTIONS.indexOf(direction) + 1) % DIRECTIONS.length]!
+  return CompassDirection.fromName(direction).clockwise().name
 }
 
-/** 90° counter-clockwise rotation: north → west → south → east → north. */
+/** 90° counter-clockwise rotation: north → west → south → east → north (delegates to {@link CompassDirection.counterClockwise}). */
 export function counterClockwise(direction: Direction): Direction {
-  return DIRECTIONS[(DIRECTIONS.indexOf(direction) + DIRECTIONS.length - 1) % DIRECTIONS.length]!
+  return CompassDirection.fromName(direction).counterClockwise().name
 }
 
-/** An immutable colored die. Value is the printed face, 1–6. */
-export class Die {
-  constructor(
-    readonly color: DieColor,
-    readonly value: number,
-  ) {
-    Object.freeze(this)
-  }
-
-  /** Value equality also accepts plain color/value data restored from a recording. */
-  static equals(a: Die, b: Die): boolean {
-    return a.color === b.color && a.value === b.value
-  }
-}
-
-/** Structural equality: same color and same value. */
+/** Structural equality: same color and same value (delegates to {@link Die.equals}). */
 export function sameDie(a: Die, b: Die): boolean {
   return Die.equals(a, b)
 }
 
-/** The four orthogonal neighbor offsets — the adjacency law (pitch §2) uses only these. */
-export const ORTHOGONAL_DELTAS: readonly Position[] = [
-  { row: -1, col: 0 },
-  { row: 1, col: 0 },
-  { row: 0, col: -1 },
-  { row: 0, col: 1 },
-]
+/** Neighbour offsets (moved to `src/model/Position.ts`; re-exported here until Prompt 59). */
+export { ORTHOGONAL_DELTAS, DIAGONAL_DELTAS } from '../model/Position'
 
-/** The four diagonal offsets — the connectivity law (pitch §9) uses orthogonals plus these. */
-export const DIAGONAL_DELTAS: readonly Position[] = [
-  { row: -1, col: -1 },
-  { row: -1, col: 1 },
-  { row: 1, col: -1 },
-  { row: 1, col: 1 },
-]
-
-/** The printed demand on a window cell: a required color, a required value, or nothing. */
-export type CellConstraint = OpenConstraint | ColorConstraint | ValueConstraint
-
-/** A pane without a printed demand; it accepts every die. */
-export class OpenConstraint {
-  readonly kind = 'open'
-
-  constructor() {
-    Object.freeze(this)
-  }
-
-  /** Open panes impose no color or value restriction. */
-  readonly accepts: (die: Die) => boolean = () => true
-}
-
-/** A printed color demand, independent of the die's value. */
-export class ColorConstraint {
-  readonly kind = 'color'
-
-  constructor(readonly color: DieColor) {
-    Object.freeze(this)
-  }
-
-  /** Whether this die matches the pane's printed color. */
-  accepts(die: Die): boolean {
-    return die.color === this.color
-  }
-}
-
-/** A printed value demand, independent of the die's color. */
-export class ValueConstraint {
-  readonly kind = 'value'
-
-  constructor(readonly value: number) {
-    Object.freeze(this)
-  }
-
-  /** Whether this die matches the pane's printed value. */
-  accepts(die: Die): boolean {
-    return die.value === this.value
-  }
-}
+/** Printed cell demands (moved to `src/model/CellConstraint.ts`; re-exported here until Prompt 59). */
+export { OpenConstraint, ColorConstraint, ValueConstraint } from '../model/CellConstraint'
+export type { CellConstraint }
 
 /** Creates an immutable open-pane demand. */
 export function openConstraint(): CellConstraint {
@@ -148,37 +74,24 @@ export function valueConstraint(value: number): CellConstraint {
   return new ValueConstraint(value)
 }
 
-/** A named 4×4 arrangement of printed cell demands; two are offered per run. */
-export interface WindowPattern {
-  readonly id: string
-  readonly name: string
-  readonly description: string
-  /** Row-major 4×4 grid of printed demands. */
-  readonly constraints: readonly (readonly CellConstraint[])[]
-}
+/** Window patterns (moved to `src/model/WindowPattern.ts` as a class; re-exported here until Prompt 59). */
+export type { WindowPattern } from '../model/WindowPattern'
 
-/** Where the beam enters: an edge cell plus the inward direction it travels. */
+/**
+ * Legacy plain entry shape: an edge cell plus the inward direction name. The class now lives in
+ * `src/model/EntryPoint.ts`; this interface stays until Prompt 59 for the engine/beam shims.
+ */
 export interface EntryPoint {
   readonly position: Position
   readonly direction: Direction
 }
 
 /**
- * Enumerates every legal entry point for an n×n grid: every edge cell with each
- * inward direction it admits. Corner cells admit two. For a 4×4 grid this is 20.
- * Deterministic order: cells scanned row-major, inward directions in N/E/S/W order.
+ * Every legal entry point for an n×n grid, as plain data (delegates to
+ * {@link ModelEntryPoint.allFor}). Corners admit two; a 4×4 grid yields 16. Order: cells
+ * row-major, inward directions S/W/N/E within each cell — the `Game` RNG samples this list,
+ * so the order must never change.
  */
 export function allEntryPoints(gridSize: number): EntryPoint[] {
-  const points: EntryPoint[] = []
-  const last = gridSize - 1
-  for (let row = 0; row < gridSize; row++) {
-    for (let col = 0; col < gridSize; col++) {
-      const position: Position = { row, col }
-      if (row === 0) points.push({ position, direction: 'south' })
-      if (col === last) points.push({ position, direction: 'west' })
-      if (row === last) points.push({ position, direction: 'north' })
-      if (col === 0) points.push({ position, direction: 'east' })
-    }
-  }
-  return points
+  return ModelEntryPoint.allFor(gridSize).map((entry) => entry.toData())
 }
