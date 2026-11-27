@@ -34,7 +34,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 28 | PlacementValidator Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (670/670) | 156✓ | — | 18 | — | green | inc-28-green |
 | 29 | EntryPoint | Darren / feat/mvc-model | 0 | 0/0 | 100% (670/670) | 156✓ | — | 19 | — | green | inc-29-green |
 | 30 | EntryPoint Tests | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 19 | — | green | inc-30-green |
-| 31 | BeamSegment | | | | | | | | | | |
+| 31 | BeamSegment | Darren / feat/mvc-model | 0 | 0/0 | 100% (715/715) | 156✓ | — | 20 | — | green | inc-31-green |
 | 32 | BeamSegment Tests | | | | | | | | | | |
 | 33 | BeamPath | | | | | | | | | | |
 | 34 | BeamPath Tests | | | | | | | | | | |
@@ -115,3 +115,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 28: 106 tests, 100% statement/branch/function/line coverage on PlacementValidator.ts; 11 of 15 precedence pairs tested + 4 impossible pairs explained (line 514); all 13 prompt-27 temporary checks made permanent; unchanged-state and deep-frozen tables cover all six laws + outOfBounds; mutation check (swap two laws, drop same-value adjacency, drop diagonal connectivity, border ring always true) — every mutation caught (1/3/7/10 failures), code restored, empty diff.
 - 29: EntryPoint promoted from interface to class (18 → 19); allFor keeps reference order (row-major, S/W/N/E per cell) — old allEntryPoints output saved before the change and matched byte for byte for sizes 3/4/5; wrong reference comment ("20", "N/E/S/W") corrected; EntryPointData interface added; no call sites changed; 7 temporary checks listed for 30.
 - 30: 45 tests; full 16-entry allFor(4) order pinned as a literal (A8), checked against pre-29 code from git history, not the current shim; lengths 3/4/5; all 7 prompt-29 temporary checks covered; fromData invalidArgument checked by kind + input unchanged. NOTE for 59: A10 imports the engine shim — delete it with the shim.
+- 31: BeamSegment promoted from interface to class (19 → 20); points derived in constructor (die.value × multiplier, 0 for empty pane), never passed in; only own fields position/direction/die/multiplier/points (struck is a getter); legacy engine interface untouched until 58; 5 temporary checks listed for 32.
