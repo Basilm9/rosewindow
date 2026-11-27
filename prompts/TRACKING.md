@@ -48,8 +48,8 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 42 | ScoreReport Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-42-green |
 | 43 ⚠ | ScoreCalculator | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-43-green |
 | 44 | ScoreCalculator Tests | Basil (Claude agent; manually verified by Basil 11/27) / feat/mvc-scoring | 0 | 0/0 | 100% (1011/1011) | 156 ✓ | — | 24 | — | green | inc-44-green |
-| 45 ⚠ | The Seven Model Event Classes | | | | | | | | | | |
-| 46 | Model Event Tests | | | | | | | | | | |
+| 45 ⚠ | The Seven Model Event Classes | Darren / feat/mvc-game | 0 | 0/0 | 100% (1020/1020) | 156✓ | — | 31 | — | green | inc-45-green |
+| 46 | Model Event Tests | Darren / feat/mvc-game | 0 | 0/0 | 100% (1080/1080) | 156✓ | — | 31 | — | green | inc-46-green |
 | 47 ⚠ | Game (the model facade) | | | | | | | | | | |
 | 48 ⚠ | Game Tests, Golden Master and Safety Properties | | | | | | | | | | |
 | 49 ⚠ | Game Statechart (XState v5) | | | | | | | | | | |
@@ -124,3 +124,4 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 - 37–44 re-verified by Darren after merging into main: typecheck 0, import-rule violations 0, lint 0/0, 1020/1020 tests, golden master ✓ (game.test.ts 22/22), 24 classes.
 - 37–44 mutation spot-check by Darren: tier boundary, report total, private colour, Odd Values — all caught (10/14/2/3 failing tests); golden master alone missed tier boundary and Odd Values. Restore verified by SHA-256.
 - 45 (CRITICAL): 7 event classes extending ModelEvent (24 → 31), kinds and payload names unchanged; source non-enumerable since 03 (Object.keys = delta, kind, round); toData() returns the legacy shape; *EventData types added (model can't import engine); isolation protocol in full incl. a @ts-expect-error control proving the type check isn't vacuous; game/hooks/machine 73/73; no existing file changed (engine still emits plain objects until 47).
+- 46: 60 tests (events.test.ts, StubModel publisher, all 7 kinds asserted literally) + events.types.ts compiled by typecheck (legacy-assignability and @ts-expect-error misspelled-kind control); all prompt-45 temporary checks covered; one justified ternary in N2 (narrowing on kind needs a conditional).
