@@ -16,15 +16,20 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+/**
+ * Each test spawns the UML generator (TypeScript compiler API) one or more times.
+ * That takes ~1s locally but can exceed Vitest's 5s default on shared CI runners,
+ * so these tests get a longer timeout without raising the global `testTimeout`.
+ */
+const UML_TEST_TIMEOUT_MS = 30_000
+
 interface Report {
   readonly status: number | null
   readonly stdout: string
   readonly diagram: string
 }
 
-function withProject(
-  check: (root: string, generate: () => string, report: () => Report) => void,
-) {
+function withProject(check: (root: string, generate: () => string, report: () => Report) => void) {
   const root = mkdtempSync(join(tmpdir(), 'rosewindow-uml-'))
   const project = fileURLToPath(new URL('../../', import.meta.url))
   try {
@@ -58,18 +63,20 @@ function withProject(
   }
 }
 
-it('derives class members and relationships from types, aliases, and executable references', () => {
-  withProject((root, generate) => {
-    writeFileSync(
-      join(root, 'src/die.ts'),
-      `export class Die {
+it(
+  'derives class members and relationships from types, aliases, and executable references',
+  () => {
+    withProject((root, generate) => {
+      writeFileSync(
+        join(root, 'src/die.ts'),
+        `export class Die {
         constructor(readonly color: string, readonly value: number) {}
         static equals(a: Die, b: Die): boolean { return a.value === b.value }
       }`,
-    )
-    writeFileSync(
-      join(root, 'src/game.ts'),
-      `import { Die as PaneDie } from './die'
+      )
+      writeFileSync(
+        join(root, 'src/game.ts'),
+        `import { Die as PaneDie } from './die'
       export interface Pattern { constraints: readonly Constraint[] }
       export type Grid = readonly (readonly (PaneDie | null)[])[]
       export class Config { readonly seed = 3 }
@@ -97,84 +104,89 @@ it('derives class members and relationships from types, aliases, and executable 
       export function SomeComponent() { return null }
       // export class CommentedOut {}
       `,
-    )
-    writeFileSync(join(root, 'tests/helper.ts'), 'export class TestHelper {}')
-    writeFileSync(join(root, 'src/ambient.d.ts'), 'export class DeclarationOnly {}')
+      )
+      writeFileSync(join(root, 'tests/helper.ts'), 'export class TestHelper {}')
+      writeFileSync(join(root, 'src/ambient.d.ts'), 'export class DeclarationOnly {}')
 
-    const output = generate()
-    expect(output).toContain('**8 concrete production classes**')
-    expect(output).toContain('+string color')
-    expect(output).toContain('+equals(a, b) boolean$')
-    expect(output).toContain('-Grid dice')
-    expect(output).toContain('+number size')
-    expect(output).toContain('+accepts(die) boolean')
-    expect(output).toContain('+empty(config, pattern) Window$')
-    expect(output).toContain('Window --> Die : has')
-    expect(output).toContain('Window --> Config : has')
-    expect(output).toContain('Window --> Constraint : has')
-    expect(output).toContain('Constraint ..> Die : uses')
-    expect(output).toContain('Game ..> SeededRandom : uses')
-    expect(output).toContain('Game ..> PlacementError : uses')
-    expect(output).toContain('DomainError <|-- PlacementError')
-    expect(output).not.toContain('Game ..> Config')
-    expect(output).toMatch(/\[Die\]\(\.\.\/src\/die\.ts#L1\)/)
-    expect(output).toMatch(/class AbstractBase \{\s+<<abstract>>/)
-    for (const name of [
-      'AmbientClass',
-      'LocalHelper',
-      'TestHelper',
-      'DeclarationOnly',
-    ]) {
-      expect(output).not.toContain(`class ${name}`)
-    }
-  })
-})
+      const output = generate()
+      expect(output).toContain('**8 concrete production classes**')
+      expect(output).toContain('+string color')
+      expect(output).toContain('+equals(a, b) boolean$')
+      expect(output).toContain('-Grid dice')
+      expect(output).toContain('+number size')
+      expect(output).toContain('+accepts(die) boolean')
+      expect(output).toContain('+empty(config, pattern) Window$')
+      expect(output).toContain('Window --> Die : has')
+      expect(output).toContain('Window --> Config : has')
+      expect(output).toContain('Window --> Constraint : has')
+      expect(output).toContain('Constraint ..> Die : uses')
+      expect(output).toContain('Game ..> SeededRandom : uses')
+      expect(output).toContain('Game ..> PlacementError : uses')
+      expect(output).toContain('DomainError <|-- PlacementError')
+      expect(output).not.toContain('Game ..> Config')
+      expect(output).toMatch(/\[Die\]\(\.\.\/src\/die\.ts#L1\)/)
+      expect(output).toMatch(/class AbstractBase \{\s+<<abstract>>/)
+      for (const name of ['AmbientClass', 'LocalHelper', 'TestHelper', 'DeclarationOnly']) {
+        expect(output).not.toContain(`class ${name}`)
+      }
+    })
+  },
+  UML_TEST_TIMEOUT_MS,
+)
 
-it('updates additions, deletions, and member changes without rewriting identical output', () => {
-  withProject((root, generate) => {
-    const source = join(root, 'src/model.ts')
-    const removed = join(root, 'src/removed.ts')
-    writeFileSync(source, 'export class Model { value = 1 }')
-    writeFileSync(removed, 'export class Removed {}')
-    const before = generate()
-    expect(before).toContain('+number value')
-    expect(before).toContain('class Removed')
+it(
+  'updates additions, deletions, and member changes without rewriting identical output',
+  () => {
+    withProject((root, generate) => {
+      const source = join(root, 'src/model.ts')
+      const removed = join(root, 'src/removed.ts')
+      writeFileSync(source, 'export class Model { value = 1 }')
+      writeFileSync(removed, 'export class Removed {}')
+      const before = generate()
+      expect(before).toContain('+number value')
+      expect(before).toContain('class Removed')
 
-    writeFileSync(source, 'export class Model { title = "rose" }\nexport class Added {}')
-    unlinkSync(removed)
-    const after = generate()
-    expect(after).not.toBe(before)
-    expect(after).not.toContain('class Removed')
-    expect(after).not.toContain('+number value')
-    expect(after).toContain('+string title')
-    expect(after).toContain('class Added')
+      writeFileSync(source, 'export class Model { title = "rose" }\nexport class Added {}')
+      unlinkSync(removed)
+      const after = generate()
+      expect(after).not.toBe(before)
+      expect(after).not.toContain('class Removed')
+      expect(after).not.toContain('+number value')
+      expect(after).toContain('+string title')
+      expect(after).toContain('class Added')
 
-    const output = join(root, 'docs/uml-class-diagram.md')
-    const timestamp = new Date('2020-01-01T00:00:00Z')
-    utimesSync(output, timestamp, timestamp)
-    expect(generate()).toBe(after)
-    expect(statSync(output).mtimeMs).toBe(timestamp.getTime())
-  })
-})
+      const output = join(root, 'docs/uml-class-diagram.md')
+      const timestamp = new Date('2020-01-01T00:00:00Z')
+      utimesSync(output, timestamp, timestamp)
+      expect(generate()).toBe(after)
+      expect(statSync(output).mtimeMs).toBe(timestamp.getTime())
+    })
+  },
+  UML_TEST_TIMEOUT_MS,
+)
 
-it('keeps classes with identical names in different modules separate', () => {
-  withProject((root, generate) => {
-    writeFileSync(join(root, 'src/first.ts'), 'export class Item { first = true }')
-    writeFileSync(join(root, 'src/second.ts'), 'export class Item { second = true }')
-    writeFileSync(
-      join(root, 'src/holder.ts'),
-      `import { Item as First } from './first'
+it(
+  'keeps classes with identical names in different modules separate',
+  () => {
+    withProject((root, generate) => {
+      writeFileSync(join(root, 'src/first.ts'), 'export class Item { first = true }')
+      writeFileSync(join(root, 'src/second.ts'), 'export class Item { second = true }')
+      writeFileSync(
+        join(root, 'src/holder.ts'),
+        `import { Item as First } from './first'
        import { Item as Second } from './second'
        export class Holder { constructor(readonly first: First, readonly second: Second) {} }`,
-    )
-    const output = generate()
-    expect(output).toContain('Holder --> Item : has')
-    expect(output).toContain('Holder --> Item_2 : has')
-    expect(output).toContain('class Item_2["Item"]')
-    expect(output).toContain('+boolean first')
-    expect(output).toContain('+boolean second')
-  })
-})
+      )
+      const output = generate()
+      expect(output).toContain('Holder --> Item : has')
+      expect(output).toContain('Holder --> Item_2 : has')
+      expect(output).toContain('class Item_2["Item"]')
+      expect(output).toContain('+boolean first')
+      expect(output).toContain('+boolean second')
+    })
+  },
+  UML_TEST_TIMEOUT_MS,
+)
 
 /** Writes `src/<path>` in the temporary project, creating its folder. */
 function write(root: string, path: string, code: string) {
@@ -188,7 +200,7 @@ function write(root: string, path: string, code: string) {
  * draws, and input-domain partitioning of the section 5 import rules (allowed, forbidden
  * package, forbidden library, type-only, forbidden global, legacy folder).
  */
-describe('packages, abstract classes and interfaces', () => {
+describe('packages, abstract classes and interfaces', { timeout: UML_TEST_TIMEOUT_MS }, () => {
   it('U4 groups classes by package and marks an abstract parent', () => {
     withProject((root, generate) => {
       write(root, 'mvc/AbstractModel.ts', 'export abstract class AbstractModel<E> { last?: E }')
@@ -233,7 +245,7 @@ describe('packages, abstract classes and interfaces', () => {
   })
 })
 
-describe('import rules (MVC_RoseWindow.md section 5)', () => {
+describe('import rules (MVC_RoseWindow.md section 5)', { timeout: UML_TEST_TIMEOUT_MS }, () => {
   it('U6 fails on a library and on a package the model may not import', () => {
     withProject((root, _generate, report) => {
       write(root, 'view/v.ts', 'export const v = 1')
@@ -268,9 +280,17 @@ export const bad = [useState, v]`,
 
   it('U8 flags browser globals and Math.random in the model, not names that look like them', () => {
     withProject((root, _generate, report) => {
-      write(root, 'model/ok.ts', 'export class Board { window = 1; size() { const window = this.window; return window } }')
+      write(
+        root,
+        'model/ok.ts',
+        'export class Board { window = 1; size() { const window = this.window; return window } }',
+      )
       expect(report().stdout).toContain('Import-rule violations: 0')
-      write(root, 'model/r.ts', 'export const roll = () => Math.random()\nexport const store = () => localStorage')
+      write(
+        root,
+        'model/r.ts',
+        'export const roll = () => Math.random()\nexport const store = () => localStorage',
+      )
       const result = report()
       expect(result.status).toBe(1)
       expect(result.stdout).toContain('Import-rule violations: 2')
@@ -295,7 +315,11 @@ export const bad = [useState, v]`,
         }),
       )
       write(root, 'progression/p.ts', 'export const p = 1')
-      write(root, 'mvc/react/hook.ts', "import { useEffect } from 'react'\nexport const hook = useEffect")
+      write(
+        root,
+        'mvc/react/hook.ts',
+        "import { useEffect } from 'react'\nexport const hook = useEffect",
+      )
       write(
         root,
         'model/m.ts',
