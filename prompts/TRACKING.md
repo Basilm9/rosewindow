@@ -47,7 +47,7 @@ Thresholds: see `00-master-context.md` section 4. Variant = the developer/branch
 | 41 | ScoreReport | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (955/955) | 156 ✓ | — | 24 | — | green | inc-41-green |
 | 42 | ScoreReport Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-42-green |
 | 43 ⚠ | ScoreCalculator | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (978/978) | 156 ✓ | — | 24 | — | green | inc-43-green |
-| 44 | ScoreCalculator Tests | | | | | | | | | | |
+| 44 | ScoreCalculator Tests | Basil (Claude agent; verified by Claude) / feat/mvc-scoring | 0 | 0/0 | 100% (1011/1011) | 156 ✓ | — | 24 | — | green | inc-44-green |
 | 45 ⚠ | The Seven Model Event Classes | | | | | | | | | | |
 | 46 | Model Event Tests | | | | | | | | | | |
 | 47 ⚠ | Game (the model facade) | | | | | | | | | | |
